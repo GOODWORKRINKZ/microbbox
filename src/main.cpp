@@ -10,6 +10,18 @@ void setup() {
     Serial.begin(115200);
     Serial.println("МикроББокс запускается...");
     
+    // ЭКСТРЕННАЯ ОСТАНОВКА МОТОРОВ перед инициализацией!
+    // Устанавливаем все пины моторов в LOW для предотвращения вращения при старте
+    pinMode(MOTOR_LEFT_FWD_PIN, OUTPUT);
+    pinMode(MOTOR_LEFT_REV_PIN, OUTPUT);
+    pinMode(MOTOR_RIGHT_FWD_PIN, OUTPUT);
+    pinMode(MOTOR_RIGHT_REV_PIN, OUTPUT);
+    
+    digitalWrite(MOTOR_LEFT_FWD_PIN, LOW);
+    digitalWrite(MOTOR_LEFT_REV_PIN, LOW);
+    digitalWrite(MOTOR_RIGHT_FWD_PIN, LOW);
+    digitalWrite(MOTOR_RIGHT_REV_PIN, LOW);
+    
     // Отключение детектора сброса напряжения для предотвращения случайных перезагрузок
     WRITE_PERI_REG(RTC_CNTL_BROWN_OUT_REG, 0);
     
