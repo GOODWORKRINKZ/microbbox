@@ -303,19 +303,24 @@ bool MicroBoxRobot::initCamera() {
 void MicroBoxRobot::initMotors() {
     DEBUG_PRINTLN("Инициализация моторов...");
     
-    // Настройка PWM для моторов (как в Scout32 - ПЕРЕД pinMode!)
-    ledcSetup(MOTOR_PWM_CHANNEL_LF, MOTOR_PWM_FREQ, MOTOR_PWM_RESOLUTION);
-    ledcSetup(MOTOR_PWM_CHANNEL_LR, MOTOR_PWM_FREQ, MOTOR_PWM_RESOLUTION);
-    ledcSetup(MOTOR_PWM_CHANNEL_RF, MOTOR_PWM_FREQ, MOTOR_PWM_RESOLUTION);
-    ledcSetup(MOTOR_PWM_CHANNEL_RR, MOTOR_PWM_FREQ, MOTOR_PWM_RESOLUTION);
+    // Настройка PWM для моторов
+    // ВАЖНО: Камера занимает канал 0 (таймер 0)
+    // Моторы используют каналы 2,3,4,5 (таймеры 1,1,2,2) - безопасно!
+    ledcSetup(MOTOR_PWM_CHANNEL_LF, MOTOR_PWM_FREQ, MOTOR_PWM_RESOLUTION); // канал 3
+    ledcSetup(MOTOR_PWM_CHANNEL_LR, MOTOR_PWM_FREQ, MOTOR_PWM_RESOLUTION); // канал 4
+    ledcSetup(MOTOR_PWM_CHANNEL_RF, MOTOR_PWM_FREQ, MOTOR_PWM_RESOLUTION); // канал 2
+    ledcSetup(MOTOR_PWM_CHANNEL_RR, MOTOR_PWM_FREQ, MOTOR_PWM_RESOLUTION); // канал 5
     
-    ledcAttachPin(MOTOR_LEFT_FWD_PIN, MOTOR_PWM_CHANNEL_LF);
-    ledcAttachPin(MOTOR_LEFT_REV_PIN, MOTOR_PWM_CHANNEL_LR);
-    ledcAttachPin(MOTOR_RIGHT_FWD_PIN, MOTOR_PWM_CHANNEL_RF);
-    ledcAttachPin(MOTOR_RIGHT_REV_PIN, MOTOR_PWM_CHANNEL_RR);
+    ledcAttachPin(MOTOR_LEFT_FWD_PIN, MOTOR_PWM_CHANNEL_LF);   // GPIO12 → канал 3
+    ledcAttachPin(MOTOR_LEFT_REV_PIN, MOTOR_PWM_CHANNEL_LR);   // GPIO13 → канал 4
+    ledcAttachPin(MOTOR_RIGHT_FWD_PIN, MOTOR_PWM_CHANNEL_RF);  // GPIO14 → канал 2
+    ledcAttachPin(MOTOR_RIGHT_REV_PIN, MOTOR_PWM_CHANNEL_RR);  // GPIO15 → канал 5
     
     // Остановка моторов (устанавливаем PWM в 0)
-    stopMotors();
+    ledcWrite(MOTOR_PWM_CHANNEL_LF, 0);
+    ledcWrite(MOTOR_PWM_CHANNEL_LR, 0);
+    ledcWrite(MOTOR_PWM_CHANNEL_RF, 0);
+    ledcWrite(MOTOR_PWM_CHANNEL_RR, 0);
     
     DEBUG_PRINTLN("Моторы инициализированы");
 }
@@ -541,10 +546,9 @@ void MicroBoxRobot::setMotorSpeed(int leftSpeed, int rightSpeed) {
     currentLeftSpeed = leftSpeed;
     currentRightSpeed = rightSpeed;
     
-    // Преобразование в PWM значения (0-65535 для 16-битного разрешения)
-    // Scout32 использует: speed = val * 8192, где val от 0 до 8
-    int leftPWM = map(abs(leftSpeed), 0, 100, 0, 65536);
-    int rightPWM = map(abs(rightSpeed), 0, 100, 0, 65536);
+    // Преобразование в PWM значения (0-8191 для 13-битного разрешения)
+    int leftPWM = map(abs(leftSpeed), 0, 100, 0, 8191);
+    int rightPWM = map(abs(rightSpeed), 0, 100, 0, 8191);
     
     // Левый мотор
     if (leftSpeed > 0) {

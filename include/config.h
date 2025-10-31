@@ -48,17 +48,17 @@
 // Пины моторов (как в Scout32 - проверенная конфигурация!)
 #define MOTOR_LEFT_FWD_PIN 12   // IN1 - Левый мотор вперед
 #define MOTOR_LEFT_REV_PIN 13   // IN2 - Левый мотор назад  
-#define MOTOR_RIGHT_FWD_PIN 15  // IN3 - Правый мотор вперед
-#define MOTOR_RIGHT_REV_PIN 14  // IN4 - Правый мотор назад
+#define MOTOR_RIGHT_FWD_PIN 14  // IN3 - Правый мотор вперед (Scout32: RF=GPIO14)
+#define MOTOR_RIGHT_REV_PIN 15  // IN4 - Правый мотор назад (Scout32: RR=GPIO15)
 
 // PWM настройки для моторов (как в Scout32!)
 #define MOTOR_PWM_FREQ 8000     // 8 кГц
-#define MOTOR_PWM_RESOLUTION 16 // 16-битное разрешение
+#define MOTOR_PWM_RESOLUTION 13 // 13-битное разрешение (8192 макс, было 16 - невозможно!)
 // Каналы PWM (как в Scout32 - проверенная конфигурация!)
 #define MOTOR_PWM_CHANNEL_LF 3  // Канал PWM для левого мотора вперед (GPIO12)
 #define MOTOR_PWM_CHANNEL_LR 4  // Канал PWM для левого мотора назад (GPIO13)
-#define MOTOR_PWM_CHANNEL_RF 2  // Канал PWM для правого мотора вперед (GPIO15)
-#define MOTOR_PWM_CHANNEL_RR 5  // Канал PWM для правого мотора назад (GPIO14)
+#define MOTOR_PWM_CHANNEL_RF 2  // Канал PWM для правого мотора вперед (GPIO14)
+#define MOTOR_PWM_CHANNEL_RR 5  // Канал PWM для правого мотора назад (GPIO15)
 
 // WiFi настройки - режим подключения к существующей сети
 #define WIFI_MODE_CLIENT true          // true = подключение к роутеру, false = точка доступа
