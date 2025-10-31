@@ -21,7 +21,7 @@
 #define NEOPIXEL_PIN 2          // Адресные светодиоды на пин 2
 #define NEOPIXEL_COUNT 3        // Всего 3 светодиода (2 сзади, 1 спереди)
 
-// Пины моторов (как в Scout32)
+// Пины моторов (как в Scout32 - проверенная конфигурация!)
 #define MOTOR_LEFT_FWD_PIN 12   // IN1 - Левый мотор вперед
 #define MOTOR_LEFT_REV_PIN 13   // IN2 - Левый мотор назад  
 #define MOTOR_RIGHT_FWD_PIN 15  // IN3 - Правый мотор вперед
