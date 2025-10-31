@@ -2,9 +2,8 @@
 #include "soc/soc.h"
 #include "soc/rtc_cntl_reg.h"
 #include "driver/gpio.h"
-#ifdef EMBEDDED_RESOURCES_H
 #include "embedded_resources.h"
-#endif
+#include "CameraServer.h"
 
 MicroBoxRobot::MicroBoxRobot() : 
     initialized(false),
@@ -12,14 +11,20 @@ MicroBoxRobot::MicroBoxRobot() :
     wifiConnected(false),
     wifiAPMode(true),
     server(nullptr),
+#ifdef FEATURE_NEOPIXEL
     pixels(nullptr),
+#endif
     firmwareUpdate(nullptr),
     currentControlMode(ControlMode::TANK),
+#if defined(FEATURE_NEOPIXEL) || defined(FEATURE_BUZZER)
     currentEffectMode(EffectMode::NORMAL),
+#endif
     currentLeftSpeed(0),
     currentRightSpeed(0),
+#if defined(FEATURE_NEOPIXEL) || defined(FEATURE_BUZZER)
     lastEffectUpdate(0),
     effectState(false),
+#endif
     lastLoop(0)
 {
     DEBUG_PRINTLN("МикроББокс конструктор");
@@ -48,17 +53,28 @@ bool MicroBoxRobot::init() {
     
     // Теперь безопасно инициализировать моторы и остальное
     initMotors();
+#ifdef FEATURE_NEOPIXEL
     initLEDs();
+#endif
+#ifdef FEATURE_BUZZER
     initBuzzer();
+#endif
     
-    // Запуск WiFi в режиме AP
+    // Запуск WiFi
+#if WIFI_MODE_CLIENT
+    if (!connectWiFiDHCP(WIFI_SSID_CLIENT, WIFI_PASSWORD_CLIENT)) {
+        DEBUG_PRINTLN("Не удалось подключиться к WiFi, запускаем AP режим");
+        startWiFiAP();
+    }
+#else
     startWiFiAP();
+#endif
     
     // Инициализация веб-сервера
     initWebServer();
     
-    // Запуск камеры сервера
-    startCameraServer();
+    // Запуск камеры сервера на порту 81
+    startCameraStreamServer();
     
     initialized = true;
     DEBUG_PRINTLN("МикроББокс успешно инициализирован");
@@ -74,6 +90,7 @@ void MicroBoxRobot::loop() {
         return; // В режиме обновления не выполняем другие операции
     }
     
+#if defined(FEATURE_NEOPIXEL) || defined(FEATURE_BUZZER)
     // Обработка эффектов
     if (currentTime - lastEffectUpdate > 100) { // Обновляем эффекты каждые 100мс
         switch (currentEffectMode) {
@@ -94,6 +111,7 @@ void MicroBoxRobot::loop() {
         }
         lastEffectUpdate = currentTime;
     }
+#endif
     
     lastLoop = currentTime;
 }
@@ -102,18 +120,24 @@ void MicroBoxRobot::shutdown() {
     DEBUG_PRINTLN("Выключение МикроББокс...");
     
     stopMotors();
+#ifdef FEATURE_NEOPIXEL
     clearLEDs();
+#endif
+#ifdef FEATURE_BUZZER
     stopBuzzer();
+#endif
     
     if (server) {
         delete server;
         server = nullptr;
     }
     
+#ifdef FEATURE_NEOPIXEL
     if (pixels) {
         delete pixels;
         pixels = nullptr;
     }
+#endif
     
     if (firmwareUpdate) {
         delete firmwareUpdate;
@@ -127,7 +151,14 @@ void MicroBoxRobot::startWiFiAP() {
     DEBUG_PRINTLN("Запуск WiFi точки доступа...");
     
     WiFi.mode(WIFI_AP);
-    WiFi.softAP(WIFI_SSID, WIFI_PASSWORD, WIFI_CHANNEL, WIFI_HIDDEN, WIFI_MAX_CONNECTIONS);
+    
+    // Установка hostname для AP режима
+    String mac = WiFi.macAddress();
+    mac.replace(":", "");
+    String hostname = "MICROBBOX-" + mac.substring(6);
+    WiFi.setHostname(hostname.c_str());
+    
+    WiFi.softAP(WIFI_SSID_AP, WIFI_PASSWORD_AP, WIFI_CHANNEL, WIFI_HIDDEN, WIFI_MAX_CONNECTIONS);
     
     IPAddress ip(AP_IP_ADDR);
     IPAddress gateway(AP_GATEWAY);
@@ -140,12 +171,21 @@ void MicroBoxRobot::startWiFiAP() {
     
     DEBUG_PRINT("WiFi AP запущена. IP: ");
     DEBUG_PRINTLN(WiFi.softAPIP());
+    DEBUG_PRINT("Hostname: ");
+    DEBUG_PRINTLN(hostname);
 }
 
-void MicroBoxRobot::connectWiFiDHCP(const char* ssid, const char* password) {
+bool MicroBoxRobot::connectWiFiDHCP(const char* ssid, const char* password) {
     DEBUG_PRINTLN("Подключение к WiFi сети...");
     
     WiFi.mode(WIFI_STA);
+    
+    // Установка hostname перед подключением
+    String mac = WiFi.macAddress();
+    mac.replace(":", "");
+    String hostname = "MICROBBOX-" + mac.substring(6);
+    WiFi.setHostname(hostname.c_str());
+    
     WiFi.begin(ssid, password);
     
     int attempts = 0;
@@ -161,10 +201,13 @@ void MicroBoxRobot::connectWiFiDHCP(const char* ssid, const char* password) {
         DEBUG_PRINTLN();
         DEBUG_PRINT("Подключено к WiFi. IP: ");
         DEBUG_PRINTLN(WiFi.localIP());
+        DEBUG_PRINT("Hostname: ");
+        DEBUG_PRINTLN(hostname);
+        return true;
     } else {
         DEBUG_PRINTLN();
-        DEBUG_PRINTLN("Не удалось подключиться к WiFi, запуск AP режима");
-        startWiFiAP();
+        DEBUG_PRINTLN("Не удалось подключиться к WiFi");
+        return false;
     }
 }
 
@@ -257,47 +300,6 @@ bool MicroBoxRobot::initCamera() {
     return true;
 }
 
-void MicroBoxRobot::startCameraServer() {
-    DEBUG_PRINTLN("Запуск камера-сервера...");
-    
-    // Обработчик для стрима камеры
-    server->on("/stream", HTTP_GET, [](AsyncWebServerRequest *request) {
-        AsyncWebServerResponse *response = request->beginChunkedResponse("multipart/x-mixed-replace; boundary=frame",
-            [](uint8_t *buffer, size_t maxLen, size_t index) -> size_t {
-                camera_fb_t *fb = esp_camera_fb_get();
-                if (!fb) {
-                    DEBUG_PRINTLN("Ошибка захвата кадра");
-                    return 0;
-                }
-                
-                static bool header_sent = false;
-                size_t len = 0;
-                
-                if (!header_sent) {
-                    len = snprintf((char*)buffer, maxLen,
-                        "\\r\\n--frame\\r\\n"
-                        "Content-Type: image/jpeg\\r\\n"
-                        "Content-Length: %u\\r\\n\\r\\n", fb->len);
-                    header_sent = true;
-                } else {
-                    if (index < fb->len) {
-                        len = min(maxLen, fb->len - index);
-                        memcpy(buffer, fb->buf + index, len);
-                    }
-                    
-                    if (index + len >= fb->len) {
-                        header_sent = false;
-                        esp_camera_fb_return(fb);
-                    }
-                }
-                
-                return len;
-            });
-        
-        request->send(response);
-    });
-}
-
 void MicroBoxRobot::initMotors() {
     DEBUG_PRINTLN("Инициализация моторов...");
     
@@ -347,6 +349,7 @@ void MicroBoxRobot::initMotors() {
     DEBUG_PRINTLN("Моторы инициализированы");
 }
 
+#ifdef FEATURE_NEOPIXEL
 void MicroBoxRobot::initLEDs() {
     DEBUG_PRINTLN("Инициализация светодиодов...");
     
@@ -357,7 +360,9 @@ void MicroBoxRobot::initLEDs() {
     
     DEBUG_PRINTLN("Светодиоды инициализированы");
 }
+#endif
 
+#ifdef FEATURE_BUZZER
 void MicroBoxRobot::initBuzzer() {
     DEBUG_PRINTLN("Инициализация бузера...");
     
@@ -369,6 +374,7 @@ void MicroBoxRobot::initBuzzer() {
     
     DEBUG_PRINTLN("Бузер инициализирован");
 }
+#endif
 
 void MicroBoxRobot::initWebServer() {
     DEBUG_PRINTLN("Инициализация веб-сервера...");
@@ -388,13 +394,13 @@ void MicroBoxRobot::initWebServer() {
     // Статические ресурсы
     #ifdef EMBEDDED_RESOURCES_H
     server->on("/styles.css", HTTP_GET, [](AsyncWebServerRequest *request) {
-        AsyncWebServerResponse *response = request->beginResponse_P(200, "text/css", stylesCss, stylesCss_len);
+        AsyncWebServerResponse *response = request->beginResponse_P(200, "text/css; charset=utf-8", stylesCss, stylesCss_len);
         response->addHeader("Cache-Control", "max-age=86400");
         request->send(response);
     });
     
     server->on("/script.js", HTTP_GET, [](AsyncWebServerRequest *request) {
-        AsyncWebServerResponse *response = request->beginResponse_P(200, "application/javascript", scriptJs, scriptJs_len);
+        AsyncWebServerResponse *response = request->beginResponse_P(200, "application/javascript; charset=utf-8", scriptJs, scriptJs_len);
         response->addHeader("Cache-Control", "max-age=86400");
         request->send(response);
     });
@@ -416,17 +422,17 @@ void MicroBoxRobot::initWebServer() {
 }
 
 void MicroBoxRobot::handleRoot(AsyncWebServerRequest *request) {
-    #ifdef EMBEDDED_RESOURCES_H
-    AsyncWebServerResponse *response = request->beginResponse_P(200, "text/html", indexHtml, indexHtml_len);
+    #ifdef USE_EMBEDDED_RESOURCES
+    AsyncWebServerResponse *response = request->beginResponse_P(200, "text/html; charset=utf-8", indexHtml, indexHtml_len);
     #else
     // Fallback HTML если ресурсы не встроены
-    String html = "<!DOCTYPE html><html><head><title>МикроББокс</title></head><body>";
+    String html = "<!DOCTYPE html><html><head><meta charset='UTF-8'><title>МикроББокс</title></head><body>";
     html += "<h1>МикроББокс</h1>";
     html += "<p>Добро пожаловать в систему управления МикроББокс!</p>";
     html += "<p>Видео стрим: <img src='/stream' style='max-width:100%'></p>";
     html += "<p>Статические ресурсы не загружены. Пожалуйста, пересоберите проект.</p>";
     html += "</body></html>";
-    AsyncWebServerResponse *response = request->beginResponse(200, "text/html", html);
+    AsyncWebServerResponse *response = request->beginResponse(200, "text/html; charset=utf-8", html);
     #endif
     
     response->addHeader("Cache-Control", "no-cache");
@@ -460,6 +466,7 @@ void MicroBoxRobot::handleCommand(AsyncWebServerRequest *request) {
             setMotorSpeed(leftSpeed, rightSpeed);
         }
         else if (body.indexOf("flashlight") >= 0) {
+#ifdef FEATURE_NEOPIXEL
             // Переключение фонарика - используем передний неопиксель (индекс 0)
             static bool flashlightState = false;
             flashlightState = !flashlightState;
@@ -472,16 +479,20 @@ void MicroBoxRobot::handleCommand(AsyncWebServerRequest *request) {
                 pixels->setPixelColor(0, pixels->Color(0, 0, 0));
             }
             pixels->show();
+#endif
         }
         else if (body.indexOf("horn") >= 0) {
+#ifdef FEATURE_BUZZER
             // Сигнал
             if (body.indexOf("true") >= 0) {
                 playTone(800, 0); // Непрерывный сигнал
             } else {
                 stopBuzzer();
             }
+#endif
         }
         else if (body.indexOf("setEffectMode") >= 0) {
+#if defined(FEATURE_NEOPIXEL) || defined(FEATURE_BUZZER)
             // Переключение режима эффектов
             if (body.indexOf("police") >= 0) {
                 setEffectMode(EffectMode::POLICE);
@@ -492,6 +503,7 @@ void MicroBoxRobot::handleCommand(AsyncWebServerRequest *request) {
             } else {
                 setEffectMode(EffectMode::NORMAL);
             }
+#endif
         }
         else if (body.indexOf("enterUpdateMode") >= 0) {
             // Вход в режим обновления прошивки
@@ -565,6 +577,7 @@ void MicroBoxRobot::stopMotors() {
     setMotorSpeed(0, 0);
 }
 
+#ifdef FEATURE_NEOPIXEL
 void MicroBoxRobot::setLEDColor(int ledIndex, uint32_t color) {
     if (pixels && ledIndex >= 0 && ledIndex < NEOPIXEL_COUNT) {
         pixels->setPixelColor(ledIndex, color);
@@ -589,7 +602,9 @@ void MicroBoxRobot::updateLEDs() {
         pixels->show();
     }
 }
+#endif
 
+#if defined(FEATURE_NEOPIXEL) || defined(FEATURE_BUZZER)
 void MicroBoxRobot::setEffectMode(EffectMode mode) {
     currentEffectMode = mode;
     DEBUG_PRINTF("Режим эффектов изменен на: %d\n", (int)mode);
@@ -603,24 +618,32 @@ void MicroBoxRobot::playPoliceEffect() {
         effectState = !effectState;
         
         if (effectState) {
+#ifdef FEATURE_NEOPIXEL
             // Синие светодиоды сзади, красные спереди
             setLEDColor(0, pixels->Color(0, 0, 255));   // Задний левый - синий
             setLEDColor(1, pixels->Color(0, 0, 255));   // Задний правый - синий
             setLEDColor(2, pixels->Color(255, 0, 0));   // Передний - красный
-            
+#endif
+#ifdef FEATURE_BUZZER            
             // Звук сирены
             playTone(800, 0);
+#endif
         } else {
+#ifdef FEATURE_NEOPIXEL
             // Красные светодиоды сзади, синие спереди
             setLEDColor(0, pixels->Color(255, 0, 0));   // Задний левый - красный
             setLEDColor(1, pixels->Color(255, 0, 0));   // Задний правый - красный
             setLEDColor(2, pixels->Color(0, 0, 255));   // Передний - синий
-            
+#endif
+#ifdef FEATURE_BUZZER            
             // Другой тон сирены
             playTone(1000, 0);
+#endif
         }
         
+#ifdef FEATURE_NEOPIXEL
         updateLEDs();
+#endif
         lastToggle = currentTime;
     }
 }
@@ -633,14 +656,24 @@ void MicroBoxRobot::playFireEffect() {
         effectState = !effectState;
         
         if (effectState) {
+#ifdef FEATURE_NEOPIXEL
             setAllLEDs(pixels->Color(255, 0, 0)); // Красный
+#endif
+#ifdef FEATURE_BUZZER
             playTone(900, 0);
+#endif
         } else {
+#ifdef FEATURE_NEOPIXEL
             setAllLEDs(pixels->Color(255, 165, 0)); // Оранжевый
+#endif
+#ifdef FEATURE_BUZZER
             playTone(1100, 0);
+#endif
         }
         
+#ifdef FEATURE_NEOPIXEL
         updateLEDs();
+#endif
         lastToggle = currentTime;
     }
 }
@@ -653,19 +686,30 @@ void MicroBoxRobot::playAmbulanceEffect() {
         effectState = !effectState;
         
         if (effectState) {
+#ifdef FEATURE_NEOPIXEL
             setAllLEDs(pixels->Color(255, 255, 255)); // Белый
+#endif
+#ifdef FEATURE_BUZZER
             playTone(750, 0);
+#endif
         } else {
+#ifdef FEATURE_NEOPIXEL
             setAllLEDs(pixels->Color(255, 0, 0)); // Красный
+#endif
+#ifdef FEATURE_BUZZER
             playTone(1050, 0);
+#endif
         }
         
+#ifdef FEATURE_NEOPIXEL
         updateLEDs();
+#endif
         lastToggle = currentTime;
     }
 }
 
 void MicroBoxRobot::playMovementAnimation() {
+#ifdef FEATURE_NEOPIXEL
     static unsigned long lastUpdate = 0;
     static int animationStep = 0;
     unsigned long currentTime = millis();
@@ -682,8 +726,11 @@ void MicroBoxRobot::playMovementAnimation() {
         animationStep++;
         lastUpdate = currentTime;
     }
+#endif
 }
+#endif
 
+#ifdef FEATURE_BUZZER
 void MicroBoxRobot::playTone(int frequency, int duration) {
     if (frequency > 0) {
         ledcWriteTone(BUZZER_CHANNEL, frequency);
@@ -703,6 +750,7 @@ void MicroBoxRobot::playMelody(const int* melody, const int* noteDurations, int 
 void MicroBoxRobot::stopBuzzer() {
     ledcWrite(BUZZER_CHANNEL, 0);
 }
+#endif
 
 void MicroBoxRobot::setControlMode(ControlMode mode) {
     currentControlMode = mode;
@@ -736,8 +784,12 @@ void MicroBoxRobot::enterUpdateMode() {
     if (firmwareUpdate) {
         // Остановка всех операций
         stopMotors();
+#ifdef FEATURE_NEOPIXEL
         clearLEDs();
+#endif
+#ifdef FEATURE_BUZZER
         stopBuzzer();
+#endif
         
         // Остановка основного сервера
         if (server) {

@@ -1,4 +1,7 @@
 #include "FirmwareUpdate.h"
+#ifdef USE_EMBEDDED_RESOURCES
+#include "embedded_resources.h"
+#endif
 
 FirmwareUpdate::FirmwareUpdate() :
     updateModeActive(false),
@@ -182,8 +185,8 @@ void FirmwareUpdate::initUpdateWebServer() {
 }
 
 void FirmwareUpdate::handleUpdateRoot(AsyncWebServerRequest *request) {
-    #ifdef EMBEDDED_RESOURCES_H
-    AsyncWebServerResponse *response = request->beginResponse_P(200, "text/html", updateHtml, updateHtml_len);
+    #ifdef USE_EMBEDDED_RESOURCES
+    AsyncWebServerResponse *response = request->beginResponse_P(200, "text/html; charset=utf-8", updateHtml, updateHtml_len);
     #else
     // Fallback HTML если ресурсы не встроены
     String html = "<!DOCTYPE html><html><head><title>МикроББокс - Обновление</title></head><body>";

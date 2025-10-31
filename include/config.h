@@ -1,6 +1,22 @@
 #ifndef MICROBOX_CONFIG_H
 #define MICROBOX_CONFIG_H
 
+// ═══════════════════════════════════════════════════════════════
+// КОНФИГУРАЦИЯ ФИЧ - Включение/выключение опциональных компонентов
+// ═══════════════════════════════════════════════════════════════
+
+// Закомментируйте ненужные ОПЦИОНАЛЬНЫЕ компоненты для экономии памяти и пинов
+//#define FEATURE_NEOPIXEL        // Адресные светодиоды WS2812B
+//#define FEATURE_BUZZER          // Звуковой бузер
+
+// Обязательные компоненты (всегда включены):
+// - MOTORS: Моторы с MX1508
+// - CAMERA: Камера ESP32CAM
+// - WIFI: WiFi и веб-сервер
+// - OTA_UPDATE: OTA обновления прошивки
+
+// ═══════════════════════════════════════════════════════════════
+
 // Версия проекта
 #ifndef GIT_VERSION
 #define GIT_VERSION "v1.0.0-dev"
@@ -17,9 +33,17 @@
 
 // Пины для нашего проекта
 // Вспышка камеры (пин 4) не используется - вместо неё используем передний неопиксель
-#define BUZZER_PIN 16           // Бузер на пин 16
+
+#ifdef FEATURE_NEOPIXEL
 #define NEOPIXEL_PIN 2          // Адресные светодиоды на пин 2
 #define NEOPIXEL_COUNT 3        // Всего 3 светодиода (2 сзади, 1 спереди)
+#endif
+
+#ifdef FEATURE_BUZZER
+#define BUZZER_PIN 16           // Бузер на пин 16
+#define BUZZER_CHANNEL 6        // PWM канал для бузера
+#define BUZZER_RESOLUTION 8     // 8-битное разрешение
+#endif
 
 // Пины моторов (как в Scout32 - проверенная конфигурация!)
 #define MOTOR_LEFT_FWD_PIN 12   // IN1 - Левый мотор вперед
@@ -35,9 +59,16 @@
 #define MOTOR_PWM_CHANNEL_RF 4  // Канал PWM для правого мотора вперед
 #define MOTOR_PWM_CHANNEL_RR 5  // Канал PWM для правого мотора назад
 
-// WiFi настройки
-#define WIFI_SSID "МикроББокс"
-#define WIFI_PASSWORD "12345678"
+// WiFi настройки - режим подключения к существующей сети
+#define WIFI_MODE_CLIENT true          // true = подключение к роутеру, false = точка доступа
+#define WIFI_SSID_CLIENT "ROS2"        // Имя сети для подключения
+#define WIFI_PASSWORD_CLIENT "1234567890"  // Пароль сети для подключения
+
+// WiFi настройки для режима точки доступа (если WIFI_MODE_CLIENT = false)
+#define WIFI_SSID_AP "МикроББокс"
+#define WIFI_PASSWORD_AP "12345678"
+
+// Общие настройки WiFi
 #define WIFI_PORT 80
 #define WIFI_CHANNEL 1
 #define WIFI_HIDDEN false
@@ -70,12 +101,13 @@
   #define PCLK_GPIO_NUM     22
 #endif
 
-// Режимы управления
+// Режимы управления моторами
 enum class ControlMode {
     TANK = 0,        // Танковый режим (левый/правый стик = левая/правая гусеница)
     DIFFERENTIAL = 1  // Дифференциальный (правый = скорость, левый = поворот)
 };
 
+#if defined(FEATURE_NEOPIXEL) || defined(FEATURE_BUZZER)
 // Эффекты и режимы
 enum class EffectMode {
     NORMAL = 0,      // Обычный режим
@@ -83,14 +115,13 @@ enum class EffectMode {
     FIRE = 2,        // Пожарный режим
     AMBULANCE = 3    // Скорая помощь
 };
+#endif
 
+#ifdef FEATURE_NEOPIXEL
 // Настройки эффектов
 #define LED_BRIGHTNESS_DEFAULT 128   // Яркость по умолчанию (50%)
 #define LED_BRIGHTNESS_MAX 255       // Максимальная яркость
-
-// Настройки бузера
-#define BUZZER_CHANNEL 6            // PWM канал для бузера
-#define BUZZER_RESOLUTION 8         // 8-битное разрешение
+#endif
 
 // Debug настройки
 #ifdef DEBUG

@@ -15,6 +15,36 @@ body {
     -moz-user-select: none;
     -ms-user-select: none;
     touch-action: manipulation;
+    width: 100vw;
+    height: 100vh;
+    position: fixed;
+}
+
+/* Кнопка fullscreen */
+.fullscreen-btn {
+    position: fixed;
+    top: 10px;
+    right: 10px;
+    z-index: 999;
+    background: rgba(0, 0, 0, 0.6);
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    color: white;
+    font-size: 24px;
+    width: 45px;
+    height: 45px;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.3s;
+}
+
+.fullscreen-btn:hover {
+    background: rgba(0, 255, 136, 0.8);
+    border-color: #00ff88;
+    transform: scale(1.1);
+}
+
+.fullscreen-btn:active {
+    transform: scale(0.95);
 }
 
 /* Экран загрузки */
@@ -444,23 +474,91 @@ body {
 }
 
 /* Медиа запросы */
-@media (max-width: 768px) {
+/* Мобильные устройства - портретная ориентация */
+@media (max-width: 768px) and (orientation: portrait) {
+    body::before {
+        content: "↻ Поверните устройство";
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100vw;
+        height: 100vh;
+        background: rgba(0, 0, 0, 0.95);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 9999;
+        font-size: 24px;
+        color: #00ff88;
+        text-align: center;
+    }
+}
+
+/* Мобильные устройства - альбомная ориентация */
+@media (max-width: 768px) and (orientation: landscape), 
+       (max-height: 600px) and (orientation: landscape) {
     .pc-controls {
         display: none !important;
     }
     
-    .header h1 {
-        font-size: 1.2em;
+    /* Скрываем header на мобильных */
+    .header {
+        display: none !important;
     }
     
-    .joystick {
+    /* Fullscreen кнопка меньше */
+    .fullscreen-btn {
+        width: 35px;
+        height: 35px;
+        font-size: 18px;
+        top: 5px;
+        right: 5px;
+    }
+    
+    /* Видео на весь экран */
+    .video-container {
+        height: 100vh !important;
+        width: 100vw !important;
+    }
+    
+    /* Джойстики компактнее */
+    .joystick-container {
         width: 100px;
         height: 100px;
     }
     
+    .joystick {
+        width: 90px;
+        height: 90px;
+    }
+    
     .joystick-knob {
+        width: 30px;
+        height: 30px;
+    }
+    
+    .joystick-label {
+        font-size: 10px;
+    }
+    
+    /* Мобильная панель компактнее */
+    .mobile-panel {
+        bottom: 5px;
+        gap: 8px;
+        padding: 5px;
+    }
+    
+    .panel-btn {
         width: 35px;
         height: 35px;
+        font-size: 16px;
+    }
+}
+
+/* Десктоп */
+@media (min-width: 769px) {
+    .header h1 {
+        font-size: 1.5em;
     }
 }
 
