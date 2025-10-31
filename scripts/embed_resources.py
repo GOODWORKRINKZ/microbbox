@@ -11,12 +11,12 @@ def minify_html_content(content):
     return htmlmin.minify(content, remove_comments=True, remove_empty_space=True)
 
 def minify_js_content(content):
-    """Минификация JavaScript."""
-    return jsmin(content)
+    """Минификация JavaScript отключена для сохранения UTF-8."""
+    return content
 
 def minify_css_content(content):
-    """Минификация CSS."""
-    return csscompressor.compress(content)
+    """Минификация CSS отключена для сохранения UTF-8."""
+    return content
 
 def process_file(file_path):
     """Обработка файла в зависимости от расширения."""

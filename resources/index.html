@@ -2,15 +2,19 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>МикроББокс - Управление</title>
     <link rel="stylesheet" href="styles.css">
     <link rel="icon" type="image/x-icon" href="favicon.ico">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="mobile-web-app-capable" content="yes">
+    <meta name="screen-orientation" content="landscape">
 </head>
 <body>
+    <!-- Кнопка fullscreen -->
+    <button id="fullscreenBtn" class="fullscreen-btn" title="Полноэкранный режим">⛶</button>
+    
     <div id="loading" class="loading-screen">
         <div class="loader"></div>
         <h2>МикроББокс</h2>
@@ -18,7 +22,7 @@
     </div>
 
     <div id="mainInterface" class="main-interface hidden">
-        <!-- Заголовок с информацией -->
+        <!-- Заголовок с информацией (скрывается на мобильных) -->
         <header class="header">
             <h1>МикроББокс</h1>
             <div class="status-indicators">
@@ -29,7 +33,7 @@
 
         <!-- Видео стрим от камеры -->
         <div class="video-container">
-            <img id="cameraStream" src="/stream" alt="Камера робота" class="camera-stream">
+            <img id="cameraStream" src="" alt="Камера робота" class="camera-stream">
             <div class="stream-overlay">
                 <div class="crosshair"></div>
             </div>

@@ -35,6 +35,9 @@ class MicroBoxController {
         // Настройка интерфейса
         this.setupInterface();
         
+        // Настройка камеры
+        this.setupCameraStream();
+        
         // Настройка событий
         this.setupEventListeners();
         
@@ -52,6 +55,17 @@ class MicroBoxController {
         
         console.log('Инициализация завершена');
     }
+
+    setupCameraStream() {
+        const streamImg = document.getElementById('cameraStream');
+        if (streamImg) {
+            // Используем порт 81 для камеры-сервера
+            const streamUrl = window.location.protocol + '//' + window.location.hostname + ':81/stream';
+            streamImg.src = streamUrl;
+            console.log('Камера стрим:', streamUrl);
+        }
+    }
+
 
     detectDeviceType() {
         const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
@@ -110,6 +124,12 @@ class MicroBoxController {
     }
 
     setupEventListeners() {
+        // Fullscreen кнопка
+        const fullscreenBtn = document.getElementById('fullscreenBtn');
+        if (fullscreenBtn) {
+            fullscreenBtn.addEventListener('click', () => this.toggleFullscreen());
+        }
+        
         // Клавиатура для ПК
         if (this.deviceType === 'desktop') {
             document.addEventListener('keydown', (e) => this.handleKeyDown(e));
@@ -221,9 +241,9 @@ class MicroBoxController {
                 x = Math.cos(angle) * maxDistance;
                 y = Math.sin(angle) * maxDistance;
             }
-            
-            knob.style.transform = `translate(${x}px, ${y}px)`;
-            
+
+            knob.style.transform = 'translate(' + x + 'px, ' + y + 'px)';
+
             // Нормализация значений (-1 до 1)
             const normalizedX = x / maxDistance;
             const normalizedY = -y / maxDistance; // Инвертируем Y
@@ -568,8 +588,8 @@ class MicroBoxController {
             document.getElementById('turnSensitivity').value = this.turnSensitivity;
             
             // Установить текущие режимы
-            document.querySelector(`input[name="controlMode"][value="${this.controlMode}"]`).checked = true;
-            document.querySelector(`input[name="effectMode"][value="${this.effectMode}"]`).checked = true;
+            document.querySelector('input[name="controlMode"][value="' + this.controlMode + '"]').checked = true;
+            document.querySelector('input[name="effectMode"][value="' + this.effectMode + '"]').checked = true;
         }
     }
 
@@ -628,6 +648,48 @@ class MicroBoxController {
                 console.log('Настройки загружены');
             } catch (error) {
                 console.error('Ошибка загрузки настроек:', error);
+            }
+        }
+    }
+    
+    toggleFullscreen() {
+        if (!document.fullscreenElement && 
+            !document.webkitFullscreenElement && 
+            !document.mozFullScreenElement && 
+            !document.msFullscreenElement) {
+            // Войти в fullscreen
+            const elem = document.documentElement;
+            if (elem.requestFullscreen) {
+                elem.requestFullscreen();
+            } else if (elem.webkitRequestFullscreen) {
+                elem.webkitRequestFullscreen();
+            } else if (elem.mozRequestFullScreen) {
+                elem.mozRequestFullScreen();
+            } else if (elem.msRequestFullscreen) {
+                elem.msRequestFullscreen();
+            }
+            
+            // Попытка заблокировать ориентацию в альбомную на мобильных
+            if (screen.orientation && screen.orientation.lock) {
+                screen.orientation.lock('landscape').catch(err => {
+                    console.log('Не удалось заблокировать ориентацию:', err);
+                });
+            }
+        } else {
+            // Выйти из fullscreen
+            if (document.exitFullscreen) {
+                document.exitFullscreen();
+            } else if (document.webkitExitFullscreen) {
+                document.webkitExitFullscreen();
+            } else if (document.mozCancelFullScreen) {
+                document.mozCancelFullScreen();
+            } else if (document.msExitFullscreen) {
+                document.msExitFullscreen();
+            }
+            
+            // Разблокировать ориентацию
+            if (screen.orientation && screen.orientation.unlock) {
+                screen.orientation.unlock();
             }
         }
     }

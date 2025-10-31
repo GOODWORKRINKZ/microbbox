@@ -22,13 +22,12 @@ public:
 
     // WiFi управление
     void startWiFiAP();
-    void connectWiFiDHCP(const char* ssid, const char* password);
+    bool connectWiFiDHCP(const char* ssid, const char* password);
     bool isWiFiConnected();
     IPAddress getIP();
 
     // Камера
     bool initCamera();
-    void startCameraServer();
 
     // Моторы
     void setMotorSpeed(int leftSpeed, int rightSpeed);  // -255 до 255
@@ -38,23 +37,29 @@ public:
     void turnRight(int speed);
     void stopMotors();
 
+#ifdef FEATURE_NEOPIXEL
     // Светодиоды
     void setLEDColor(int ledIndex, uint32_t color);
     void setAllLEDs(uint32_t color);
     void clearLEDs();
     void updateLEDs();
+#endif
     
+#if defined(FEATURE_NEOPIXEL) || defined(FEATURE_BUZZER)
     // Эффекты
     void setEffectMode(EffectMode mode);
     void playPoliceEffect();
     void playFireEffect();
     void playAmbulanceEffect();
     void playMovementAnimation();
+#endif
 
+#ifdef FEATURE_BUZZER
     // Бузер
     void playTone(int frequency, int duration);
     void playMelody(const int* melody, const int* noteDurations, int noteCount);
     void stopBuzzer();
+#endif
 
     // Управление
     void setControlMode(ControlMode mode);
@@ -62,7 +67,9 @@ public:
 
     // Статус
     bool isInitialized() const { return initialized; }
+#if defined(FEATURE_NEOPIXEL) || defined(FEATURE_BUZZER)
     EffectMode getCurrentEffectMode() const { return currentEffectMode; }
+#endif
     ControlMode getCurrentControlMode() const { return currentControlMode; }
     
     // Система обновления
@@ -89,20 +96,26 @@ private:
     
     // Объекты
     AsyncWebServer* server;
+#ifdef FEATURE_NEOPIXEL
     Adafruit_NeoPixel* pixels;
+#endif
     FirmwareUpdate* firmwareUpdate;
     
     // Режимы
     ControlMode currentControlMode;
+#if defined(FEATURE_NEOPIXEL) || defined(FEATURE_BUZZER)
     EffectMode currentEffectMode;
+#endif
     
     // Состояние моторов
     int currentLeftSpeed;
     int currentRightSpeed;
     
+#if defined(FEATURE_NEOPIXEL) || defined(FEATURE_BUZZER)
     // Состояние эффектов
     unsigned long lastEffectUpdate;
     bool effectState;
+#endif
     
     // Timing
     unsigned long lastLoop;
