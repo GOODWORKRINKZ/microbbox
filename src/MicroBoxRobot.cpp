@@ -298,6 +298,21 @@ void MicroBoxRobot::startCameraServer() {
 void MicroBoxRobot::initMotors() {
     DEBUG_PRINTLN("Инициализация моторов...");
     
+    // ВАЖНО: Сначала устанавливаем пины в OUTPUT и LOW состояние
+    // чтобы моторы не крутились при старте/перезагрузке
+    pinMode(MOTOR_LEFT_FWD_PIN, OUTPUT);
+    pinMode(MOTOR_LEFT_REV_PIN, OUTPUT);
+    pinMode(MOTOR_RIGHT_FWD_PIN, OUTPUT);
+    pinMode(MOTOR_RIGHT_REV_PIN, OUTPUT);
+    
+    digitalWrite(MOTOR_LEFT_FWD_PIN, LOW);
+    digitalWrite(MOTOR_LEFT_REV_PIN, LOW);
+    digitalWrite(MOTOR_RIGHT_FWD_PIN, LOW);
+    digitalWrite(MOTOR_RIGHT_REV_PIN, LOW);
+    
+    // Небольшая задержка для стабилизации
+    delay(10);
+    
     // Настройка PWM каналов для моторов
     ledcSetup(MOTOR_PWM_CHANNEL_LF, MOTOR_PWM_FREQ, MOTOR_PWM_RESOLUTION);
     ledcSetup(MOTOR_PWM_CHANNEL_LR, MOTOR_PWM_FREQ, MOTOR_PWM_RESOLUTION);
@@ -310,7 +325,7 @@ void MicroBoxRobot::initMotors() {
     ledcAttachPin(MOTOR_RIGHT_FWD_PIN, MOTOR_PWM_CHANNEL_RF);
     ledcAttachPin(MOTOR_RIGHT_REV_PIN, MOTOR_PWM_CHANNEL_RR);
     
-    // Остановка моторов
+    // Остановка моторов (устанавливаем PWM в 0)
     stopMotors();
     
     DEBUG_PRINTLN("Моторы инициализированы");
