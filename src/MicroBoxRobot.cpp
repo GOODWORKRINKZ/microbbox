@@ -1,6 +1,7 @@
 #include "MicroBoxRobot.h"
 #include "soc/soc.h"
 #include "soc/rtc_cntl_reg.h"
+#include "driver/gpio.h"
 #ifdef EMBEDDED_RESOURCES_H
 #include "embedded_resources.h"
 #endif
@@ -300,20 +301,33 @@ void MicroBoxRobot::startCameraServer() {
 void MicroBoxRobot::initMotors() {
     DEBUG_PRINTLN("Инициализация моторов...");
     
-    // ВАЖНО: Сначала устанавливаем пины в OUTPUT и LOW состояние
-    // чтобы моторы не крутились при старте/перезагрузке
-    pinMode(MOTOR_LEFT_FWD_PIN, OUTPUT);
-    pinMode(MOTOR_LEFT_REV_PIN, OUTPUT);
-    pinMode(MOTOR_RIGHT_FWD_PIN, OUTPUT);
-    pinMode(MOTOR_RIGHT_REV_PIN, OUTPUT);
+    // КРИТИЧНО для MX1508: Включаем внутренние pull-down резисторы ESP32
+    // Это предотвращает floating состояние пинов при Reset/включении
+    // MX1508 имеет высокое входное сопротивление - floating пины могут включить моторы!
     
+    // Устанавливаем пины в OUTPUT с внутренним pull-down
+    pinMode(MOTOR_LEFT_FWD_PIN, OUTPUT);
+    gpio_pulldown_en((gpio_num_t)MOTOR_LEFT_FWD_PIN);
+    gpio_pullup_dis((gpio_num_t)MOTOR_LEFT_FWD_PIN);
     digitalWrite(MOTOR_LEFT_FWD_PIN, LOW);
+    
+    pinMode(MOTOR_LEFT_REV_PIN, OUTPUT);
+    gpio_pulldown_en((gpio_num_t)MOTOR_LEFT_REV_PIN);
+    gpio_pullup_dis((gpio_num_t)MOTOR_LEFT_REV_PIN);
     digitalWrite(MOTOR_LEFT_REV_PIN, LOW);
+    
+    pinMode(MOTOR_RIGHT_FWD_PIN, OUTPUT);
+    gpio_pulldown_en((gpio_num_t)MOTOR_RIGHT_FWD_PIN);
+    gpio_pullup_dis((gpio_num_t)MOTOR_RIGHT_FWD_PIN);
     digitalWrite(MOTOR_RIGHT_FWD_PIN, LOW);
+    
+    pinMode(MOTOR_RIGHT_REV_PIN, OUTPUT);
+    gpio_pulldown_en((gpio_num_t)MOTOR_RIGHT_REV_PIN);
+    gpio_pullup_dis((gpio_num_t)MOTOR_RIGHT_REV_PIN);
     digitalWrite(MOTOR_RIGHT_REV_PIN, LOW);
     
-    // Небольшая задержка для стабилизации
-    delay(10);
+    // Задержка для стабилизации состояния пинов
+    delay(50);
     
     // Настройка PWM каналов для моторов
     ledcSetup(MOTOR_PWM_CHANNEL_LF, MOTOR_PWM_FREQ, MOTOR_PWM_RESOLUTION);
