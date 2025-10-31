@@ -1,0 +1,524 @@
+/* МикроББокс - Адаптивные стили */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background: linear-gradient(135deg, #1e3c72, #2a5298);
+    color: white;
+    overflow: hidden;
+    user-select: none;
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    touch-action: manipulation;
+}
+
+/* Экран загрузки */
+.loading-screen {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(135deg, #1e3c72, #2a5298);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+}
+
+.loader {
+    border: 4px solid rgba(255, 255, 255, 0.3);
+    border-radius: 50%;
+    border-top: 4px solid #00ff88;
+    width: 50px;
+    height: 50px;
+    animation: spin 1s linear infinite;
+    margin-bottom: 20px;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* Основной интерфейс */
+.main-interface {
+    width: 100%;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+}
+
+.hidden {
+    display: none !important;
+}
+
+/* Заголовок */
+.header {
+    background: rgba(0, 0, 0, 0.8);
+    padding: 10px 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    z-index: 100;
+}
+
+.header h1 {
+    font-size: 1.5em;
+    color: #00ff88;
+    text-shadow: 0 0 10px rgba(0, 255, 136, 0.3);
+}
+
+.status-indicators {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.status-indicator {
+    font-size: 1.2em;
+    color: #ff4444;
+    transition: color 0.3s;
+}
+
+.status-indicator.connected {
+    color: #00ff88;
+}
+
+.device-type {
+    background: rgba(255, 255, 255, 0.2);
+    padding: 5px 10px;
+    border-radius: 15px;
+    font-size: 0.8em;
+}
+
+/* Видео контейнер */
+.video-container {
+    flex: 1;
+    position: relative;
+    background: black;
+    overflow: hidden;
+}
+
+.camera-stream {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+}
+
+.stream-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+}
+
+.crosshair {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 30px;
+    height: 30px;
+    border: 2px solid rgba(255, 255, 255, 0.7);
+    border-radius: 50%;
+    transform: translate(-50%, -50%);
+}
+
+.crosshair::before,
+.crosshair::after {
+    content: '';
+    position: absolute;
+    background: rgba(255, 255, 255, 0.7);
+}
+
+.crosshair::before {
+    top: 50%;
+    left: 6px;
+    right: 6px;
+    height: 1px;
+    transform: translateY(-50%);
+}
+
+.crosshair::after {
+    left: 50%;
+    top: 6px;
+    bottom: 6px;
+    width: 1px;
+    transform: translateX(-50%);
+}
+
+/* ПК управление */
+.pc-controls {
+    position: absolute;
+    right: 20px;
+    top: 70px;
+    bottom: 20px;
+    width: 300px;
+    background: rgba(0, 0, 0, 0.8);
+    border-radius: 15px;
+    padding: 20px;
+    backdrop-filter: blur(10px);
+}
+
+.control-panel {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.control-section h3 {
+    color: #00ff88;
+    margin-bottom: 10px;
+    text-align: center;
+}
+
+.control-buttons {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 5px;
+    margin-bottom: 15px;
+}
+
+.middle-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 5px;
+}
+
+.control-btn {
+    background: linear-gradient(145deg, #2a5298, #1e3c72);
+    border: none;
+    color: white;
+    padding: 15px;
+    border-radius: 10px;
+    font-size: 1.2em;
+    cursor: pointer;
+    transition: all 0.3s;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+}
+
+.control-btn:hover {
+    background: linear-gradient(145deg, #3a62a8, #2e4c82);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.4);
+}
+
+.control-btn:active {
+    transform: translateY(0);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+.stop-btn {
+    background: linear-gradient(145deg, #ff4444, #cc3333);
+}
+
+.stop-btn:hover {
+    background: linear-gradient(145deg, #ff5555, #dd4444);
+}
+
+.mode-selector, .feature-btn {
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    color: white;
+    padding: 10px;
+    border-radius: 8px;
+    margin-bottom: 10px;
+    cursor: pointer;
+    transition: all 0.3s;
+}
+
+.mode-selector:hover, .feature-btn:hover {
+    background: rgba(255, 255, 255, 0.2);
+}
+
+.feature-btn {
+    width: 100%;
+    font-size: 0.9em;
+}
+
+/* Мобильные стики */
+.mobile-controls {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    height: 40%;
+    display: flex;
+    justify-content: space-between;
+    padding: 20px;
+    background: linear-gradient(to top, rgba(0, 0, 0, 0.9), transparent);
+}
+
+.joystick-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+}
+
+.joystick {
+    width: 120px;
+    height: 120px;
+    border: 3px solid rgba(255, 255, 255, 0.5);
+    border-radius: 50%;
+    position: relative;
+    background: rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(10px);
+}
+
+.joystick-knob {
+    width: 40px;
+    height: 40px;
+    background: linear-gradient(145deg, #00ff88, #00cc66);
+    border-radius: 50%;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+    transition: all 0.1s;
+}
+
+.joystick-label {
+    color: rgba(255, 255, 255, 0.8);
+    font-size: 0.9em;
+    text-align: center;
+}
+
+.mobile-panel {
+    position: absolute;
+    top: 20px;
+    right: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.panel-btn {
+    width: 50px;
+    height: 50px;
+    border: none;
+    border-radius: 50%;
+    background: rgba(0, 0, 0, 0.7);
+    color: white;
+    font-size: 1.5em;
+    cursor: pointer;
+    transition: all 0.3s;
+    backdrop-filter: blur(10px);
+}
+
+.panel-btn:hover, .panel-btn:active {
+    background: rgba(0, 255, 136, 0.3);
+    transform: scale(1.1);
+}
+
+/* VR управление */
+.vr-controls {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.9);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.vr-info {
+    text-align: center;
+    padding: 40px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 20px;
+    backdrop-filter: blur(10px);
+}
+
+.vr-info h2 {
+    color: #00ff88;
+    margin-bottom: 20px;
+}
+
+.vr-status {
+    margin-top: 20px;
+    padding: 10px;
+    background: rgba(0, 0, 0, 0.5);
+    border-radius: 10px;
+}
+
+/* Модальные окна */
+.modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.8);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+}
+
+.modal-content {
+    background: linear-gradient(145deg, #2a5298, #1e3c72);
+    padding: 30px;
+    border-radius: 15px;
+    max-width: 500px;
+    width: 90%;
+    max-height: 80%;
+    overflow-y: auto;
+    position: relative;
+}
+
+.close {
+    position: absolute;
+    top: 10px;
+    right: 20px;
+    font-size: 2em;
+    cursor: pointer;
+    color: rgba(255, 255, 255, 0.7);
+}
+
+.close:hover {
+    color: white;
+}
+
+.settings-section {
+    margin-bottom: 20px;
+}
+
+.settings-section h3 {
+    color: #00ff88;
+    margin-bottom: 10px;
+}
+
+.settings-section label {
+    display: block;
+    margin-bottom: 8px;
+    cursor: pointer;
+}
+
+.settings-section input[type="range"] {
+    width: 100%;
+    margin-left: 10px;
+}
+
+.btn-primary {
+    background: linear-gradient(145deg, #00ff88, #00cc66);
+    color: black;
+    border: none;
+    padding: 12px 24px;
+    border-radius: 8px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: all 0.3s;
+    width: 100%;
+    margin-top: 20px;
+}
+
+.btn-primary:hover {
+    background: linear-gradient(145deg, #00cc66, #00aa55);
+    transform: translateY(-2px);
+}
+
+/* Информация о подключении */
+.connection-info {
+    position: fixed;
+    bottom: 20px;
+    left: 20px;
+    background: rgba(0, 0, 0, 0.8);
+    padding: 10px 15px;
+    border-radius: 20px;
+    font-size: 0.9em;
+    backdrop-filter: blur(10px);
+}
+
+/* Медиа запросы */
+@media (max-width: 768px) {
+    .pc-controls {
+        display: none !important;
+    }
+    
+    .header h1 {
+        font-size: 1.2em;
+    }
+    
+    .joystick {
+        width: 100px;
+        height: 100px;
+    }
+    
+    .joystick-knob {
+        width: 35px;
+        height: 35px;
+    }
+}
+
+@media (max-height: 600px) {
+    .mobile-controls {
+        height: 50%;
+    }
+    
+    .joystick {
+        width: 80px;
+        height: 80px;
+    }
+    
+    .joystick-knob {
+        width: 30px;
+        height: 30px;
+    }
+}
+
+/* VR специфичные стили */
+@media (min-width: 1200px) and (orientation: landscape) {
+    .vr-info {
+        transform: scale(1.2);
+    }
+}
+
+/* Анимации */
+@keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.5; }
+}
+
+.status-indicator {
+    animation: pulse 2s infinite;
+}
+
+.status-indicator.connected {
+    animation: none;
+}
+
+/* Активные состояния */
+.joystick.active .joystick-knob {
+    background: linear-gradient(145deg, #ff4444, #cc3333);
+}
+
+.control-btn.active {
+    background: linear-gradient(145deg, #00ff88, #00cc66);
+    color: black;
+}
+
+.feature-btn.active {
+    background: rgba(0, 255, 136, 0.3);
+}
+
+.update-btn {
+    background: linear-gradient(145deg, #ff8c00, #ff7700);
+}
+
+.update-btn:hover {
+    background: linear-gradient(145deg, #ff9900, #ff8800);
+}
