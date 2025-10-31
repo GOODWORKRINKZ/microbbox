@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>МикроББокс - Управление</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="icon" type="image/x-icon" href="favicon.ico">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="mobile-web-app-capable" content="yes">
+</head>
+<body>
+    <div id="loading" class="loading-screen">
+        <div class="loader"></div>
+        <h2>МикроББокс</h2>
+        <p>Загрузка системы управления...</p>
+    </div>
+
+    <div id="mainInterface" class="main-interface hidden">
+        <!-- Заголовок с информацией -->
+        <header class="header">
+            <h1>МикроББокс</h1>
+            <div class="status-indicators">
+                <span id="connectionStatus" class="status-indicator">●</span>
+                <span id="deviceType" class="device-type"></span>
+            </div>
+        </header>
+
+        <!-- Видео стрим от камеры -->
+        <div class="video-container">
+            <img id="cameraStream" src="/stream" alt="Камера робота" class="camera-stream">
+            <div class="stream-overlay">
+                <div class="crosshair"></div>
+            </div>
+        </div>
+
+        <!-- Панель управления для ПК -->
+        <div id="pcControls" class="pc-controls hidden">
+            <div class="control-panel">
+                <div class="control-section">
+                    <h3>Управление</h3>
+                    <div class="control-buttons">
+                        <button class="control-btn" data-direction="forward">↑</button>
+                        <div class="middle-row">
+                            <button class="control-btn" data-direction="left">←</button>
+                            <button class="control-btn stop-btn" data-direction="stop">⏹</button>
+                            <button class="control-btn" data-direction="right">→</button>
+                        </div>
+                        <button class="control-btn" data-direction="backward">↓</button>
+                    </div>
+                </div>
+                
+                <div class="control-section">
+                    <h3>Режимы</h3>
+                    <select id="controlMode" class="mode-selector">
+                        <option value="tank">Танковый</option>
+                        <option value="differential">Дифференциальный</option>
+                    </select>
+                    
+                    <select id="effectMode" class="mode-selector">
+                        <option value="normal">Обычный</option>
+                        <option value="police">Полиция</option>
+                        <option value="fire">Пожарные</option>
+                        <option value="ambulance">Скорая</option>
+                    </select>
+                </div>
+
+                <div class="control-section">
+                    <h3>Дополнительно</h3>
+                    <button id="flashlightBtn" class="feature-btn">💡 Фонарик</button>
+                    <button id="hornBtn" class="feature-btn">🔊 Сигнал</button>
+                    <button id="updateBtn" class="feature-btn update-btn">🔄 Обновление</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Мобильные стики -->
+        <div id="mobileControls" class="mobile-controls hidden">
+            <div class="joystick-container left">
+                <div class="joystick" id="leftJoystick">
+                    <div class="joystick-knob"></div>
+                </div>
+                <span class="joystick-label">Поворот</span>
+            </div>
+            
+            <div class="joystick-container right">
+                <div class="joystick" id="rightJoystick">
+                    <div class="joystick-knob"></div>
+                </div>
+                <span class="joystick-label">Скорость</span>
+            </div>
+
+            <!-- Мобильная панель режимов -->
+            <div class="mobile-panel">
+                <button id="mobileSettings" class="panel-btn">⚙️</button>
+                <button id="mobileFlashlight" class="panel-btn">💡</button>
+                <button id="mobileHorn" class="panel-btn">🔊</button>
+                <button id="mobileEffects" class="panel-btn">✨</button>
+                <button id="mobileUpdate" class="panel-btn">🔄</button>
+            </div>
+        </div>
+
+        <!-- VR управление -->
+        <div id="vrControls" class="vr-controls hidden">
+            <div class="vr-info">
+                <h2>Режим VR активен</h2>
+                <p>Используйте контроллеры Oculus для управления</p>
+                <div class="vr-status">
+                    <span id="vrStatus">Поиск контроллеров...</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Модальное окно настроек -->
+        <div id="settingsModal" class="modal hidden">
+            <div class="modal-content">
+                <span class="close">&times;</span>
+                <h2>Настройки МикроББокс</h2>
+                
+                <div class="settings-section">
+                    <h3>Режим управления</h3>
+                    <label>
+                        <input type="radio" name="controlMode" value="tank"> Танковый режим
+                    </label>
+                    <label>
+                        <input type="radio" name="controlMode" value="differential"> Дифференциальный режим
+                    </label>
+                </div>
+
+                <div class="settings-section">
+                    <h3>Эффекты</h3>
+                    <label>
+                        <input type="radio" name="effectMode" value="normal" checked> Обычный
+                    </label>
+                    <label>
+                        <input type="radio" name="effectMode" value="police"> Полиция
+                    </label>
+                    <label>
+                        <input type="radio" name="effectMode" value="fire"> Пожарные
+                    </label>
+                    <label>
+                        <input type="radio" name="effectMode" value="ambulance"> Скорая помощь
+                    </label>
+                </div>
+
+                <div class="settings-section">
+                    <h3>Чувствительность</h3>
+                    <label>Скорость движения: <input type="range" id="speedSensitivity" min="50" max="100" value="80"></label>
+                    <label>Чувствительность поворота: <input type="range" id="turnSensitivity" min="50" max="100" value="70"></label>
+                </div>
+
+                <button id="saveSettings" class="btn-primary">Сохранить</button>
+            </div>
+        </div>
+
+        <!-- Информация о подключении -->
+        <div id="connectionInfo" class="connection-info">
+            <span id="connectionText">Подключение...</span>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>

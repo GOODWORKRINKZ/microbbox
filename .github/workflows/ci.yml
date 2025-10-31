@@ -1,0 +1,255 @@
+name: МикроББокс CI
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+
+env:
+  PLATFORMIO_BUILD_CACHE_DIR: ~/.platformio/.cache
+
+jobs:
+  check:
+    name: Code Quality Check
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout Repository
+      uses: actions/checkout@v4
+      
+    - name: Setup Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.11'
+        
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install platformio htmlmin jsmin csscompressor
+        
+    - name: Check PlatformIO configuration
+      run: |
+        pio project config
+        
+    - name: Check code compilation (syntax check)
+      run: |
+        echo "Checking code compilation without full build..."
+        pio run --target compiledb --environment debug
+        
+    - name: List project files
+      run: |
+        echo "Project structure:"
+        find . -name "*.cpp" -o -name "*.h" -o -name "*.html" -o -name "*.css" -o -name "*.js" | head -20
+
+  build-test:
+    name: Build Test
+    runs-on: ubuntu-latest
+    needs: check
+    
+    strategy:
+      matrix:
+        environment: [debug, release]
+        
+    steps:
+    - name: Checkout Repository
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+        
+    - name: Setup Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.11'
+        
+    - name: Cache PlatformIO
+      uses: actions/cache@v3
+      with:
+        path: |
+          ~/.platformio/.cache
+          ~/.platformio/lib
+          ~/.platformio/platforms
+        key: ${{ runner.os }}-platformio-${{ hashFiles('**/platformio.ini') }}
+        restore-keys: |
+          ${{ runner.os }}-platformio-
+          
+    - name: Install PlatformIO and dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install platformio htmlmin jsmin csscompressor
+        
+    - name: Build firmware
+      run: |
+        echo "Building МикроББокс for ${{ matrix.environment }}"
+        pio run --environment ${{ matrix.environment }}
+        
+    - name: Check build output
+      run: |
+        if [ -f ".pio/build/${{ matrix.environment }}/firmware.bin" ]; then
+          echo "✅ Build successful for ${{ matrix.environment }}"
+          ls -la .pio/build/${{ matrix.environment }}/firmware.*
+          
+          # Показываем размер прошивки
+          SIZE=$(stat -c%s ".pio/build/${{ matrix.environment }}/firmware.bin")
+          echo "📦 Firmware size: $(($SIZE / 1024)) KB"
+          
+          # Проверяем, что размер разумный (не больше 3MB для ESP32)
+          if [ $SIZE -gt 3145728 ]; then
+            echo "⚠️  Warning: Firmware size is quite large (>3MB)"
+          else
+            echo "✅ Firmware size is acceptable"
+          fi
+        else
+          echo "❌ Build failed - firmware.bin not found"
+          exit 1
+        fi
+
+  resource-check:
+    name: Web Resources Check
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout Repository
+      uses: actions/checkout@v4
+      
+    - name: Setup Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.11'
+        
+    - name: Install dependencies for resource processing
+      run: |
+        pip install htmlmin jsmin csscompressor
+        
+    - name: Check resource files exist
+      run: |
+        echo "Checking web resource files..."
+        
+        RESOURCES_DIR="resources"
+        REQUIRED_FILES=("index.html" "update.html" "styles.css" "script.js")
+        
+        for file in "${REQUIRED_FILES[@]}"; do
+          if [ -f "$RESOURCES_DIR/$file" ]; then
+            echo "✅ Found: $file"
+            
+            # Показываем размер файла
+            SIZE=$(stat -c%s "$RESOURCES_DIR/$file")
+            echo "   Size: $(($SIZE / 1024)) KB"
+            
+            # Базовая проверка содержимого
+            case $file in
+              *.html)
+                if grep -q "<!DOCTYPE html>" "$RESOURCES_DIR/$file"; then
+                  echo "   ✅ Valid HTML structure"
+                else
+                  echo "   ⚠️  HTML might be malformed"
+                fi
+                ;;
+              *.css)
+                if grep -q "body\|\.container\|#" "$RESOURCES_DIR/$file"; then
+                  echo "   ✅ Contains CSS rules"
+                else
+                  echo "   ⚠️  CSS might be empty"
+                fi
+                ;;
+              *.js)
+                if grep -q "function\|class\|const\|let" "$RESOURCES_DIR/$file"; then
+                  echo "   ✅ Contains JavaScript code"
+                else
+                  echo "   ⚠️  JavaScript might be empty"  
+                fi
+                ;;
+            esac
+          else
+            echo "❌ Missing: $file"
+            exit 1
+          fi
+        done
+        
+    - name: Test resource minification
+      run: |
+        echo "Testing resource minification process..."
+        python -c "
+import htmlmin
+import jsmin
+import csscompressor
+import os
+
+def test_minify_html():
+    with open('resources/index.html', 'r', encoding='utf-8') as f:
+        content = f.read()
+    minified = htmlmin.minify(content, remove_comments=True, remove_empty_space=True)
+    original_size = len(content)
+    minified_size = len(minified)
+    compression_ratio = (1 - minified_size/original_size) * 100
+    print(f'HTML: {original_size} → {minified_size} bytes ({compression_ratio:.1f}% reduction)')
+    
+def test_minify_css():
+    with open('resources/styles.css', 'r', encoding='utf-8') as f:
+        content = f.read()
+    minified = csscompressor.compress(content)
+    original_size = len(content)
+    minified_size = len(minified)
+    compression_ratio = (1 - minified_size/original_size) * 100
+    print(f'CSS: {original_size} → {minified_size} bytes ({compression_ratio:.1f}% reduction)')
+
+def test_minify_js():
+    with open('resources/script.js', 'r', encoding='utf-8') as f:
+        content = f.read()
+    minified = jsmin.jsmin(content)
+    original_size = len(content)
+    minified_size = len(minified)
+    compression_ratio = (1 - minified_size/original_size) * 100
+    print(f'JS: {original_size} → {minified_size} bytes ({compression_ratio:.1f}% reduction)')
+
+print('Testing minification:')
+test_minify_html()
+test_minify_css()  
+test_minify_js()
+print('✅ All resources can be minified successfully')
+"
+
+  status-check:
+    name: Build Status Check
+    runs-on: ubuntu-latest
+    needs: [check, build-test, resource-check]
+    if: always()
+    
+    steps:
+    - name: Check overall status
+      run: |
+        echo "🔍 МикроББокс CI Status Summary"
+        echo "=============================="
+        
+        if [[ "${{ needs.check.result }}" == "success" ]]; then
+          echo "✅ Code Quality Check: PASSED"
+        else
+          echo "❌ Code Quality Check: FAILED"
+        fi
+        
+        if [[ "${{ needs.build-test.result }}" == "success" ]]; then
+          echo "✅ Build Test: PASSED"
+        else
+          echo "❌ Build Test: FAILED"  
+        fi
+        
+        if [[ "${{ needs.resource-check.result }}" == "success" ]]; then
+          echo "✅ Resource Check: PASSED"
+        else
+          echo "❌ Resource Check: FAILED"
+        fi
+        
+        echo ""
+        echo "Commit: ${{ github.sha }}"
+        echo "Branch: ${{ github.ref }}"
+        echo "Event: ${{ github.event_name }}"
+        
+        # Fail if any critical job failed
+        if [[ "${{ needs.check.result }}" != "success" ]] || [[ "${{ needs.build-test.result }}" != "success" ]]; then
+          echo ""
+          echo "💥 Critical jobs failed - failing CI"
+          exit 1
+        fi
+        
+        echo ""
+        echo "🎉 All checks passed successfully!"

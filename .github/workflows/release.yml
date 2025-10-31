@@ -1,0 +1,307 @@
+name: МикроББокс Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Release version (e.g. v1.0.0)'
+        required: true
+        type: string
+
+jobs:
+  create-release:
+    name: Create Release and Build Firmware
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout Repository
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+        
+    - name: Setup Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.11'
+        
+    - name: Cache PlatformIO
+      uses: actions/cache@v4
+      with:
+        path: |
+          ~/.platformio
+          .pio
+        key: ${{ runner.os }}-pio-${{ hashFiles('**/platformio.ini') }}
+        restore-keys: |
+          ${{ runner.os }}-pio-
+          
+    - name: Install PlatformIO and dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install platformio htmlmin jsmin csscompressor
+        
+    - name: Generate Epic Release Name
+      id: epic_name
+      run: |
+        # Массивы старославянских прилагательных и героев
+        ADJECTIVES=(
+          "Yarostniy:Яростный"
+          "Mudriy:Мудрый"
+          "Hrabriy:Храбрый"
+          "Veshchiy:Вещий"
+          "Moguchiy:Могучий"
+          "Slavniy:Славный"
+          "Grozniy:Грозный"
+          "Bystriy:Быстрый"
+          "Svetliy:Светлый"
+          "Krepkiy:Крепкий"
+          "Silniy:Сильный"
+          "Udaloy:Удалой"
+          "Otvazhniy:Отважный"
+          "Verniy:Верный"
+          "Braviy:Бравый"
+          "Velikiy:Великий"
+          "Vechniy:Вечный"
+          "Hitriy:Хитрый"
+          "Shchedriy:Щедрый"
+          "Neukrotimiy:Неукротимый"
+        )
+        
+        HEROES=(
+          "Svyatogor:Святогор"
+          "Dobrynya:Добрыня"
+          "Ilya:Илья"
+          "Boyan:Боян"
+          "Mikula:Микула"
+          "Peresvet:Пересвет"
+          "Volkh:Волх"
+          "Stavr:Ставр"
+          "Alyosha:Алёша"
+          "Dunay:Дунай"
+          "Volga:Вольга"
+          "Churilo:Чурило"
+          "Yeruslan:Еруслан"
+          "Sadko:Садко"
+          "Dyuk:Дюк"
+          "Vladimir:Владимир"
+          "Koshchey:Кощей"
+          "Solovey:Соловей"
+          "Potyk:Потык"
+          "Buslay:Буслай"
+        )
+        
+        # Используем версию как seed для детерминированной генерации
+        VERSION="${{ inputs.version }}"
+        SEED=$(echo -n "$VERSION" | md5sum | cut -c1-8)
+        SEED_DEC=$((16#$SEED))
+        
+        # Выбираем прилагательное и героя по seed
+        ADJ_INDEX=$(($SEED_DEC % ${#ADJECTIVES[@]}))
+        HERO_INDEX=$((($SEED_DEC / ${#ADJECTIVES[@]}) % ${#HEROES[@]}))
+        
+        ADJ_PAIR="${ADJECTIVES[$ADJ_INDEX]}"
+        HERO_PAIR="${HEROES[$HERO_INDEX]}"
+        
+        ADJ_EN=$(echo $ADJ_PAIR | cut -d: -f1)
+        ADJ_RU=$(echo $ADJ_PAIR | cut -d: -f2)
+        HERO_EN=$(echo $HERO_PAIR | cut -d: -f1)
+        HERO_RU=$(echo $HERO_PAIR | cut -d: -f2)
+        
+        EPIC_NAME_EN="${ADJ_EN} ${HERO_EN}"
+        EPIC_NAME_RU="${ADJ_RU} ${HERO_RU}"
+        
+        echo "epic_name_en=${EPIC_NAME_EN}" >> $GITHUB_OUTPUT
+        echo "epic_name_ru=${EPIC_NAME_RU}" >> $GITHUB_OUTPUT
+        
+        echo "🎭 Эпическое название релиза: ${EPIC_NAME_RU} (${EPIC_NAME_EN})"
+        
+    - name: Create Git Tag
+      run: |
+        git config user.name "GitHub Actions"
+        git config user.email "actions@github.com"
+        git tag -a ${{ inputs.version }} -m "Release ${{ inputs.version }}"
+        git push origin ${{ inputs.version }}
+        
+    - name: Build Release Firmware
+      run: |
+        echo "🔨 Building release firmware..."
+        pio run --environment release
+        
+    - name: Build Debug Firmware
+      run: |
+        echo "🔨 Building debug firmware..."
+        pio run --environment debug
+        
+    - name: Prepare Release Files
+      run: |
+        VERSION=${{ inputs.version }}
+        
+        # Копируем и переименовываем файлы
+        cp .pio/build/release/firmware.bin microbox-${VERSION}-release.bin
+        cp .pio/build/debug/firmware.bin microbox-${VERSION}-debug.bin
+        
+        # Создаем контрольные суммы
+        sha256sum microbox-${VERSION}-release.bin > microbox-${VERSION}-release.bin.sha256
+        sha256sum microbox-${VERSION}-debug.bin > microbox-${VERSION}-debug.bin.sha256
+        
+        # Информация о размерах
+        echo "## 📦 Собранные файлы:" > build-info.txt
+        ls -lh microbox-*.bin | awk '{print $9 " - " $5}' >> build-info.txt
+        
+    - name: Generate Release Notes
+      run: |
+        VERSION=${{ inputs.version }}
+        EPIC_NAME_RU="${{ steps.epic_name.outputs.epic_name_ru }}"
+        EPIC_NAME_EN="${{ steps.epic_name.outputs.epic_name_en }}"
+        
+        cat > RELEASE_NOTES.md << 'EOFMARKER'
+        # МикроББокс $VERSION — $EPIC_NAME_RU
+        
+        > **"$EPIC_NAME_EN"** — Epic codename for this release
+        
+        Автоматический релиз МикроББокс - миниатюрного робота на ESP32CAM.
+        
+        ## 📦 Файлы прошивки
+        
+        - **microbox-$VERSION-release.bin** - Оптимизированная прошивка для продакшена
+        - **microbox-$VERSION-debug.bin** - Отладочная версия с расширенным логированием
+        
+        ## 🚀 Как установить
+        
+        ### Метод 1: Через веб-интерфейс (OTA Update)
+        
+        1. Подключитесь к роботу через WiFi:
+           - SSID: `МикроББокс`
+           - Пароль: `12345678`
+        2. Откройте браузер и перейдите на `http://192.168.4.1`
+        3. Нажмите кнопку **🔄 Обновление**
+        4. Выберите скачанный файл `.bin`
+        5. Дождитесь завершения обновления
+        
+        ### Метод 2: Через USB (esptool)
+        
+        ```bash
+        # Установите esptool
+        pip install esptool
+        
+        # Подключите ESP32CAM к компьютеру через USB-UART
+        # Замените COM3 на ваш порт (для Linux/Mac: /dev/ttyUSB0)
+        esptool.py --chip esp32 --port COM3 --baud 921600 \
+          write_flash -z 0x10000 microbox-$VERSION-release.bin
+        ```
+        
+        ### Метод 3: Через PlatformIO
+        
+        ```bash
+        # Клонируйте репозиторий
+        git clone https://github.com/GOODWORKRINKZ/microbbox.git
+        cd microbbox
+        
+        # Переключитесь на нужную версию
+        git checkout $VERSION
+        
+        # Соберите и загрузите
+        pio run --environment release --target upload
+        ```
+        
+        ## ✨ Возможности
+        
+        - 📱 **Адаптивный веб-интерфейс** - автоматически подстраивается под ПК, мобильные устройства и VR-шлемы
+        - 🎮 **Управление**:
+          - С клавиатуры (WASD/стрелки)
+          - Виртуальными стиками на мобильных
+          - Геймпадом
+          - Контроллерами VR (Oculus Quest)
+        - 📹 **Видеострим в реальном времени** с камеры ESP32CAM
+        - 💡 **3 адресных светодиода** WS2812B с анимациями
+        - 🔊 **Бузер** для звуковых эффектов
+        - 🚔 **Режимы эффектов**:
+          - Полиция (красно-синие мигалки + сирена)
+          - Пожарные (красно-оранжевые эффекты)
+          - Скорая помощь (бело-красные эффекты)
+          - Обычный (анимация движения)
+        - 🔄 **OTA обновления** прямо через веб-интерфейс
+        - ⚙️ **Два режима управления**:
+          - Танковый (левый/правый стик = левая/правая сторона)
+          - Дифференциальный (правый = скорость, левый = поворот)
+        
+        ## 🔧 Технические характеристики
+        
+        - **Процессор**: ESP32 @ 240MHz
+        - **Память**: 320KB RAM, 4MB Flash
+        - **Камера**: OV2640
+        - **WiFi**: 2.4GHz (режимы AP/STA)
+        - **Моторы**: 2x с драйвером MX1508
+        - **Светодиоды**: 3x WS2812B (2 сзади, 1 спереди)
+        - **Бузер**: Активный бузер на пине 16
+        
+        ## 📝 Проверка целостности
+        
+        Перед установкой проверьте контрольные суммы:
+        
+        ```bash
+        # Для release версии
+        sha256sum -c microbox-$VERSION-release.bin.sha256
+        
+        # Для debug версии
+        sha256sum -c microbox-$VERSION-debug.bin.sha256
+        ```
+        
+        ## 🐛 Известные проблемы
+        
+        - При первом запуске может потребоваться перезагрузка для стабильной работы WiFi
+        - В режиме VR требуется совместимый браузер с WebXR API
+        
+        ## 📖 Документация
+        
+        Полная документация доступна в [README.md](https://github.com/GOODWORKRINKZ/microbbox/blob/main/README.md)
+        
+        ## 💬 Поддержка
+        
+        Если у вас возникли проблемы:
+        - Создайте [Issue](https://github.com/GOODWORKRINKZ/microbbox/issues)
+        - Посмотрите [Wiki](https://github.com/GOODWORKRINKZ/microbbox/wiki)
+        
+        ---
+        
+        EOFMARKER
+        
+        # Подставляем переменные в конец файла
+        echo "" >> RELEASE_NOTES.md
+        echo "**Дата сборки**: $(date -u +'%Y-%m-%d %H:%M:%S UTC')" >> RELEASE_NOTES.md
+        echo "**Git commit**: $(git rev-parse --short HEAD)" >> RELEASE_NOTES.md
+        
+        # Заменяем переменные в файле на реальные значения
+        sed -i "s/\$VERSION/${VERSION}/g" RELEASE_NOTES.md
+        sed -i "s/\$EPIC_NAME_RU/${EPIC_NAME_RU}/g" RELEASE_NOTES.md
+        sed -i "s/\$EPIC_NAME_EN/${EPIC_NAME_EN}/g" RELEASE_NOTES.md
+        
+    - name: Create GitHub Release
+      uses: softprops/action-gh-release@v1
+      with:
+        tag_name: ${{ inputs.version }}
+        name: МикроББокс ${{ inputs.version }} — ${{ steps.epic_name.outputs.epic_name_ru }}
+        body_path: RELEASE_NOTES.md
+        files: |
+          microbox-*.bin
+          microbox-*.sha256
+        draft: false
+        prerelease: false
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        
+    - name: Build Summary
+      run: |
+        echo "## ✅ Релиз ${{ inputs.version }} успешно создан!" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "### 🎭 Эпическое название:" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "**${{ steps.epic_name.outputs.epic_name_ru }}** (${{ steps.epic_name.outputs.epic_name_en }})" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "### 📦 Файлы:" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        ls -lh microbox-*.bin | awk '{print "- **" $9 "** - " $5}' >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "### 🔗 Ссылки:" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "- [Релиз на GitHub](https://github.com/${{ github.repository }}/releases/tag/${{ inputs.version }})" >> $GITHUB_STEP_SUMMARY
+        echo "- [Все релизы](https://github.com/${{ github.repository }}/releases)" >> $GITHUB_STEP_SUMMARY
