@@ -429,10 +429,18 @@ void MicroBoxRobot::handleCommand(AsyncWebServerRequest *request) {
             setMotorSpeed(leftSpeed, rightSpeed);
         }
         else if (body.indexOf("flashlight") >= 0) {
-            // Переключение фонарика
+            // Переключение фонарика - используем передний неопиксель (индекс 0)
             static bool flashlightState = false;
             flashlightState = !flashlightState;
-            digitalWrite(FLASH_LED_PIN, flashlightState ? HIGH : LOW);
+            
+            if (flashlightState) {
+                // Включаем передний светодиод белым цветом на полную яркость
+                pixels->setPixelColor(0, pixels->Color(255, 255, 255));
+            } else {
+                // Выключаем передний светодиод
+                pixels->setPixelColor(0, pixels->Color(0, 0, 0));
+            }
+            pixels->show();
         }
         else if (body.indexOf("horn") >= 0) {
             // Сигнал
