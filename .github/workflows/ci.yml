@@ -169,45 +169,10 @@ jobs:
     - name: Test resource minification
       run: |
         echo "Testing resource minification process..."
-        python -c "
-import htmlmin
-import jsmin
-import csscompressor
-import os
-
-def test_minify_html():
-    with open('resources/index.html', 'r', encoding='utf-8') as f:
-        content = f.read()
-    minified = htmlmin.minify(content, remove_comments=True, remove_empty_space=True)
-    original_size = len(content)
-    minified_size = len(minified)
-    compression_ratio = (1 - minified_size/original_size) * 100
-    print(f'HTML: {original_size} → {minified_size} bytes ({compression_ratio:.1f}% reduction)')
-    
-def test_minify_css():
-    with open('resources/styles.css', 'r', encoding='utf-8') as f:
-        content = f.read()
-    minified = csscompressor.compress(content)
-    original_size = len(content)
-    minified_size = len(minified)
-    compression_ratio = (1 - minified_size/original_size) * 100
-    print(f'CSS: {original_size} → {minified_size} bytes ({compression_ratio:.1f}% reduction)')
-
-def test_minify_js():
-    with open('resources/script.js', 'r', encoding='utf-8') as f:
-        content = f.read()
-    minified = jsmin.jsmin(content)
-    original_size = len(content)
-    minified_size = len(minified)
-    compression_ratio = (1 - minified_size/original_size) * 100
-    print(f'JS: {original_size} → {minified_size} bytes ({compression_ratio:.1f}% reduction)')
-
-print('Testing minification:')
-test_minify_html()
-test_minify_css()  
-test_minify_js()
-print('✅ All resources can be minified successfully')
-"
+        python -c "import htmlmin; content=open('resources/index.html').read(); minified=htmlmin.minify(content); print(f'HTML: {len(content)} -> {len(minified)} bytes')"
+        python -c "import csscompressor; content=open('resources/styles.css').read(); minified=csscompressor.compress(content); print(f'CSS: {len(content)} -> {len(minified)} bytes')"
+        python -c "import jsmin; content=open('resources/script.js').read(); minified=jsmin.jsmin(content); print(f'JS: {len(content)} -> {len(minified)} bytes')"
+        echo "✅ All resources can be minified successfully"
 
   status-check:
     name: Build Status Check
