@@ -10,7 +10,11 @@ void setup() {
     Serial.begin(115200);
     Serial.println("МикроББокс запускается...");
     
-    // ЭКСТРЕННАЯ ОСТАНОВКА МОТОРОВ перед инициализацией!
+    // ЭКСТРЕННАЯ ОСТАНОВКА МОТОРОВ И ЗАЩИТА GPIO перед инициализацией!
+    // GPIO2 - strapping pin, должен быть LOW при загрузке (для NeoPixel это OK)
+    pinMode(NEOPIXEL_PIN, OUTPUT);
+    digitalWrite(NEOPIXEL_PIN, LOW);
+    
     // Устанавливаем все пины моторов в LOW для предотвращения вращения при старте
     pinMode(MOTOR_LEFT_FWD_PIN, OUTPUT);
     pinMode(MOTOR_LEFT_REV_PIN, OUTPUT);
