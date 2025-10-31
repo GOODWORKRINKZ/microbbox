@@ -7,24 +7,26 @@
 MicroBoxRobot* robot = nullptr;
 
 void setup() {
+    // КРИТИЧНО! Моторы ПЕРВЫМИ, ещё до Serial!
+    // При подключении монитора DTR вызывает Reset, пины в floating - моторы крутятся!
+    
+    // Устанавливаем пины моторов в OUTPUT и LOW с pull-down максимально быстро
+    pinMode(MOTOR_LEFT_FWD_PIN, OUTPUT);
+    digitalWrite(MOTOR_LEFT_FWD_PIN, LOW);
+    pinMode(MOTOR_LEFT_REV_PIN, OUTPUT);
+    digitalWrite(MOTOR_LEFT_REV_PIN, LOW);
+    pinMode(MOTOR_RIGHT_FWD_PIN, OUTPUT);
+    digitalWrite(MOTOR_RIGHT_FWD_PIN, LOW);
+    pinMode(MOTOR_RIGHT_REV_PIN, OUTPUT);
+    digitalWrite(MOTOR_RIGHT_REV_PIN, LOW);
+    
+    // Теперь безопасно инициализировать Serial
     Serial.begin(115200);
     Serial.println("МикроББокс запускается...");
     
-    // ЭКСТРЕННАЯ ОСТАНОВКА МОТОРОВ И ЗАЩИТА GPIO перед инициализацией!
-    // GPIO2 - strapping pin, должен быть LOW при загрузке (для NeoPixel это OK)
+    // Защита GPIO2 (strapping pin для NeoPixel)
     pinMode(NEOPIXEL_PIN, OUTPUT);
     digitalWrite(NEOPIXEL_PIN, LOW);
-    
-    // Устанавливаем все пины моторов в LOW для предотвращения вращения при старте
-    pinMode(MOTOR_LEFT_FWD_PIN, OUTPUT);
-    pinMode(MOTOR_LEFT_REV_PIN, OUTPUT);
-    pinMode(MOTOR_RIGHT_FWD_PIN, OUTPUT);
-    pinMode(MOTOR_RIGHT_REV_PIN, OUTPUT);
-    
-    digitalWrite(MOTOR_LEFT_FWD_PIN, LOW);
-    digitalWrite(MOTOR_LEFT_REV_PIN, LOW);
-    digitalWrite(MOTOR_RIGHT_FWD_PIN, LOW);
-    digitalWrite(MOTOR_RIGHT_REV_PIN, LOW);
     
     // Отключение детектора сброса напряжения для предотвращения случайных перезагрузок
     WRITE_PERI_REG(RTC_CNTL_BROWN_OUT_REG, 0);
