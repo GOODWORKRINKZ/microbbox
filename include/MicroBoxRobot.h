@@ -85,7 +85,6 @@ private:
     
     void handleRoot(AsyncWebServerRequest *request);
     void handleStream(AsyncWebServerRequest *request);
-    void handleCommand(AsyncWebServerRequest *request);
     void handleNotFound(AsyncWebServerRequest *request);
 
     // Состояние

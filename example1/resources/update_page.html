@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="ru">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Сканер частот "ФИЛИН"</title>
+    <link rel="stylesheet" href="styles.css" />
+    <link rel="icon" type="image/x-icon" href="favicon.ico" />
+  </head>
+
+  <body>
+    <header class="appbar">
+      <div class="wave-container">
+        <div class="wave"></div>
+        <div class="wave"></div>
+        <div class="wave"></div>
+      </div>
+      <img src="/logo.svg" alt="ФИЛИН Лого" class="logo" />
+      <h1>Сканер частот "ФИЛИН"</h1>
+    </header>
+
+    <div class="container">
+      <div class="tabs">
+        <button
+          class="tablinks hidden"
+          id="settingsTabButton"
+          onclick="openTab(event, 'Settings')"
+        >
+          Настройки
+        </button>
+        <button class="tablinks" onclick="openTab(event, 'Info')">
+          Информация
+        </button>
+        <button class="tablinks" onclick="openTab(event, 'Update')">
+          Обновление прошивки
+        </button>
+      </div>
+
+      <div id="Info" class="tabcontent">
+        <h2>Общая информация об устройстве</h2>
+        <table id="deviceInfoTable">
+          <thead>
+            <tr>
+              <th>Диапазон</th>
+              <th>Кол-во каналов</th>
+              <th>Частоты</th>
+              <th>RSSI (мин - макс)</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+        <p>
+          <strong>Версия прошивки:</strong> <span id="firmwareVersion"></span>
+        </p>
+        <p>
+          <strong>Целевая платформа:</strong> <span id="targetVersion"></span>
+        </p>
+      </div>
+
+      <div id="Update" class="tabcontent">
+        <h2>Обновление прошивки</h2>
+        <p class="instructions">
+          ВАЖНО: Имя файла прошивки должно иметь формат
+          <em>vX.X.X-AAAAAAAA-000.bin</em>. Пожалуйста, убедитесь, что
+          загружаемый вами файл соответствует правильной целевой платформе.
+          Информация о целевой платформе указывается в конце имени файла
+          прошивки и должна заканчиваться на
+          <code id="targetVersionCode">-111</code>.
+        </p>
+        <form
+          id="updateForm"
+          method="POST"
+          action="/update"
+          enctype="multipart/form-data"
+        >
+          <input type="file" name="update" accept=".bin, .hex" />
+          <input id="submitButton" type="submit" value="Загрузить прошивку" />
+        </form>
+        <div class="result-message" id="resultMessage">
+          <p id="message"></p>
+        </div>
+      </div>
+
+      <div id="Settings" class="tabcontent">
+        <h2>Настройки RSSI</h2>
+        <form id="settingsForm">
+          <!-- Container for 1.2 GHz settings -->
+          <div class="rssi-settings">
+            <label for="RSSI_BAND_1_2_MIN">RSSI 1.2 ГГц (мин):</label>
+            <input
+              type="number"
+              id="RSSI_BAND_1_2_MIN"
+              name="RSSI_BAND_1_2_MIN"
+            />
+
+            <label for="RSSI_BAND_1_2_MAX">RSSI 1.2 ГГц (макс):</label>
+            <input
+              type="number"
+              id="RSSI_BAND_1_2_MAX"
+              name="RSSI_BAND_1_2_MAX"
+            />
+          </div>
+
+          <!-- Container for 2.4 GHz settings -->
+          <div class="rssi-settings">
+            <label for="RSSI_BAND_2_4_MIN">RSSI 2.4 ГГц (мин):</label>
+            <input
+              type="number"
+              id="RSSI_BAND_2_4_MIN"
+              name="RSSI_BAND_2_4_MIN"
+            />
+
+            <label for="RSSI_BAND_2_4_MAX">RSSI 2.4 ГГц (макс):</label>
+            <input
+              type="number"
+              id="RSSI_BAND_2_4_MAX"
+              name="RSSI_BAND_2_4_MAX"
+            />
+          </div>
+
+          <!-- Container for 5.8 GHz settings -->
+          <div class="rssi-settings">
+            <label for="RSSI_BAND_5_8_MIN">RSSI 5.8 ГГц (мин):</label>
+            <input
+              type="number"
+              id="RSSI_BAND_5_8_MIN"
+              name="RSSI_BAND_5_8_MIN"
+            />
+
+            <label for="RSSI_BAND_5_8_MAX">RSSI 5.8 ГГц (макс):</label>
+            <input
+              type="number"
+              id="RSSI_BAND_5_8_MAX"
+              name="RSSI_BAND_5_8_MAX"
+            />
+          </div>
+
+          <input type="submit" value="Сохранить изменения" />
+        </form>
+      </div>
+    </div>
+
+    <div class="preloader" id="preloader">
+      <div class="oscilloscope">
+        <div class="wave-animation"></div>
+      </div>
+      <p>Загрузка...</p>
+    </div>
+
+    <footer class="footer" id="footer">
+      <a href="https://t.me/dronesfactory" target="_blank">@dronesfactory</a>
+    </footer>
+    <script src="script.js"></script>
+  </body>
+</html>

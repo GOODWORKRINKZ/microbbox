@@ -2,25 +2,37 @@
 #include "soc/soc.h"
 #include "soc/rtc_cntl_reg.h"
 #include "driver/gpio.h"
-#include "embedded_resources.h"
 #include "CameraServer.h"
+#ifdef USE_EMBEDDED_RESOURCES
+#include "embedded_resources.h"
+#endif
 
 MicroBoxRobot::MicroBoxRobot() : 
     initialized(false),
+
     cameraInitialized(false),
+#endif
+
     wifiConnected(false),
     wifiAPMode(true),
     server(nullptr),
+#endif
 #ifdef FEATURE_NEOPIXEL
     pixels(nullptr),
 #endif
+
     firmwareUpdate(nullptr),
+#endif
+
     currentControlMode(ControlMode::TANK),
+#endif
 #if defined(FEATURE_NEOPIXEL) || defined(FEATURE_BUZZER)
     currentEffectMode(EffectMode::NORMAL),
 #endif
+
     currentLeftSpeed(0),
     currentRightSpeed(0),
+#endif
 #if defined(FEATURE_NEOPIXEL) || defined(FEATURE_BUZZER)
     lastEffectUpdate(0),
     effectState(false),
@@ -37,22 +49,28 @@ MicroBoxRobot::~MicroBoxRobot() {
 bool MicroBoxRobot::init() {
     DEBUG_PRINTLN("Инициализация МикроББокс...");
     
+
     // Инициализация системы обновления
     firmwareUpdate = new FirmwareUpdate();
     if (!firmwareUpdate->init()) {
         DEBUG_PRINTLN("ОШИБКА: Не удалось инициализировать систему обновления");
         return false;
     }
+#endif
     
+
     // ВАЖНО: Сначала камера, потом моторы! (как в Scout32)
     // Камера использует LEDC каналы 0-1, моторы 2-5
     if (!initCamera()) {
         DEBUG_PRINTLN("ОШИБКА: Не удалось инициализировать камеру");
         return false;
     }
+#endif
     
+
     // Теперь безопасно инициализировать моторы и остальное
     initMotors();
+#endif
 #ifdef FEATURE_NEOPIXEL
     initLEDs();
 #endif
@@ -60,21 +78,24 @@ bool MicroBoxRobot::init() {
     initBuzzer();
 #endif
     
+
     // Запуск WiFi
-#if WIFI_MODE_CLIENT
-    if (!connectWiFiDHCP(WIFI_SSID_CLIENT, WIFI_PASSWORD_CLIENT)) {
-        DEBUG_PRINTLN("Не удалось подключиться к WiFi, запускаем AP режим");
-        startWiFiAP();
-    }
-#else
+    #if WIFI_MODE_CLIENT
+    // Режим клиента - подключаемся к существующей сети
+    connectWiFiDHCP(WIFI_SSID_CLIENT, WIFI_PASSWORD_CLIENT);
+    #else
+    // Режим точки доступа
     startWiFiAP();
-#endif
+    #endif
     
     // Инициализация веб-сервера
     initWebServer();
+#endif
     
-    // Запуск камеры сервера на порту 81
-    startCameraStreamServer();
+ && defined(FEATURE_WIFI)
+    // Запуск камеры сервера
+    startCameraServer();
+#endif
     
     initialized = true;
     DEBUG_PRINTLN("МикроББокс успешно инициализирован");
@@ -84,11 +105,13 @@ bool MicroBoxRobot::init() {
 void MicroBoxRobot::loop() {
     unsigned long currentTime = millis();
     
+
     // Обработка системы обновления
     if (firmwareUpdate && firmwareUpdate->isInUpdateMode()) {
         firmwareUpdate->loop();
         return; // В режиме обновления не выполняем другие операции
     }
+#endif
     
 #if defined(FEATURE_NEOPIXEL) || defined(FEATURE_BUZZER)
     // Обработка эффектов
@@ -104,9 +127,13 @@ void MicroBoxRobot::loop() {
                 playAmbulanceEffect();
                 break;
             case EffectMode::NORMAL:
+
                 if (currentLeftSpeed != 0 || currentRightSpeed != 0) {
+#endif
                     playMovementAnimation();
+
                 }
+#endif
                 break;
         }
         lastEffectUpdate = currentTime;
@@ -119,7 +146,9 @@ void MicroBoxRobot::loop() {
 void MicroBoxRobot::shutdown() {
     DEBUG_PRINTLN("Выключение МикроББокс...");
     
+
     stopMotors();
+#endif
 #ifdef FEATURE_NEOPIXEL
     clearLEDs();
 #endif
@@ -127,10 +156,12 @@ void MicroBoxRobot::shutdown() {
     stopBuzzer();
 #endif
     
+
     if (server) {
         delete server;
         server = nullptr;
     }
+#endif
     
 #ifdef FEATURE_NEOPIXEL
     if (pixels) {
@@ -139,10 +170,12 @@ void MicroBoxRobot::shutdown() {
     }
 #endif
     
+
     if (firmwareUpdate) {
         delete firmwareUpdate;
         firmwareUpdate = nullptr;
     }
+#endif
     
     initialized = false;
 }
@@ -151,13 +184,6 @@ void MicroBoxRobot::startWiFiAP() {
     DEBUG_PRINTLN("Запуск WiFi точки доступа...");
     
     WiFi.mode(WIFI_AP);
-    
-    // Установка hostname для AP режима
-    String mac = WiFi.macAddress();
-    mac.replace(":", "");
-    String hostname = "MICROBBOX-" + mac.substring(6);
-    WiFi.setHostname(hostname.c_str());
-    
     WiFi.softAP(WIFI_SSID_AP, WIFI_PASSWORD_AP, WIFI_CHANNEL, WIFI_HIDDEN, WIFI_MAX_CONNECTIONS);
     
     IPAddress ip(AP_IP_ADDR);
@@ -171,21 +197,18 @@ void MicroBoxRobot::startWiFiAP() {
     
     DEBUG_PRINT("WiFi AP запущена. IP: ");
     DEBUG_PRINTLN(WiFi.softAPIP());
-    DEBUG_PRINT("Hostname: ");
-    DEBUG_PRINTLN(hostname);
 }
 
-bool MicroBoxRobot::connectWiFiDHCP(const char* ssid, const char* password) {
+void MicroBoxRobot::connectWiFiDHCP(const char* ssid, const char* password) {
     DEBUG_PRINTLN("Подключение к WiFi сети...");
     
-    WiFi.mode(WIFI_STA);
-    
-    // Установка hostname перед подключением
+    // Устанавливаем имя устройства
     String mac = WiFi.macAddress();
     mac.replace(":", "");
-    String hostname = "MICROBBOX-" + mac.substring(6);
+    String hostname = "MICROBBOX-" + mac.substring(6); // Последние 6 символов MAC
     WiFi.setHostname(hostname.c_str());
     
+    WiFi.mode(WIFI_STA);
     WiFi.begin(ssid, password);
     
     int attempts = 0;
@@ -199,15 +222,14 @@ bool MicroBoxRobot::connectWiFiDHCP(const char* ssid, const char* password) {
         wifiAPMode = false;
         wifiConnected = true;
         DEBUG_PRINTLN();
-        DEBUG_PRINT("Подключено к WiFi. IP: ");
-        DEBUG_PRINTLN(WiFi.localIP());
         DEBUG_PRINT("Hostname: ");
         DEBUG_PRINTLN(hostname);
-        return true;
+        DEBUG_PRINT("Подключено к WiFi. IP: ");
+        DEBUG_PRINTLN(WiFi.localIP());
     } else {
         DEBUG_PRINTLN();
-        DEBUG_PRINTLN("Не удалось подключиться к WiFi");
-        return false;
+        DEBUG_PRINTLN("Не удалось подключиться к WiFi, запуск AP режима");
+        startWiFiAP();
     }
 }
 
@@ -300,15 +322,49 @@ bool MicroBoxRobot::initCamera() {
     return true;
 }
 
+void MicroBoxRobot::startCameraServer() {
+    startCameraStreamServer();
+}
+
+
 void MicroBoxRobot::initMotors() {
     DEBUG_PRINTLN("Инициализация моторов...");
     
-    // Настройка PWM для моторов (как в Scout32 - ПЕРЕД pinMode!)
+    // КРИТИЧНО для MX1508: Включаем внутренние pull-down резисторы ESP32
+    // Это предотвращает floating состояние пинов при Reset/включении
+    // MX1508 имеет высокое входное сопротивление - floating пины могут включить моторы!
+    
+    // Устанавливаем пины в OUTPUT с внутренним pull-down
+    pinMode(MOTOR_LEFT_FWD_PIN, OUTPUT);
+    gpio_pulldown_en((gpio_num_t)MOTOR_LEFT_FWD_PIN);
+    gpio_pullup_dis((gpio_num_t)MOTOR_LEFT_FWD_PIN);
+    digitalWrite(MOTOR_LEFT_FWD_PIN, LOW);
+    
+    pinMode(MOTOR_LEFT_REV_PIN, OUTPUT);
+    gpio_pulldown_en((gpio_num_t)MOTOR_LEFT_REV_PIN);
+    gpio_pullup_dis((gpio_num_t)MOTOR_LEFT_REV_PIN);
+    digitalWrite(MOTOR_LEFT_REV_PIN, LOW);
+    
+    pinMode(MOTOR_RIGHT_FWD_PIN, OUTPUT);
+    gpio_pulldown_en((gpio_num_t)MOTOR_RIGHT_FWD_PIN);
+    gpio_pullup_dis((gpio_num_t)MOTOR_RIGHT_FWD_PIN);
+    digitalWrite(MOTOR_RIGHT_FWD_PIN, LOW);
+    
+    pinMode(MOTOR_RIGHT_REV_PIN, OUTPUT);
+    gpio_pulldown_en((gpio_num_t)MOTOR_RIGHT_REV_PIN);
+    gpio_pullup_dis((gpio_num_t)MOTOR_RIGHT_REV_PIN);
+    digitalWrite(MOTOR_RIGHT_REV_PIN, LOW);
+    
+    // Задержка для стабилизации состояния пинов
+    delay(50);
+    
+    // Настройка PWM каналов для моторов
     ledcSetup(MOTOR_PWM_CHANNEL_LF, MOTOR_PWM_FREQ, MOTOR_PWM_RESOLUTION);
     ledcSetup(MOTOR_PWM_CHANNEL_LR, MOTOR_PWM_FREQ, MOTOR_PWM_RESOLUTION);
     ledcSetup(MOTOR_PWM_CHANNEL_RF, MOTOR_PWM_FREQ, MOTOR_PWM_RESOLUTION);
     ledcSetup(MOTOR_PWM_CHANNEL_RR, MOTOR_PWM_FREQ, MOTOR_PWM_RESOLUTION);
     
+    // Привязка каналов к пинам
     ledcAttachPin(MOTOR_LEFT_FWD_PIN, MOTOR_PWM_CHANNEL_LF);
     ledcAttachPin(MOTOR_LEFT_REV_PIN, MOTOR_PWM_CHANNEL_LR);
     ledcAttachPin(MOTOR_RIGHT_FWD_PIN, MOTOR_PWM_CHANNEL_RF);
@@ -357,140 +413,21 @@ void MicroBoxRobot::initWebServer() {
         this->handleRoot(request);
     });
     
-    // API команды - тестовый GET для отладки
-    server->on("/command", HTTP_GET, [this](AsyncWebServerRequest *request) {
-        DEBUG_PRINTLN("GET /command вызван!");
-        
-        if (request->hasParam("test")) {
-            String testValue = request->getParam("test")->value();
-            DEBUG_PRINT("Test параметр: ");
-            DEBUG_PRINTLN(testValue);
-            
-            if (testValue == "motor") {
-                DEBUG_PRINTLN("Тест моторов: вперед на 50%");
-                setMotorSpeed(50, 50);
-                delay(2000);
-                setMotorSpeed(0, 0);
-                request->send(200, "text/plain", "Motors test OK: forward 50% for 2 sec");
-                return;
-            }
-        }
-        
-        request->send(200, "text/plain", "Command GET endpoint. Try: /command?test=motor");
+    // API команды
+    server->on("/command", HTTP_POST, [this](AsyncWebServerRequest *request) {
+        this->handleCommand(request);
     });
     
-    // API команды - POST для JSON
-    server->on("/command", HTTP_POST, 
-        [this](AsyncWebServerRequest *request) {
-            // Ответ будет отправлен в onBody
-        },
-        NULL,
-        [this](AsyncWebServerRequest *request, uint8_t *data, size_t len, size_t index, size_t total) {
-            // Накапливаем данные пока не получим всё
-            static String commandBody = "";
-            
-            // Добавляем полученный фрагмент
-            for (size_t i = 0; i < len; i++) {
-                commandBody += (char)data[i];
-            }
-            
-            // Если это последний фрагмент (index + len == total)
-            if (index + len == total) {
-                DEBUG_PRINT("Получена команда: ");
-                DEBUG_PRINTLN(commandBody);
-                
-                // Парсинг JSON команды
-                if (commandBody.indexOf("move") >= 0) {
-                    int leftSpeed = 0, rightSpeed = 0;
-                    
-                    int leftPos = commandBody.indexOf("\"left\":");
-                    int rightPos = commandBody.indexOf("\"right\":");
-                    
-                    if (leftPos >= 0) {
-                        leftSpeed = commandBody.substring(leftPos + 7).toInt();
-                    }
-                    if (rightPos >= 0) {
-                        rightSpeed = commandBody.substring(rightPos + 8).toInt();
-                    }
-                    
-                    DEBUG_PRINT("Движение: left=");
-                    DEBUG_PRINT(leftSpeed);
-                    DEBUG_PRINT(" right=");
-                    DEBUG_PRINTLN(rightSpeed);
-                    
-                    setMotorSpeed(leftSpeed, rightSpeed);
-                    request->send(200, "application/json", "{\"status\":\"ok\",\"action\":\"Поехал: left=" + String(leftSpeed) + ", right=" + String(rightSpeed) + "\"}");
-                }
-                else if (commandBody.indexOf("flashlight") >= 0) {
-#ifdef FEATURE_NEOPIXEL
-                    static bool flashlightState = false;
-                    flashlightState = !flashlightState;
-                    
-                    if (flashlightState) {
-                        pixels->setPixelColor(0, pixels->Color(255, 255, 255));
-                        request->send(200, "application/json", "{\"status\":\"ok\",\"action\":\"Фонарик включен\"}");
-                    } else {
-                        pixels->setPixelColor(0, pixels->Color(0, 0, 0));
-                        request->send(200, "application/json", "{\"status\":\"ok\",\"action\":\"Фонарик выключен\"}");
-                    }
-                    pixels->show();
-#else
-                    request->send(200, "application/json", "{\"status\":\"ok\",\"action\":\"Фонарик (нет LED)\"}");
-#endif
-                }
-                else if (commandBody.indexOf("horn") >= 0) {
-#ifdef FEATURE_BUZZER
-                    if (commandBody.indexOf("true") >= 0) {
-                        playTone(800, 0);
-                        request->send(200, "application/json", "{\"status\":\"ok\",\"action\":\"Сигналю!\"}");
-                    } else {
-                        stopBuzzer();
-                        request->send(200, "application/json", "{\"status\":\"ok\",\"action\":\"Сигнал выкл\"}");
-                    }
-#else
-                    request->send(200, "application/json", "{\"status\":\"ok\",\"action\":\"Сигнал (нет бузера)\"}");
-#endif
-                }
-                else if (commandBody.indexOf("setEffectMode") >= 0) {
-#if defined(FEATURE_NEOPIXEL) || defined(FEATURE_BUZZER)
-                    if (commandBody.indexOf("police") >= 0) {
-                        setEffectMode(EffectMode::POLICE);
-                        request->send(200, "application/json", "{\"status\":\"ok\",\"action\":\"Режим: Полиция\"}");
-                    } else if (commandBody.indexOf("fire") >= 0) {
-                        setEffectMode(EffectMode::FIRE);
-                        request->send(200, "application/json", "{\"status\":\"ok\",\"action\":\"Режим: Пожарная\"}");
-                    } else if (commandBody.indexOf("ambulance") >= 0) {
-                        setEffectMode(EffectMode::AMBULANCE);
-                        request->send(200, "application/json", "{\"status\":\"ok\",\"action\":\"Режим: Скорая\"}");
-                    } else {
-                        setEffectMode(EffectMode::NORMAL);
-                        request->send(200, "application/json", "{\"status\":\"ok\",\"action\":\"Режим: Обычный\"}");
-                    }
-#else
-                    request->send(200, "application/json", "{\"status\":\"ok\",\"action\":\"Эффекты недоступны\"}");
-#endif
-                }
-                else if (commandBody.indexOf("enterUpdateMode") >= 0) {
-                    enterUpdateMode();
-                    request->send(200, "application/json", "{\"status\":\"ok\",\"action\":\"Режим обновления\"}");
-                }
-                
-                // Очищаем буфер для следующей команды
-                commandBody = "";
-            }
-        }
-    );
-    
     // Статические ресурсы
-    #ifdef EMBEDDED_RESOURCES_H
+    #ifdef USE_EMBEDDED_RESOURCES
     server->on("/styles.css", HTTP_GET, [](AsyncWebServerRequest *request) {
-        AsyncWebServerResponse *response = request->beginResponse_P(200, "text/css; charset=utf-8", stylesCss, stylesCss_len);
+        AsyncWebServerResponse *response = request->beginResponse_P(200, "text/css", stylesCss, stylesCss_len);
         response->addHeader("Cache-Control", "max-age=86400");
         request->send(response);
     });
     
     server->on("/script.js", HTTP_GET, [](AsyncWebServerRequest *request) {
-        AsyncWebServerResponse *response = request->beginResponse_P(200, "application/javascript; charset=utf-8", scriptJs, scriptJs_len);
+        AsyncWebServerResponse *response = request->beginResponse_P(200, "application/javascript", scriptJs, scriptJs_len);
         response->addHeader("Cache-Control", "max-age=86400");
         request->send(response);
     });
@@ -529,6 +466,83 @@ void MicroBoxRobot::handleRoot(AsyncWebServerRequest *request) {
     request->send(response);
 }
 
+void MicroBoxRobot::handleCommand(AsyncWebServerRequest *request) {
+    // Обработка JSON команд от веб-интерфейса
+    if (request->hasParam("body", true)) {
+        String body = request->getParam("body", true)->value();
+        
+        // Здесь должен быть парсинг JSON и выполнение команд
+        // Для простоты используем простые строковые команды
+        
+        if (body.indexOf("move") >= 0) {
+            // Парсинг команды движения
+            // Например: {"command":"move","left":50,"right":50}
+            // Простой парсинг для демонстрации
+            int leftSpeed = 0, rightSpeed = 0;
+            
+            int leftPos = body.indexOf("\"left\":");
+            int rightPos = body.indexOf("\"right\":");
+            
+            if (leftPos >= 0) {
+                leftSpeed = body.substring(leftPos + 7).toInt();
+            }
+            if (rightPos >= 0) {
+                rightSpeed = body.substring(rightPos + 8).toInt();
+            }
+            
+            setMotorSpeed(leftSpeed, rightSpeed);
+        }
+#ifdef FEATURE_NEOPIXEL
+        else if (body.indexOf("flashlight") >= 0) {
+            // Переключение фонарика - используем передний неопиксель (индекс 0)
+            static bool flashlightState = false;
+            flashlightState = !flashlightState;
+            
+            if (flashlightState) {
+                // Включаем передний светодиод белым цветом на полную яркость
+                pixels->setPixelColor(0, pixels->Color(255, 255, 255));
+            } else {
+                // Выключаем передний светодиод
+                pixels->setPixelColor(0, pixels->Color(0, 0, 0));
+            }
+            pixels->show();
+        }
+#endif
+#ifdef FEATURE_BUZZER
+        else if (body.indexOf("horn") >= 0) {
+            // Сигнал
+            if (body.indexOf("true") >= 0) {
+                playTone(800, 0); // Непрерывный сигнал
+            } else {
+                stopBuzzer();
+            }
+        }
+#endif
+#if defined(FEATURE_NEOPIXEL) || defined(FEATURE_BUZZER)
+        else if (body.indexOf("setEffectMode") >= 0) {
+            // Переключение режима эффектов
+            if (body.indexOf("police") >= 0) {
+                setEffectMode(EffectMode::POLICE);
+            } else if (body.indexOf("fire") >= 0) {
+                setEffectMode(EffectMode::FIRE);
+            } else if (body.indexOf("ambulance") >= 0) {
+                setEffectMode(EffectMode::AMBULANCE);
+            } else {
+                setEffectMode(EffectMode::NORMAL);
+            }
+        }
+#endif
+
+        else if (body.indexOf("enterUpdateMode") >= 0) {
+            // Вход в режим обновления прошивки
+            enterUpdateMode();
+        }
+#endif
+    }
+    
+    request->send(200, "application/json", "{\"status\":\"ok\"}");
+}
+
 void MicroBoxRobot::handleNotFound(AsyncWebServerRequest *request) {
     request->send(404, "text/plain", "Страница не найдена");
 }
@@ -542,9 +556,8 @@ void MicroBoxRobot::setMotorSpeed(int leftSpeed, int rightSpeed) {
     currentRightSpeed = rightSpeed;
     
     // Преобразование в PWM значения (0-65535 для 16-битного разрешения)
-    // Scout32 использует: speed = val * 8192, где val от 0 до 8
-    int leftPWM = map(abs(leftSpeed), 0, 100, 0, 65536);
-    int rightPWM = map(abs(rightSpeed), 0, 100, 0, 65536);
+    int leftPWM = map(abs(leftSpeed), 0, 100, 0, 65535);
+    int rightPWM = map(abs(rightSpeed), 0, 100, 0, 65535);
     
     // Левый мотор
     if (leftSpeed > 0) {
@@ -560,14 +573,14 @@ void MicroBoxRobot::setMotorSpeed(int leftSpeed, int rightSpeed) {
     
     // Правый мотор
     if (rightSpeed > 0) {
-        ledcWrite(MOTOR_PWM_CHANNEL_RR, rightPWM);
-        ledcWrite(MOTOR_PWM_CHANNEL_RF, 0);
-    } else if (rightSpeed < 0) {
-        ledcWrite(MOTOR_PWM_CHANNEL_RR, 0);
         ledcWrite(MOTOR_PWM_CHANNEL_RF, rightPWM);
-    } else {
         ledcWrite(MOTOR_PWM_CHANNEL_RR, 0);
+    } else if (rightSpeed < 0) {
         ledcWrite(MOTOR_PWM_CHANNEL_RF, 0);
+        ledcWrite(MOTOR_PWM_CHANNEL_RR, rightPWM);
+    } else {
+        ledcWrite(MOTOR_PWM_CHANNEL_RF, 0);
+        ledcWrite(MOTOR_PWM_CHANNEL_RR, 0);
     }
     
     DEBUG_PRINTF("Моторы: левый=%d, правый=%d\n", leftSpeed, rightSpeed);
@@ -633,32 +646,35 @@ void MicroBoxRobot::playPoliceEffect() {
     if (currentTime - lastToggle > 250) { // Переключение каждые 250мс
         effectState = !effectState;
         
-        if (effectState) {
 #ifdef FEATURE_NEOPIXEL
+        if (effectState) {
             // Синие светодиоды сзади, красные спереди
             setLEDColor(0, pixels->Color(0, 0, 255));   // Задний левый - синий
             setLEDColor(1, pixels->Color(0, 0, 255));   // Задний правый - синий
             setLEDColor(2, pixels->Color(255, 0, 0));   // Передний - красный
-#endif
-#ifdef FEATURE_BUZZER            
+#ifdef FEATURE_BUZZER
             // Звук сирены
             playTone(800, 0);
 #endif
         } else {
-#ifdef FEATURE_NEOPIXEL
             // Красные светодиоды сзади, синие спереди
             setLEDColor(0, pixels->Color(255, 0, 0));   // Задний левый - красный
             setLEDColor(1, pixels->Color(255, 0, 0));   // Задний правый - красный
             setLEDColor(2, pixels->Color(0, 0, 255));   // Передний - синий
-#endif
-#ifdef FEATURE_BUZZER            
+#ifdef FEATURE_BUZZER
             // Другой тон сирены
             playTone(1000, 0);
 #endif
         }
-        
-#ifdef FEATURE_NEOPIXEL
         updateLEDs();
+#endif
+#if !defined(FEATURE_NEOPIXEL) && defined(FEATURE_BUZZER)
+        // Только звук без LED
+        if (effectState) {
+            playTone(800, 0);
+        } else {
+            playTone(1000, 0);
+        }
 #endif
         lastToggle = currentTime;
     }
@@ -671,24 +687,26 @@ void MicroBoxRobot::playFireEffect() {
     if (currentTime - lastToggle > 200) { // Быстрое мигание
         effectState = !effectState;
         
-        if (effectState) {
 #ifdef FEATURE_NEOPIXEL
+        if (effectState) {
             setAllLEDs(pixels->Color(255, 0, 0)); // Красный
-#endif
 #ifdef FEATURE_BUZZER
             playTone(900, 0);
 #endif
         } else {
-#ifdef FEATURE_NEOPIXEL
             setAllLEDs(pixels->Color(255, 165, 0)); // Оранжевый
-#endif
 #ifdef FEATURE_BUZZER
             playTone(1100, 0);
 #endif
         }
-        
-#ifdef FEATURE_NEOPIXEL
         updateLEDs();
+#endif
+#if !defined(FEATURE_NEOPIXEL) && defined(FEATURE_BUZZER)
+        if (effectState) {
+            playTone(900, 0);
+        } else {
+            playTone(1100, 0);
+        }
 #endif
         lastToggle = currentTime;
     }
@@ -701,24 +719,26 @@ void MicroBoxRobot::playAmbulanceEffect() {
     if (currentTime - lastToggle > 300) { // Медленнее полиции
         effectState = !effectState;
         
-        if (effectState) {
 #ifdef FEATURE_NEOPIXEL
+        if (effectState) {
             setAllLEDs(pixels->Color(255, 255, 255)); // Белый
-#endif
 #ifdef FEATURE_BUZZER
             playTone(750, 0);
 #endif
         } else {
-#ifdef FEATURE_NEOPIXEL
             setAllLEDs(pixels->Color(255, 0, 0)); // Красный
-#endif
 #ifdef FEATURE_BUZZER
             playTone(1050, 0);
 #endif
         }
-        
-#ifdef FEATURE_NEOPIXEL
         updateLEDs();
+#endif
+#if !defined(FEATURE_NEOPIXEL) && defined(FEATURE_BUZZER)
+        if (effectState) {
+            playTone(750, 0);
+        } else {
+            playTone(1050, 0);
+        }
 #endif
         lastToggle = currentTime;
     }
@@ -794,12 +814,15 @@ void MicroBoxRobot::processControlInput(int leftX, int leftY, int rightX, int ri
     setMotorSpeed(leftSpeed, rightSpeed);
 }
 
+
 void MicroBoxRobot::enterUpdateMode() {
     DEBUG_PRINTLN("Вход в режим обновления прошивки");
     
     if (firmwareUpdate) {
         // Остановка всех операций
+
         stopMotors();
+#endif
 #ifdef FEATURE_NEOPIXEL
         clearLEDs();
 #endif
@@ -807,10 +830,12 @@ void MicroBoxRobot::enterUpdateMode() {
         stopBuzzer();
 #endif
         
+
         // Остановка основного сервера
         if (server) {
             server->end();
         }
+#endif
         
         // Запуск режима обновления
         firmwareUpdate->startUpdateMode();
@@ -820,3 +845,4 @@ void MicroBoxRobot::enterUpdateMode() {
 bool MicroBoxRobot::isInUpdateMode() const {
     return firmwareUpdate && firmwareUpdate->isInUpdateMode();
 }
+#endif
