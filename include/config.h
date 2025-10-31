@@ -14,9 +14,9 @@
 #ifndef LED_BUILTIN
 #define LED_BUILTIN 33          // Встроенный светодиод ESP32CAM
 #endif
-#define FLASH_LED_PIN 4         // Пин встроенной вспышки ESP32CAM
 
 // Пины для нашего проекта
+// Вспышка камеры (пин 4) не используется - вместо неё используем передний неопиксель
 #define BUZZER_PIN 16           // Бузер на пин 16
 #define NEOPIXEL_PIN 2          // Адресные светодиоды на пин 2
 #define NEOPIXEL_COUNT 3        // Всего 3 светодиода (2 сзади, 1 спереди)
