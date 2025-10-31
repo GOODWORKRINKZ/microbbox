@@ -329,6 +329,12 @@ void MicroBoxRobot::initMotors() {
 void MicroBoxRobot::initLEDs() {
     DEBUG_PRINTLN("Инициализация светодиодов...");
     
+    // Настройка белого LED на пине 4 (как в Scout32)
+    ledcSetup(NEOPIXEL_LED_CHANNEL, 5000, 8); // 5kHz, 8-bit
+    ledcAttachPin(NEOPIXEL_PIN, NEOPIXEL_LED_CHANNEL);
+    ledcWrite(NEOPIXEL_LED_CHANNEL, 0); // Выключен по умолчанию
+    
+    // Инициализация NeoPixel на пине 2
     pixels = new Adafruit_NeoPixel(NEOPIXEL_COUNT, NEOPIXEL_PIN, NEO_GRB + NEO_KHZ800);
     pixels->begin();
     pixels->setBrightness(LED_BRIGHTNESS_DEFAULT);
