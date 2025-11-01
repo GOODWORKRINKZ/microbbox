@@ -40,6 +40,35 @@
             <div class="stream-overlay">
                 <div class="crosshair"></div>
             </div>
+            <!-- T-800 Vision Overlay -->
+            <div id="t800Overlay" class="t800-overlay hidden">
+                <div class="t800-scanline"></div>
+                <div class="t800-hud">
+                    <div class="t800-reticle"></div>
+                    <div class="t800-data top-left">
+                        <div class="t800-text">CYBERDYNE SYSTEMS</div>
+                        <div class="t800-text">SERIES 800 MODEL 101</div>
+                        <div class="t800-text">CPU: 6502 @ 1MHZ</div>
+                        <div class="t800-text">MEM: <span id="t800Mem">0x2F8A</span></div>
+                    </div>
+                    <div class="t800-data top-right">
+                        <div class="t800-text">TARGET ACQUISITION</div>
+                        <div class="t800-text">SCAN: <span id="t800Scan">ACTIVE</span></div>
+                        <div class="t800-text">THREAT: <span id="t800Threat">NONE</span></div>
+                    </div>
+                    <div class="t800-data bottom-left">
+                        <div class="t800-text">PWR: <span id="t800Power">100%</span></div>
+                        <div class="t800-text">TEMP: <span id="t800Temp">37°C</span></div>
+                        <div class="t800-text">TIME: <span id="t800Time">00:00:00</span></div>
+                    </div>
+                    <div class="t800-data bottom-right">
+                        <div class="t800-text">MOTOR SYS: <span id="t800Motor">NOMINAL</span></div>
+                        <div class="t800-text">OPTICAL: <span id="t800Optical">ONLINE</span></div>
+                        <div class="t800-text">NET CPU: <span id="t800Net">ACTIVE</span></div>
+                    </div>
+                    <div class="t800-scanner"></div>
+                </div>
+            </div>
         </div>
 
         <!-- Панель управления для ПК -->
@@ -70,6 +99,7 @@
                         <option value="police">Полиция</option>
                         <option value="fire">Пожарные</option>
                         <option value="ambulance">Скорая</option>
+                        <option value="terminator">T-800 🤖</option>
                     </select>
                 </div>
 
@@ -148,6 +178,9 @@
                     </label>
                     <label>
                         <input type="radio" name="effectMode" value="ambulance"> Скорая помощь
+                    </label>
+                    <label>
+                        <input type="radio" name="effectMode" value="terminator"> T-800 (Терминатор) 🤖
                     </label>
                 </div>
 
