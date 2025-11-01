@@ -4,6 +4,12 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>МикРоББокс - Управление</title>
+    <!-- Google Fonts - Lato -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Lato:wght@300;400;700;900&display=swap" rel="stylesheet">
+    <!-- Font Awesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" integrity="sha512-DTOQO9RWCH3ppGqcWaEA1BIZOC6xxalwEsw9c2QQeAIftl+Vegovlnee1c9QX4TctnWMn13TZye+giMm8e2LwA==" crossorigin="anonymous" referrerpolicy="no-referrer" />
     <link rel="stylesheet" href="styles.css">
     <link rel="icon" type="image/x-icon" href="favicon.ico">
     <meta name="apple-mobile-web-app-capable" content="yes">
@@ -13,10 +19,10 @@
 </head>
 <body>
     <!-- Кнопка fullscreen -->
-    <button id="fullscreenBtn" class="fullscreen-btn" title="Полноэкранный режим">⛶</button>
+    <button id="fullscreenBtn" class="fullscreen-btn" title="Полноэкранный режим"><i class="fas fa-expand"></i></button>
     
     <!-- Кнопка входа в VR -->
-    <button id="vrBtn" class="vr-btn hidden" title="Войти в VR режим">🥽 VR</button>
+    <button id="vrBtn" class="vr-btn hidden" title="Войти в VR режим"><i class="fas fa-vr-cardboard"></i> VR</button>
     
     <div id="loading" class="loading-screen">
         <div class="loader"></div>
@@ -77,13 +83,13 @@
                 <div class="control-section">
                     <h3>Управление</h3>
                     <div class="control-buttons">
-                        <button class="control-btn" data-direction="forward">↑</button>
+                        <button class="control-btn" data-direction="forward"><i class="fas fa-arrow-up"></i></button>
                         <div class="middle-row">
-                            <button class="control-btn" data-direction="left">←</button>
-                            <button class="control-btn stop-btn" data-direction="stop">⏹</button>
-                            <button class="control-btn" data-direction="right">→</button>
+                            <button class="control-btn" data-direction="left"><i class="fas fa-arrow-left"></i></button>
+                            <button class="control-btn stop-btn" data-direction="stop"><i class="fas fa-stop"></i></button>
+                            <button class="control-btn" data-direction="right"><i class="fas fa-arrow-right"></i></button>
                         </div>
-                        <button class="control-btn" data-direction="backward">↓</button>
+                        <button class="control-btn" data-direction="backward"><i class="fas fa-arrow-down"></i></button>
                     </div>
                 </div>
                 
@@ -95,16 +101,16 @@
                         <option value="police">Полиция</option>
                         <option value="fire">Пожарные</option>
                         <option value="ambulance">Скорая</option>
-                        <option value="terminator">T-800 🤖</option>
+                        <option value="terminator">T-800 <i class="fas fa-robot"></i></option>
                     </select>
                 </div>
 
                 <div class="control-section">
                     <h3>Дополнительно</h3>
-                    <button id="flashlightBtn" class="feature-btn">💡 Фонарик</button>
-                    <button id="hornBtn" class="feature-btn">🔊 Сигнал</button>
-                    <button id="updateBtn" class="feature-btn update-btn">🔄 Обновление</button>
-                    <button id="helpBtn" class="feature-btn">❓ Справка</button>
+                    <button id="flashlightBtn" class="feature-btn"><i class="fas fa-lightbulb"></i> Фонарик</button>
+                    <button id="hornBtn" class="feature-btn"><i class="fas fa-volume-high"></i> Сигнал</button>
+                    <button id="updateBtn" class="feature-btn update-btn"><i class="fas fa-rotate"></i> Обновление</button>
+                    <button id="helpBtn" class="feature-btn"><i class="fas fa-circle-question"></i> Справка</button>
                 </div>
             </div>
         </div>
@@ -127,12 +133,12 @@
 
             <!-- Мобильная панель режимов -->
             <div class="mobile-panel">
-                <button id="mobileSettings" class="panel-btn">⚙️</button>
-                <button id="mobileFlashlight" class="panel-btn">💡</button>
-                <button id="mobileHorn" class="panel-btn">🔊</button>
-                <button id="mobileEffects" class="panel-btn">✨</button>
-                <button id="mobileUpdate" class="panel-btn">🔄</button>
-                <button id="mobileHelp" class="panel-btn">❓</button>
+                <button id="mobileSettings" class="panel-btn"><i class="fas fa-gear"></i></button>
+                <button id="mobileFlashlight" class="panel-btn"><i class="fas fa-lightbulb"></i></button>
+                <button id="mobileHorn" class="panel-btn"><i class="fas fa-volume-high"></i></button>
+                <button id="mobileEffects" class="panel-btn"><i class="fas fa-sparkles"></i></button>
+                <button id="mobileUpdate" class="panel-btn"><i class="fas fa-rotate"></i></button>
+                <button id="mobileHelp" class="panel-btn"><i class="fas fa-circle-question"></i></button>
             </div>
         </div>
 
@@ -150,7 +156,7 @@
         <!-- Модальное окно настроек -->
         <div id="settingsModal" class="modal hidden">
             <div class="modal-content">
-                <span class="close">&times;</span>
+                <span class="close"><i class="fas fa-xmark"></i></span>
                 <h2>Настройки МикРоББокс</h2>
                 
                 <div class="settings-section">
@@ -168,7 +174,7 @@
                         <input type="radio" name="effectMode" value="ambulance"> Скорая помощь
                     </label>
                     <label>
-                        <input type="radio" name="effectMode" value="terminator"> T-800 (Терминатор) 🤖
+                        <input type="radio" name="effectMode" value="terminator"> T-800 (Терминатор) <i class="fas fa-robot"></i>
                     </label>
                 </div>
 
@@ -201,7 +207,7 @@
                 </div>
 
                 <div class="settings-section">
-                    <h3>🔄 Обновление прошивки</h3>
+                    <h3><i class="fas fa-rotate"></i> Обновление прошивки</h3>
                     <div id="updateInfo" class="update-info">
                         <p>Текущая версия: <strong id="currentVersion">Загрузка...</strong></p>
                         <p id="releaseName"></p>
@@ -250,27 +256,27 @@
         <!-- Модальное окно справки -->
         <div id="helpModal" class="modal hidden">
             <div class="modal-content help-modal-content">
-                <span class="close help-close">&times;</span>
-                <h2>🤖 МикРоББокс - Дифференциальное Управление</h2>
+                <span class="close help-close"><i class="fas fa-xmark"></i></span>
+                <h2><i class="fas fa-robot"></i> МикРоББокс - Дифференциальное Управление</h2>
                 <p>Демонстрация работы джойстиков в дифференциальном режиме</p>
                 
                 <div class="help-section">
-                    <h3>✨ Особенности Дифференциального Режима</h3>
+                    <h3><i class="fas fa-sparkles"></i> Особенности Дифференциального Режима</h3>
                     <div class="help-feature-grid">
                         <div class="help-feature-box">
-                            <h4>◄═══► Левый Слот</h4>
+                            <h4><i class="fas fa-left-right"></i> Левый Слот</h4>
                             <p><strong>Горизонтальный слайдер</strong></p>
                             <p>Управление поворотом робота (влево/вправо)</p>
                             <p>Круг движется только по горизонтали</p>
                         </div>
                         <div class="help-feature-box">
-                            <h4>▲ Правый Слот ▼</h4>
+                            <h4><i class="fas fa-up-down"></i> Правый Слот</h4>
                             <p><strong>Вертикальный слайдер</strong></p>
                             <p>Управление скоростью (вперед/назад)</p>
                             <p>Круг движется только по вертикали</p>
                         </div>
                         <div class="help-feature-box">
-                            <h4>⚙️ Принцип Работы</h4>
+                            <h4><i class="fas fa-gear"></i> Принцип Работы</h4>
                             <p><strong>Дифференциальная передача</strong></p>
                             <p>Левый мотор = Скорость + Поворот</p>
                             <p>Правый мотор = Скорость - Поворот</p>
@@ -317,7 +323,7 @@
                 </div>
 
                 <div class="help-diagram">
-                    <h3>📐 Формулы Расчета Скорости Моторов</h3>
+                    <h3><i class="fas fa-calculator"></i> Формулы Расчета Скорости Моторов</h3>
                     <div class="help-formula">
                         <strong>Входные данные:</strong><br>
                         • speed = rightJoystick.y × speedSensitivity<br>
@@ -338,19 +344,19 @@
                 </div>
 
                 <div class="help-section">
-                    <h3>🎮 Как Использовать</h3>
+                    <h3><i class="fas fa-gamepad"></i> Как Использовать</h3>
                     <div class="help-feature-grid">
                         <div class="help-feature-box">
                             <h4>1️⃣ Движение Вперед/Назад</h4>
                             <p>Используйте <strong>ПРАВЫЙ СЛОТ</strong></p>
-                            <p>▲ Сдвиньте круг вверх = вперед</p>
-                            <p>▼ Сдвиньте круг вниз = назад</p>
+                            <p><i class="fas fa-arrow-up"></i> Сдвиньте круг вверх = вперед</p>
+                            <p><i class="fas fa-arrow-down"></i> Сдвиньте круг вниз = назад</p>
                         </div>
                         <div class="help-feature-box">
                             <h4>2️⃣ Повороты</h4>
                             <p>Используйте <strong>ЛЕВЫЙ СЛОТ</strong></p>
-                            <p>◄ Сдвиньте круг влево = поворот налево</p>
-                            <p>► Сдвиньте круг вправо = поворот направо</p>
+                            <p><i class="fas fa-arrow-left"></i> Сдвиньте круг влево = поворот налево</p>
+                            <p><i class="fas fa-arrow-right"></i> Сдвиньте круг вправо = поворот направо</p>
                         </div>
                         <div class="help-feature-box">
                             <h4>3️⃣ Комбинированное Управление</h4>
