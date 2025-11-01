@@ -455,41 +455,27 @@ void FirmwareUpdate::handleDownloadAndInstall(AsyncWebServerRequest *request) {
         return;
     }
     
-    // ВАЖНО: Устанавливаем статус ПЕРЕД отправкой ответа
-    // Это позволит фронтенду сразу увидеть начало процесса
-    updating = true;
-    currentState = UpdateState::DOWNLOADING;
-    updateStatus = "Подготовка к скачиванию прошивки";
-    updateStartTime = millis();
-    updateReceived = 0;
-    currentProgress = 0;
+    // НОВЫЙ ПОДХОД: Сохраняем URL в EEPROM и перезагружаемся в безопасном режиме
+    // Это освободит память камеры и веб-сервера для OTA обновления
+    DEBUG_PRINTLN("Сохраняем URL обновления и планируем перезагрузку в безопасном режиме...");
     
-    // Отправляем ответ с информацией о начале процесса
+    // Сохраняем URL обновления
+    preferences.begin("ota", false);
+    preferences.putString("url", url);
+    preferences.end();
+    
+    // Устанавливаем флаг OTA
+    setOTAPending(true);
+    
+    // Отправляем ответ с информацией о перезагрузке
     AsyncWebServerResponse *response = request->beginResponse(200, "application/json", 
-        "{\"status\":\"ok\",\"message\":\"Начато скачивание прошивки\",\"updating\":true}");
+        "{\"status\":\"ok\",\"message\":\"Устройство перезагружается для обновления\",\"rebooting\":true}");
     response->addHeader("Access-Control-Allow-Origin", "*");
     request->send(response);
     
-    // ВАЖНО: Блокирующая операция скачивания и установки прошивки
-    // Это нормально для OTA обновления - нельзя прерывать процесс
-    // Веб-сервер будет недоступен во время обновления (~30-60 секунд)
-    // НО мы используем yield() и esp_task_wdt_reset() внутри для предотвращения watchdog timeout
-    // Фронтенд должен опрашивать /api/update/status для отображения прогресса
-    
-    // Скачиваем и устанавливаем
-    bool success = downloadAndInstallFirmware(url);
-    
-    if (success) {
-        DEBUG_PRINTLN("Прошивка успешно установлена, планируем перезагрузку...");
-        // Планируем перезагрузку через 2 секунды
-        shouldReboot = true;
-        rebootScheduledTime = millis() + 2000;
-    } else {
-        DEBUG_PRINTLN("Ошибка установки прошивки");
-        currentState = UpdateState::FAILED;
-        updateStatus = "Ошибка установки прошивки";
-        updating = false; // Сбрасываем флаг при ошибке
-    }
+    // Даем время на отправку ответа и перезагружаемся
+    delay(1000);
+    ESP.restart();
 }
 
 bool FirmwareUpdate::downloadAndInstallFirmware(const String& url) {
@@ -662,4 +648,31 @@ bool FirmwareUpdate::downloadAndInstallFirmware(const String& url) {
         updating = false;
         return false;
     }
+}
+
+// Static методы для управления флагом OTA обновления
+bool FirmwareUpdate::isOTAPending() {
+    Preferences prefs;
+    if (!prefs.begin("ota", true)) {  // Read-only
+        DEBUG_PRINTLN("ОШИБКА: Не удалось открыть preferences для чтения OTA флага");
+        return false;  // По умолчанию считаем что OTA не ожидается
+    }
+    bool pending = prefs.getBool("pending", false);
+    prefs.end();
+    return pending;
+}
+
+void FirmwareUpdate::setOTAPending(bool pending) {
+    Preferences prefs;
+    if (!prefs.begin("ota", false)) {  // Read-write
+        DEBUG_PRINTLN("ОШИБКА: Не удалось открыть preferences для записи OTA флага");
+        return;
+    }
+    prefs.putBool("pending", pending);
+    prefs.end();
+    DEBUG_PRINTF("OTA pending flag set to: %s\n", pending ? "true" : "false");
+}
+
+void FirmwareUpdate::clearOTAPending() {
+    setOTAPending(false);
 }

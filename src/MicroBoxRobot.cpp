@@ -90,6 +90,94 @@ bool MicroBoxRobot::init() {
     return true;
 }
 
+bool MicroBoxRobot::initSafeModeForOTA() {
+    DEBUG_PRINTLN("=== БЕЗОПАСНЫЙ РЕЖИМ ДЛЯ OTA ОБНОВЛЕНИЯ ===");
+    DEBUG_PRINTLN("Инициализация минимальных компонентов для обновления прошивки...");
+    
+    // НЕ инициализируем камеру - освобождаем память и LEDC каналы
+    // НЕ инициализируем моторы - не нужны для OTA
+    // НЕ инициализируем NeoPixel и Buzzer - экономим ресурсы
+    
+    // Инициализация настроек WiFi
+    wifiSettings = new WiFiSettings();
+    if (!wifiSettings->init()) {
+        DEBUG_PRINTLN("ОШИБКА: Не удалось инициализировать настройки WiFi");
+        return false;
+    }
+    
+    // Инициализация системы обновления
+    firmwareUpdate = new FirmwareUpdate();
+    
+    // Запуск WiFi с использованием сохраненных настроек
+    if (wifiSettings->getMode() == WiFiMode::CLIENT) {
+        // Пытаемся подключиться к сохраненной сети
+        if (!connectToSavedWiFi()) {
+            DEBUG_PRINTLN("Не удалось подключиться к сохраненной WiFi, запускаем AP режим");
+            startWiFiAP();
+        }
+    } else {
+        // Режим точки доступа
+        startWiFiAP();
+    }
+    
+    // НЕ запускаем mDNS - не критично для OTA
+    
+    // Минимальный веб-сервер только для OTA
+    server = new AsyncWebServer(WIFI_PORT);
+    
+    // Регистрируем только обработчики OTA
+    firmwareUpdate->init(server);
+    
+    // Добавляем простой индикатор статуса
+    server->on("/", HTTP_GET, [](AsyncWebServerRequest *request){
+        request->send(200, "text/html", 
+            "<html><body><h1>OTA Update Mode</h1>"
+            "<p>Device is in safe mode for firmware update.</p>"
+            "<p>Please wait while update completes...</p>"
+            "</body></html>");
+    });
+    
+    server->begin();
+    DEBUG_PRINTLN("Минимальный веб-сервер запущен");
+    
+    // НЕ запускаем камера-сервер - основной источник проблем с памятью
+    
+    // Теперь выполняем OTA обновление
+    DEBUG_PRINTLN("Читаем URL обновления из EEPROM...");
+    Preferences prefs;
+    prefs.begin("ota", true);
+    String url = prefs.getString("url", "");
+    prefs.end();
+    
+    if (url.length() == 0) {
+        DEBUG_PRINTLN("ОШИБКА: URL обновления не найден в EEPROM");
+        FirmwareUpdate::clearOTAPending();
+        return false;
+    }
+    
+    DEBUG_PRINTF("URL обновления: %s\n", url.c_str());
+    DEBUG_PRINTLN("Начинаем загрузку и установку прошивки...");
+    
+    // Выполняем обновление - теперь у нас достаточно памяти
+    bool success = firmwareUpdate->downloadAndInstallFirmware(url);
+    
+    // Очистка флага OTA
+    FirmwareUpdate::clearOTAPending();
+    
+    if (success) {
+        DEBUG_PRINTLN("✓ Обновление успешно завершено!");
+        DEBUG_PRINTLN("Перезагрузка через 2 секунды...");
+    } else {
+        DEBUG_PRINTLN("✗ Ошибка обновления прошивки");
+        DEBUG_PRINTLN("Перезагружаемся в нормальном режиме...");
+    }
+    
+    delay(2000);
+    ESP.restart();
+    
+    return success;  // Unreachable, но компилятор требует return для bool функции
+}
+
 void MicroBoxRobot::loop() {
     unsigned long currentTime = millis();
     

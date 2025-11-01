@@ -42,11 +42,17 @@ public:
     
     // Обновление
     void registerUpdateHandlers(AsyncWebServer* server);
+    bool downloadAndInstallFirmware(const String& url);  // Public для safe mode
     
     // Статус
     bool isUpdating() const { return updating; }
     String getUpdateStatus() const { return updateStatus; }
     int getUpdateProgress() const { return currentProgress; }
+    
+    // Safe mode для OTA обновлений
+    static bool isOTAPending();
+    static void setOTAPending(bool pending);
+    static void clearOTAPending();
 
 private:
     enum class UpdateState {
@@ -63,9 +69,6 @@ private:
     void handleCheckUpdates(AsyncWebServerRequest *request);
     void handleCurrentVersion(AsyncWebServerRequest *request);
     void handleDownloadAndInstall(AsyncWebServerRequest *request);
-    
-    // Метод для скачивания прошивки с URL
-    bool downloadAndInstallFirmware(const String& url);
     
     // Парсинг GitHub API
     bool parseGitHubRelease(const String& json, ReleaseInfo& releaseInfo);
