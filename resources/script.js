@@ -1324,8 +1324,14 @@ class MicroBoxController {
                 document.getElementById('newReleaseName').textContent = `Релиз: ${releaseName}`;
                 document.getElementById('releaseNotes').textContent = releaseNotes;
                 
-                // Store download URL for later
+                // Store download URL and release info for later
                 this.updateDownloadUrl = downloadUrl;
+                this.latestReleaseInfo = {
+                    version: latestVersion,
+                    releaseName: releaseName,
+                    releaseNotes: releaseNotes,
+                    downloadUrl: downloadUrl
+                };
                 
                 console.log('Доступно обновление:', {
                     current: currentVersion,
@@ -1370,9 +1376,86 @@ class MicroBoxController {
         return false;
     }
     
+    // Функция для показа экрана обновления прошивки с глитч-эффектом
+    showFirmwareUpdateScreen(releaseInfo) {
+        // Создаем оверлей
+        const overlay = document.createElement('div');
+        overlay.className = 'firmware-update-overlay glitch-effect';
+        overlay.id = 'firmwareUpdateOverlay';
+        
+        overlay.innerHTML = `
+            <div class="firmware-scanner"></div>
+            <div class="firmware-glitch-text glitching">ОБНОВЛЕНИЕ СИСТЕМЫ</div>
+            
+            <div class="firmware-release-info">
+                <h3>Новая прошивка</h3>
+                <p><strong>Версия:</strong> ${releaseInfo.version}</p>
+                <p><strong>Релиз:</strong> ${releaseInfo.releaseName || 'Без названия'}</p>
+                ${releaseInfo.releaseNotes ? `<p><strong>Изменения:</strong></p><p style="font-size: 0.9em; opacity: 0.8;">${releaseInfo.releaseNotes.substring(0, 200)}${releaseInfo.releaseNotes.length > 200 ? '...' : ''}</p>` : ''}
+            </div>
+            
+            <div class="firmware-warnings">
+                <strong>⚠️ Внимание:</strong>
+                <ul>
+                    <li>Не отключайте питание</li>
+                    <li>Процесс займет 1-2 минуты</li>
+                    <li>Устройство автоматически перезагрузится</li>
+                </ul>
+            </div>
+            
+            <div class="firmware-spinner"></div>
+            
+            <div class="firmware-status" id="firmwareStatus">
+                Подготовка к загрузке...
+            </div>
+            
+            <div class="firmware-progress">
+                <div class="firmware-progress-fill" id="firmwareProgressFill"></div>
+                <div class="firmware-progress-text" id="firmwareProgressText">0%</div>
+            </div>
+        `;
+        
+        document.body.appendChild(overlay);
+        return overlay;
+    }
+    
+    // Функция для обновления статуса на экране обновления
+    updateFirmwareStatus(status, progress) {
+        const statusEl = document.getElementById('firmwareStatus');
+        const progressFill = document.getElementById('firmwareProgressFill');
+        const progressText = document.getElementById('firmwareProgressText');
+        
+        if (statusEl) statusEl.textContent = status;
+        if (progressFill) progressFill.style.width = progress + '%';
+        if (progressText) progressText.textContent = progress + '%';
+    }
+    
+    // Функция для скрытия оверлея с финальным глитч-эффектом и перезагрузкой страницы
+    hideFirmwareUpdateScreen() {
+        const overlay = document.getElementById('firmwareUpdateOverlay');
+        if (overlay) {
+            const glitchText = overlay.querySelector('.firmware-glitch-text');
+            if (glitchText) {
+                glitchText.textContent = 'ПЕРЕЗАГРУЗКА...';
+                glitchText.classList.add('glitching');
+            }
+            
+            // Финальный глитч эффект перед перезагрузкой
+            setTimeout(() => {
+                overlay.classList.add('glitch-effect');
+                
+                // Перезагрузка страницы через 2 секунды
+                setTimeout(() => {
+                    window.location.reload();
+                }, 2000);
+            }, 1000);
+        }
+    }
+
     async downloadAndInstallUpdate() {
-        if (!this.updateDownloadUrl) {
-            alert('URL обновления не найден');
+        // Проверяем что есть информация о релизе
+        if (!this.updateDownloadUrl || !this.latestReleaseInfo) {
+            alert('Сначала проверьте наличие обновлений');
             return;
         }
         
@@ -1397,20 +1480,16 @@ class MicroBoxController {
         
         const maxPolls = TOTAL_TIMEOUT_MS / POLL_INTERVAL_MS;
         
-        const progressDiv = document.getElementById('uploadProgress');
-        const progressFill = document.getElementById('progressFill');
-        const progressText = document.getElementById('progressText');
-        const downloadBtn = document.getElementById('downloadUpdateBtn');
-        
         try {
-            // Показываем прогресс
-            progressDiv.classList.remove('hidden');
-            downloadBtn.disabled = true;
-            downloadBtn.textContent = 'Загрузка...';
-            progressFill.style.width = '0%';
-            progressText.textContent = '0%';
+            // Показываем экран обновления с глитч-эффектом
+            const overlay = this.showFirmwareUpdateScreen(this.latestReleaseInfo);
+            
+            // Небольшая задержка для эффекта
+            await new Promise(resolve => setTimeout(resolve, 1000));
             
             // Отправляем запрос на бэкенд для скачивания и установки
+            this.updateFirmwareStatus('Отправка запроса на сервер...', 0);
+            
             const formData = new FormData();
             formData.append('url', this.updateDownloadUrl);
             
@@ -1427,7 +1506,7 @@ class MicroBoxController {
             const data = await response.json();
             
             if (data.status === 'ok') {
-                downloadBtn.textContent = 'Установка...';
+                this.updateFirmwareStatus('Загрузка прошивки с GitHub...', 5);
                 
                 // Начинаем опрос статуса обновления
                 let pollCount = 0;
@@ -1444,21 +1523,25 @@ class MicroBoxController {
                             // Сбрасываем счетчик ошибок при успешном ответе
                             consecutiveErrors = 0;
                             
-                            // Обновляем прогресс
-                            progressFill.style.width = status.progress + '%';
-                            progressText.textContent = status.progress + '%';
+                            // Обновляем прогресс на экране обновления
+                            let statusText = status.status;
+                            if (status.state === UpdateState.DOWNLOADING) {
+                                statusText = 'Загрузка прошивки: ' + statusText;
+                            } else if (status.state === UpdateState.UPLOADING) {
+                                statusText = 'Установка прошивки: ' + statusText;
+                            }
+                            
+                            this.updateFirmwareStatus(statusText, status.progress);
                             
                             // Проверяем состояние
                             if (status.state === UpdateState.SUCCESS) {
                                 clearInterval(pollInterval);
-                                progressFill.style.width = '100%';
-                                progressText.textContent = '100%';
-                                alert('Обновление успешно установлено! Устройство перезагружается...');
+                                this.updateFirmwareStatus('Обновление завершено! Перезагрузка...', 100);
                                 
-                                // Ждем перезагрузки
+                                // Показываем финальный глитч и перезагружаем
                                 setTimeout(() => {
-                                    window.location.reload();
-                                }, 5000);
+                                    this.hideFirmwareUpdateScreen();
+                                }, 1500);
                             } else if (status.state === UpdateState.FAILED) {
                                 clearInterval(pollInterval);
                                 throw new Error('Ошибка обновления: ' + status.status);
@@ -1477,11 +1560,43 @@ class MicroBoxController {
                             clearInterval(pollInterval);
                             throw new Error('Не удалось получить статус обновления. Возможно, устройство недоступно.');
                         }
+                        
+                        // В конце процесса (когда уже идет перезагрузка) ошибки - это нормально
+                        if (elapsedTimeMs > EARLY_ERROR_PERIOD_MS && consecutiveErrors >= 10) {
+                            // Считаем что обновление прошло успешно и устройство перезагружается
+                            clearInterval(pollInterval);
+                            this.updateFirmwareStatus('Устройство перезагружается...', 100);
+                            setTimeout(() => {
+                                this.hideFirmwareUpdateScreen();
+                            }, 2000);
+                        }
                     }
                     
                     // Таймаут
                     if (pollCount >= maxPolls) {
                         clearInterval(pollInterval);
+                        alert('Превышено время ожидания. Устройство может перезагружаться. Проверьте статус вручную.');
+                        if (overlay && overlay.parentNode) {
+                            overlay.parentNode.removeChild(overlay);
+                        }
+                    }
+                }, POLL_INTERVAL_MS);
+            } else {
+                throw new Error(data.message || 'Неизвестная ошибка');
+            }
+            
+        } catch (error) {
+            console.error('Error during automatic update:', error);
+            
+            // Убираем оверлей при ошибке
+            const overlay = document.getElementById('firmwareUpdateOverlay');
+            if (overlay && overlay.parentNode) {
+                overlay.parentNode.removeChild(overlay);
+            }
+            
+            alert('Ошибка автоматического обновления: ' + error.message + '\n\nПожалуйста, скачайте файл вручную с GitHub и загрузите через форму ниже.');
+        }
+    }
                         alert('Превышено время ожидания. Проверьте статус устройства вручную.');
                         downloadBtn.disabled = false;
                         downloadBtn.textContent = 'Скачать и установить автоматически';
