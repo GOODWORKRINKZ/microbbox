@@ -5,10 +5,12 @@
 #include <WiFi.h>
 #include <ESPAsyncWebServer.h>
 #include <AsyncTCP.h>
+#include <ESPmDNS.h>
 #include <esp_camera.h>
 #include <Adafruit_NeoPixel.h>
 #include "config.h"
 #include "FirmwareUpdate.h"
+#include "WiFiSettings.h"
 
 class MicroBoxRobot {
 public:
@@ -23,8 +25,14 @@ public:
     // WiFi управление
     void startWiFiAP();
     bool connectWiFiDHCP(const char* ssid, const char* password);
+    bool connectToSavedWiFi();
     bool isWiFiConnected();
     IPAddress getIP();
+    String getDeviceName();
+    
+    // WiFi настройки
+    bool saveWiFiConfig(const String& ssid, const String& password, WiFiMode mode);
+    WiFiSettings* getWiFiSettings() { return wifiSettings; }
 
     // Камера
     bool initCamera();
@@ -82,6 +90,7 @@ private:
     void initLEDs();
     void initBuzzer();
     void initWebServer();
+    void initMDNS();
     
     void handleRoot(AsyncWebServerRequest *request);
     void handleStream(AsyncWebServerRequest *request);
@@ -99,6 +108,7 @@ private:
     Adafruit_NeoPixel* pixels;
 #endif
     FirmwareUpdate* firmwareUpdate;
+    WiFiSettings* wifiSettings;
     
     // Режимы
     ControlMode currentControlMode;

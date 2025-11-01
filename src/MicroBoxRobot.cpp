@@ -15,6 +15,7 @@ MicroBoxRobot::MicroBoxRobot() :
     pixels(nullptr),
 #endif
     firmwareUpdate(nullptr),
+    wifiSettings(nullptr),
     currentControlMode(ControlMode::TANK),
 #if defined(FEATURE_NEOPIXEL) || defined(FEATURE_BUZZER)
     currentEffectMode(EffectMode::NORMAL),
@@ -36,6 +37,13 @@ MicroBoxRobot::~MicroBoxRobot() {
 
 bool MicroBoxRobot::init() {
     DEBUG_PRINTLN("Инициализация МикроББокс...");
+    
+    // Инициализация настроек WiFi
+    wifiSettings = new WiFiSettings();
+    if (!wifiSettings->init()) {
+        DEBUG_PRINTLN("ОШИБКА: Не удалось инициализировать настройки WiFi");
+        return false;
+    }
     
     // Инициализация системы обновления
     firmwareUpdate = new FirmwareUpdate();
@@ -60,15 +68,20 @@ bool MicroBoxRobot::init() {
     initBuzzer();
 #endif
     
-    // Запуск WiFi
-#if WIFI_MODE_CLIENT
-    if (!connectWiFiDHCP(WIFI_SSID_CLIENT, WIFI_PASSWORD_CLIENT)) {
-        DEBUG_PRINTLN("Не удалось подключиться к WiFi, запускаем AP режим");
+    // Запуск WiFi с использованием сохраненных настроек
+    if (wifiSettings->getMode() == WiFiMode::CLIENT) {
+        // Пытаемся подключиться к сохраненной сети
+        if (!connectToSavedWiFi()) {
+            DEBUG_PRINTLN("Не удалось подключиться к сохраненной WiFi, запускаем AP режим");
+            startWiFiAP();
+        }
+    } else {
+        // Режим точки доступа
         startWiFiAP();
     }
-#else
-    startWiFiAP();
-#endif
+    
+    // Инициализация mDNS
+    initMDNS();
     
     // Инициализация веб-сервера
     initWebServer();
@@ -144,6 +157,11 @@ void MicroBoxRobot::shutdown() {
         firmwareUpdate = nullptr;
     }
     
+    if (wifiSettings) {
+        delete wifiSettings;
+        wifiSettings = nullptr;
+    }
+    
     initialized = false;
 }
 
@@ -152,13 +170,14 @@ void MicroBoxRobot::startWiFiAP() {
     
     WiFi.mode(WIFI_AP);
     
-    // Установка hostname для AP режима
-    String mac = WiFi.macAddress();
-    mac.replace(":", "");
-    String hostname = "MICROBBOX-" + mac.substring(6);
-    WiFi.setHostname(hostname.c_str());
+    // Получаем имя устройства из настроек
+    String deviceName = wifiSettings->getDeviceName();
     
-    WiFi.softAP(WIFI_SSID_AP, WIFI_PASSWORD_AP, WIFI_CHANNEL, WIFI_HIDDEN, WIFI_MAX_CONNECTIONS);
+    // Установка hostname для AP режима
+    WiFi.setHostname(deviceName.c_str());
+    
+    // Используем имя устройства в SSID
+    WiFi.softAP(deviceName.c_str(), WIFI_PASSWORD_AP, WIFI_CHANNEL, WIFI_HIDDEN, WIFI_MAX_CONNECTIONS);
     
     IPAddress ip(AP_IP_ADDR);
     IPAddress gateway(AP_GATEWAY);
@@ -169,10 +188,12 @@ void MicroBoxRobot::startWiFiAP() {
     wifiAPMode = true;
     wifiConnected = true;
     
-    DEBUG_PRINT("WiFi AP запущена. IP: ");
+    DEBUG_PRINT("WiFi AP запущена. SSID: ");
+    DEBUG_PRINTLN(deviceName);
+    DEBUG_PRINT("IP: ");
     DEBUG_PRINTLN(WiFi.softAPIP());
     DEBUG_PRINT("Hostname: ");
-    DEBUG_PRINTLN(hostname);
+    DEBUG_PRINTLN(deviceName);
 }
 
 bool MicroBoxRobot::connectWiFiDHCP(const char* ssid, const char* password) {
@@ -180,11 +201,11 @@ bool MicroBoxRobot::connectWiFiDHCP(const char* ssid, const char* password) {
     
     WiFi.mode(WIFI_STA);
     
+    // Получаем имя устройства из настроек
+    String deviceName = wifiSettings->getDeviceName();
+    
     // Установка hostname перед подключением
-    String mac = WiFi.macAddress();
-    mac.replace(":", "");
-    String hostname = "MICROBBOX-" + mac.substring(6);
-    WiFi.setHostname(hostname.c_str());
+    WiFi.setHostname(deviceName.c_str());
     
     WiFi.begin(ssid, password);
     
@@ -202,7 +223,7 @@ bool MicroBoxRobot::connectWiFiDHCP(const char* ssid, const char* password) {
         DEBUG_PRINT("Подключено к WiFi. IP: ");
         DEBUG_PRINTLN(WiFi.localIP());
         DEBUG_PRINT("Hostname: ");
-        DEBUG_PRINTLN(hostname);
+        DEBUG_PRINTLN(deviceName);
         return true;
     } else {
         DEBUG_PRINTLN();
@@ -491,6 +512,100 @@ void MicroBoxRobot::initWebServer() {
             }
         }
     );
+    
+    // WiFi конфигурация - получение текущих настроек
+    server->on("/api/wifi/status", HTTP_GET, [this](AsyncWebServerRequest *request) {
+        String json = "{";
+        json += "\"connected\":" + String(wifiConnected ? "true" : "false") + ",";
+        json += "\"mode\":\"" + String(wifiAPMode ? "AP" : "CLIENT") + "\",";
+        json += "\"ip\":\"" + getIP().toString() + "\",";
+        json += "\"deviceName\":\"" + getDeviceName() + "\",";
+        
+        if (wifiSettings) {
+            json += "\"savedSSID\":\"" + wifiSettings->getSSID() + "\",";
+            json += "\"savedMode\":\"" + String(wifiSettings->getMode() == WiFiMode::CLIENT ? "CLIENT" : "AP") + "\"";
+        }
+        
+        json += "}";
+        request->send(200, "application/json", json);
+    });
+    
+    // WiFi конфигурация - сохранение настроек
+    server->on("/api/wifi/config", HTTP_POST,
+        [this](AsyncWebServerRequest *request) {
+            // Ответ будет отправлен в onBody
+        },
+        NULL,
+        [this](AsyncWebServerRequest *request, uint8_t *data, size_t len, size_t index, size_t total) {
+            static String configBody = "";
+            
+            // Добавляем полученный фрагмент
+            for (size_t i = 0; i < len; i++) {
+                configBody += (char)data[i];
+            }
+            
+            // Если это последний фрагмент
+            if (index + len == total) {
+                DEBUG_PRINT("Получена конфигурация WiFi: ");
+                DEBUG_PRINTLN(configBody);
+                
+                // Простой парсинг JSON
+                String ssid = "";
+                String password = "";
+                WiFiMode mode = WiFiMode::CLIENT;
+                
+                int ssidPos = configBody.indexOf("\"ssid\":\"");
+                if (ssidPos >= 0) {
+                    int start = ssidPos + 8;
+                    int end = configBody.indexOf("\"", start);
+                    if (end > start) {
+                        ssid = configBody.substring(start, end);
+                    }
+                }
+                
+                int passwordPos = configBody.indexOf("\"password\":\"");
+                if (passwordPos >= 0) {
+                    int start = passwordPos + 12;
+                    int end = configBody.indexOf("\"", start);
+                    if (end > start) {
+                        password = configBody.substring(start, end);
+                    }
+                }
+                
+                int modePos = configBody.indexOf("\"mode\":\"");
+                if (modePos >= 0) {
+                    int start = modePos + 8;
+                    int end = configBody.indexOf("\"", start);
+                    if (end > start) {
+                        String modeStr = configBody.substring(start, end);
+                        if (modeStr == "AP") {
+                            mode = WiFiMode::AP;
+                        }
+                    }
+                }
+                
+                // Сохраняем конфигурацию
+                if (ssid.length() > 0) {
+                    if (saveWiFiConfig(ssid, password, mode)) {
+                        request->send(200, "application/json", "{\"status\":\"ok\",\"message\":\"Настройки сохранены. Перезагрузите устройство.\"}");
+                    } else {
+                        request->send(500, "application/json", "{\"status\":\"error\",\"message\":\"Ошибка сохранения настроек\"}");
+                    }
+                } else {
+                    request->send(400, "application/json", "{\"status\":\"error\",\"message\":\"SSID не может быть пустым\"}");
+                }
+                
+                configBody = "";
+            }
+        }
+    );
+    
+    // Перезагрузка устройства
+    server->on("/api/restart", HTTP_POST, [](AsyncWebServerRequest *request) {
+        request->send(200, "application/json", "{\"status\":\"ok\",\"message\":\"Перезагрузка...\"}");
+        delay(1000);
+        ESP.restart();
+    });
     
     // Статические ресурсы
     #ifdef EMBEDDED_RESOURCES_H
@@ -829,4 +944,68 @@ void MicroBoxRobot::enterUpdateMode() {
 
 bool MicroBoxRobot::isInUpdateMode() const {
     return firmwareUpdate && firmwareUpdate->isInUpdateMode();
+}
+
+bool MicroBoxRobot::connectToSavedWiFi() {
+    String ssid = wifiSettings->getSSID();
+    String password = wifiSettings->getPassword();
+    
+    // Проверяем, есть ли сохраненные данные
+    if (ssid.length() == 0) {
+        DEBUG_PRINTLN("Нет сохраненных данных WiFi");
+        return false;
+    }
+    
+    DEBUG_PRINT("Подключение к сохраненной сети: ");
+    DEBUG_PRINTLN(ssid);
+    
+    return connectWiFiDHCP(ssid.c_str(), password.c_str());
+}
+
+String MicroBoxRobot::getDeviceName() {
+    if (wifiSettings) {
+        return wifiSettings->getDeviceName();
+    }
+    return "MICROBBOX";
+}
+
+bool MicroBoxRobot::saveWiFiConfig(const String& ssid, const String& password, WiFiMode mode) {
+    if (!wifiSettings) {
+        return false;
+    }
+    
+    DEBUG_PRINTLN("Сохранение настроек WiFi...");
+    DEBUG_PRINT("SSID: ");
+    DEBUG_PRINTLN(ssid);
+    DEBUG_PRINT("Mode: ");
+    DEBUG_PRINTLN(mode == WiFiMode::CLIENT ? "CLIENT" : "AP");
+    
+    wifiSettings->setSSID(ssid);
+    wifiSettings->setPassword(password);
+    wifiSettings->setMode(mode);
+    
+    return wifiSettings->save();
+}
+
+void MicroBoxRobot::initMDNS() {
+    String deviceName = wifiSettings->getDeviceName();
+    
+    // Убираем MICROBBOX- префикс и оставляем только MAC часть для mDNS
+    String macPart = deviceName.substring(10); // После "MICROBBOX-"
+    macPart.toLowerCase();
+    
+    // Формируем mDNS имя: {6mac}.microbbox
+    String mdnsName = macPart + ".microbbox";
+    
+    DEBUG_PRINT("Инициализация mDNS: ");
+    DEBUG_PRINTLN(mdnsName);
+    
+    if (MDNS.begin(mdnsName.c_str())) {
+        MDNS.addService("http", "tcp", 80);
+        DEBUG_PRINT("mDNS запущен: http://");
+        DEBUG_PRINT(mdnsName);
+        DEBUG_PRINTLN(".local");
+    } else {
+        DEBUG_PRINTLN("Ошибка запуска mDNS");
+    }
 }

@@ -619,4 +619,72 @@ body {
 
 .update-btn:hover {
     background: linear-gradient(145deg, #ff9900, #ff8800);
+}}
+
+/* WiFi Settings Styles */
+.wifi-status {
+    padding: 10px;
+    margin-bottom: 10px;
+    background: rgba(0, 0, 0, 0.3);
+    border-radius: 5px;
+    font-size: 14px;
+}
+
+.settings-section select,
+.settings-section input[type="text"],
+.settings-section input[type="password"] {
+    width: 100%;
+    padding: 10px;
+    margin-top: 5px;
+    margin-bottom: 15px;
+    background: rgba(0, 0, 0, 0.3);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 5px;
+    color: white;
+    font-size: 16px;
+}
+
+.settings-section select:focus,
+.settings-section input[type="text"]:focus,
+.settings-section input[type="password"]:focus {
+    outline: none;
+    border-color: #00ff88;
+}
+
+.btn-secondary {
+    width: 100%;
+    padding: 12px;
+    margin-top: 5px;
+    margin-bottom: 10px;
+    background: linear-gradient(145deg, #4CAF50, #45a049);
+    border: none;
+    border-radius: 8px;
+    color: white;
+    font-size: 16px;
+    cursor: pointer;
+    transition: all 0.3s;
+}
+
+.btn-secondary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+}
+
+.btn-danger {
+    width: 100%;
+    padding: 12px;
+    margin-top: 5px;
+    margin-bottom: 15px;
+    background: linear-gradient(145deg, #f44336, #da190b);
+    border: none;
+    border-radius: 8px;
+    color: white;
+    font-size: 16px;
+    cursor: pointer;
+    transition: all 0.3s;
+}
+
+.btn-danger:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
 }
