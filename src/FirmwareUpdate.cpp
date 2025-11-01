@@ -709,6 +709,44 @@ void FirmwareUpdate::clearOTAPending() {
     // ВАЖНО: Также очищаем сохраненный URL, чтобы избежать путаницы
     prefs.remove("url");
     
+    // ВАЖНО: Также очищаем счетчик попыток
+    prefs.remove("retryCount");
+    
     prefs.end();
-    DEBUG_PRINTLN("OTA pending flag and URL cleared");
+    DEBUG_PRINTLN("OTA pending flag, URL and retry count cleared");
+}
+
+int FirmwareUpdate::getOTARetryCount() {
+    Preferences prefs;
+    if (!prefs.begin("ota", true)) {  // Read-only
+        DEBUG_PRINTLN("ОШИБКА: Не удалось открыть preferences для чтения счетчика попыток OTA");
+        return 0;
+    }
+    int retryCount = prefs.getInt("retryCount", 0);
+    prefs.end();
+    return retryCount;
+}
+
+void FirmwareUpdate::incrementOTARetryCount() {
+    Preferences prefs;
+    if (!prefs.begin("ota", false)) {  // Read-write
+        DEBUG_PRINTLN("ОШИБКА: Не удалось открыть preferences для увеличения счетчика попыток OTA");
+        return;
+    }
+    int retryCount = prefs.getInt("retryCount", 0);
+    retryCount++;
+    prefs.putInt("retryCount", retryCount);
+    prefs.end();
+    DEBUG_PRINTF("OTA retry count incremented to: %d\n", retryCount);
+}
+
+void FirmwareUpdate::clearOTARetryCount() {
+    Preferences prefs;
+    if (!prefs.begin("ota", false)) {  // Read-write
+        DEBUG_PRINTLN("ОШИБКА: Не удалось открыть preferences для очистки счетчика попыток OTA");
+        return;
+    }
+    prefs.remove("retryCount");
+    prefs.end();
+    DEBUG_PRINTLN("OTA retry count cleared");
 }

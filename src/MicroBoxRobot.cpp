@@ -94,6 +94,32 @@ bool MicroBoxRobot::initSafeModeForOTA() {
     DEBUG_PRINTLN("=== БЕЗОПАСНЫЙ РЕЖИМ ДЛЯ OTA ОБНОВЛЕНИЯ ===");
     DEBUG_PRINTLN("Инициализация минимальных компонентов для обновления прошивки...");
     
+    // КРИТИЧНО: Проверяем счетчик попыток ПЕРВЫМ делом
+    int retryCount = FirmwareUpdate::getOTARetryCount();
+    DEBUG_PRINTF("Текущий счетчик попыток OTA: %d\n", retryCount);
+    
+    if (retryCount >= FirmwareUpdate::MAX_OTA_RETRY_ATTEMPTS) {
+        DEBUG_PRINTLN("═══════════════════════════════════════");
+        DEBUG_PRINTLN("  ПРЕВЫШЕНО МАКСИМАЛЬНОЕ КОЛИЧЕСТВО ПОПЫТОК OTA!");
+        DEBUG_PRINTF("  Попыток выполнено: %d из %d\n", retryCount, FirmwareUpdate::MAX_OTA_RETRY_ATTEMPTS);
+        DEBUG_PRINTLN("  Очищаем флаг OTA и загружаемся в нормальном режиме");
+        DEBUG_PRINTLN("═══════════════════════════════════════");
+        
+        // Очищаем ВСЕ данные OTA чтобы прервать цикл
+        FirmwareUpdate::clearOTAPending();
+        
+        // Перезагружаемся в нормальном режиме
+        delay(2000);
+        ESP.restart();
+        return false;
+    }
+    
+    // КРИТИЧНО: Увеличиваем счетчик попыток ПЕРЕД началом обновления
+    // Если произойдет сбой (abort, watchdog reset и т.д.), счетчик уже будет увеличен
+    FirmwareUpdate::incrementOTARetryCount();
+    DEBUG_PRINTF("Счетчик попыток увеличен. Попытка %d из %d\n", 
+                 retryCount + 1, FirmwareUpdate::MAX_OTA_RETRY_ATTEMPTS);
+    
     // НЕ инициализируем камеру - освобождаем память и LEDC каналы
     // НЕ инициализируем моторы - не нужны для OTA
     // НЕ инициализируем NeoPixel и Buzzer - экономим ресурсы
@@ -102,6 +128,7 @@ bool MicroBoxRobot::initSafeModeForOTA() {
     wifiSettings = new WiFiSettings();
     if (!wifiSettings->init()) {
         DEBUG_PRINTLN("ОШИБКА: Не удалось инициализировать настройки WiFi");
+        FirmwareUpdate::clearOTAPending();  // Очищаем при ошибке
         return false;
     }
     
@@ -167,7 +194,7 @@ bool MicroBoxRobot::initSafeModeForOTA() {
     // Выполняем обновление - теперь у нас достаточно памяти
     bool success = firmwareUpdate->downloadAndInstallFirmware(url);
     
-    // Очистка флага OTA
+    // Очистка ВСЕХ данных OTA (флаг, URL, счетчик попыток)
     FirmwareUpdate::clearOTAPending();
     
     if (success) {
