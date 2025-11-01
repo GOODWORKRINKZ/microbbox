@@ -651,7 +651,7 @@ body {
 
 .update-btn:hover {
     background: linear-gradient(145deg, #ff9900, #ff8800);
-}}
+}
 
 /* WiFi Settings Styles */
 .wifi-status {
@@ -837,3 +837,288 @@ body {
     opacity: 0.5;
     cursor: not-allowed;
 }
+
+/* ═══════════════════════════════════════════════════════════════
+   T-800 Terminator Vision Overlay Styles
+   ═══════════════════════════════════════════════════════════════ */
+
+.t800-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    z-index: 10;
+    background: rgba(255, 0, 0, 0.05);
+    mix-blend-mode: screen;
+    animation: t800-flicker 0.15s infinite alternate;
+}
+
+@keyframes t800-flicker {
+    0% { opacity: 1; }
+    100% { opacity: 0.98; }
+}
+
+.t800-scanline {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 3px;
+    background: linear-gradient(to bottom, 
+        rgba(255, 0, 0, 0.8) 0%, 
+        rgba(255, 0, 0, 0) 100%
+    );
+    box-shadow: 0 0 10px rgba(255, 0, 0, 0.8);
+    animation: t800-scan 8s linear infinite;
+    z-index: 11;
+}
+
+@keyframes t800-scan {
+    0% { top: 0; }
+    100% { top: 100%; }
+}
+
+.t800-hud {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    font-family: 'Courier New', monospace;
+    color: #ff0000;
+    text-shadow: 0 0 5px #ff0000, 0 0 10px #ff0000;
+    z-index: 12;
+}
+
+.t800-reticle {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 100px;
+    height: 100px;
+    transform: translate(-50%, -50%);
+    border: 2px solid #ff0000;
+    border-radius: 50%;
+    box-shadow: 0 0 10px rgba(255, 0, 0, 0.8), inset 0 0 10px rgba(255, 0, 0, 0.5);
+    animation: t800-pulse 2s ease-in-out infinite;
+}
+
+.t800-reticle::before,
+.t800-reticle::after {
+    content: '';
+    position: absolute;
+    background: #ff0000;
+    box-shadow: 0 0 5px #ff0000;
+}
+
+.t800-reticle::before {
+    top: 50%;
+    left: -20px;
+    right: -20px;
+    height: 2px;
+    transform: translateY(-50%);
+}
+
+.t800-reticle::after {
+    left: 50%;
+    top: -20px;
+    bottom: -20px;
+    width: 2px;
+    transform: translateX(-50%);
+}
+
+@keyframes t800-pulse {
+    0%, 100% {
+        transform: translate(-50%, -50%) scale(1);
+        opacity: 1;
+    }
+    50% {
+        transform: translate(-50%, -50%) scale(1.1);
+        opacity: 0.8;
+    }
+}
+
+.t800-data {
+    position: absolute;
+    font-size: 12px;
+    /* No background or border - text displays directly over video like original Terminator */
+}
+
+.t800-data.top-left {
+    top: 20px;
+    left: 20px;
+}
+
+.t800-data.top-right {
+    top: 20px;
+    right: 20px;
+    text-align: right;
+}
+
+.t800-data.bottom-left {
+    bottom: 20px;
+    left: 20px;
+}
+
+.t800-data.bottom-right {
+    bottom: 20px;
+    right: 20px;
+    text-align: right;
+}
+
+.t800-text {
+    margin: 2px 0;
+    font-weight: bold;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    animation: t800-text-glow 3s ease-in-out infinite;
+}
+
+@keyframes t800-text-glow {
+    0%, 100% {
+        text-shadow: 0 0 5px #ff0000, 0 0 10px #ff0000;
+    }
+    50% {
+        text-shadow: 0 0 10px #ff0000, 0 0 20px #ff0000, 0 0 30px #ff0000;
+    }
+}
+
+.t800-scanner {
+    position: absolute;
+    top: 50%;
+    left: 10%;
+    width: 80%;
+    height: 2px;
+    background: linear-gradient(90deg,
+        transparent 0%,
+        rgba(255, 0, 0, 0.8) 50%,
+        transparent 100%
+    );
+    box-shadow: 0 0 10px rgba(255, 0, 0, 0.8);
+    animation: t800-scanner-move 4s linear infinite;
+}
+
+@keyframes t800-scanner-move {
+    0%, 100% { top: 30%; opacity: 0; }
+    50% { top: 70%; opacity: 1; }
+}
+
+.t800-data::before,
+.t800-data::after {
+    content: '';
+    position: absolute;
+    width: 10px;
+    height: 10px;
+    border: 2px solid #ff0000;
+}
+
+.t800-data.top-left::before {
+    top: -10px;
+    left: -10px;
+    border-right: none;
+    border-bottom: none;
+}
+
+.t800-data.top-left::after {
+    top: -10px;
+    right: -10px;
+    border-left: none;
+    border-bottom: none;
+}
+
+.t800-data.bottom-left::before {
+    bottom: -10px;
+    left: -10px;
+    border-right: none;
+    border-top: none;
+}
+
+.t800-data.bottom-left::after {
+    bottom: -10px;
+    right: -10px;
+    border-left: none;
+    border-top: none;
+}
+
+.t800-data.top-right::before {
+    top: -10px;
+    left: -10px;
+    border-right: none;
+    border-bottom: none;
+}
+
+.t800-data.top-right::after {
+    top: -10px;
+    right: -10px;
+    border-left: none;
+    border-bottom: none;
+}
+
+.t800-data.bottom-right::before {
+    bottom: -10px;
+    left: -10px;
+    border-right: none;
+    border-top: none;
+}
+
+.t800-data.bottom-right::after {
+    bottom: -10px;
+    right: -10px;
+    border-left: none;
+    border-top: none;
+}
+
+/* Mobile adjustments for T-800 HUD */
+@media (max-width: 768px) {
+    .t800-data {
+        font-size: 9px;
+    }
+
+    .t800-text {
+        margin: 1px 0;
+    }
+
+    .t800-reticle {
+        width: 60px;
+        height: 60px;
+    }
+
+    .t800-data.top-left,
+    .t800-data.top-right {
+        top: 10px;
+    }
+
+    .t800-data.bottom-left,
+    .t800-data.bottom-right {
+        bottom: 10px;
+    }
+
+    .t800-data.top-left,
+    .t800-data.bottom-left {
+        left: 10px;
+    }
+
+    .t800-data.top-right,
+    .t800-data.bottom-right {
+        right: 10px;
+    }
+}
+
+/* Portrait mode adjustments */
+@media (max-width: 480px) and (orientation: portrait) {
+    .t800-data {
+        font-size: 8px;
+    }
+
+    .t800-text {
+        margin: 0;
+    }
+
+    .t800-reticle {
+        width: 50px;
+        height: 50px;
+    }
+}
+
