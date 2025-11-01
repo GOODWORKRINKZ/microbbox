@@ -28,7 +28,7 @@ MicroBoxRobot::MicroBoxRobot() :
 #endif
     lastLoop(0)
 {
-    DEBUG_PRINTLN("МикроББокс конструктор");
+    DEBUG_PRINTLN("МикРоББокс конструктор");
 }
 
 MicroBoxRobot::~MicroBoxRobot() {
@@ -36,7 +36,7 @@ MicroBoxRobot::~MicroBoxRobot() {
 }
 
 bool MicroBoxRobot::init() {
-    DEBUG_PRINTLN("Инициализация МикроББокс...");
+    DEBUG_PRINTLN("Инициализация МикРоББокс...");
     
     // Инициализация настроек WiFi
     wifiSettings = new WiFiSettings();
@@ -86,7 +86,7 @@ bool MicroBoxRobot::init() {
     startCameraStreamServer();
     
     initialized = true;
-    DEBUG_PRINTLN("МикроББокс успешно инициализирован");
+    DEBUG_PRINTLN("МикРоББокс успешно инициализирован");
     return true;
 }
 
@@ -126,7 +126,7 @@ void MicroBoxRobot::loop() {
 }
 
 void MicroBoxRobot::shutdown() {
-    DEBUG_PRINTLN("Выключение МикроББокс...");
+    DEBUG_PRINTLN("Выключение МикРоББокс...");
     
     stopMotors();
 #ifdef FEATURE_NEOPIXEL
@@ -676,9 +676,9 @@ void MicroBoxRobot::handleRoot(AsyncWebServerRequest *request) {
     AsyncWebServerResponse *response = request->beginResponse_P(200, "text/html; charset=utf-8", indexHtml, indexHtml_len);
     #else
     // Fallback HTML если ресурсы не встроены
-    String html = "<!DOCTYPE html><html><head><meta charset='UTF-8'><title>МикроББокс</title></head><body>";
-    html += "<h1>МикроББокс</h1>";
-    html += "<p>Добро пожаловать в систему управления МикроББокс!</p>";
+    String html = "<!DOCTYPE html><html><head><meta charset='UTF-8'><title>МикРоББокс</title></head><body>";
+    html += "<h1>МикРоББокс</h1>";
+    html += "<p>Добро пожаловать в систему управления МикРоББокс!</p>";
     html += "<p>Видео стрим: <img src='/stream' style='max-width:100%'></p>";
     html += "<p>Статические ресурсы не загружены. Пожалуйста, пересоберите проект.</p>";
     html += "</body></html>";

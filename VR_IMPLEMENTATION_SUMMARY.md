@@ -283,6 +283,6 @@ While not in the original requirements, these could improve the experience:
 
 ## Conclusion
 
-This implementation provides a complete WebXR VR solution for the МикроББокс robot, enabling intuitive control via Oculus Quest controllers. The implementation is standards-compliant, well-documented, and ready for user testing.
+This implementation provides a complete WebXR VR solution for the МикРоББокс robot, enabling intuitive control via Oculus Quest controllers. The implementation is standards-compliant, well-documented, and ready for user testing.
 
 The solution directly addresses the original issue where VR mode was not working in the Oculus browser, by implementing proper WebXR session management and controller support following the patterns demonstrated in the working examples at https://immersive-web.github.io/webxr-samples/.

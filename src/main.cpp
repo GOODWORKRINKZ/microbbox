@@ -22,7 +22,7 @@ void setup() {
     
     // Теперь безопасно инициализировать Serial
     Serial.begin(115200);
-    Serial.println("МикроББокс запускается...");
+    Serial.println("МикРоББокс запускается...");
     
     // Защита GPIO2 (strapping pin для NeoPixel)
     pinMode(NEOPIXEL_PIN, OUTPUT);
@@ -41,7 +41,7 @@ void setup() {
         }
     }
     
-    Serial.println("МикроББокс готов к работе!");
+    Serial.println("МикРоББокс готов к работе!");
     Serial.print("IP адрес: ");
     Serial.println(robot->getIP());
 }

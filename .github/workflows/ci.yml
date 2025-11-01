@@ -1,4 +1,4 @@
-name: МикроББокс CI
+name: МикРоББокс CI
 
 on:
   push:
@@ -80,7 +80,7 @@ jobs:
         
     - name: Build firmware
       run: |
-        echo "Building МикроББокс for ${{ matrix.environment }}"
+        echo "Building МикРоББокс for ${{ matrix.environment }}"
         pio run --environment ${{ matrix.environment }}
         
     - name: Check build output
@@ -183,7 +183,7 @@ jobs:
     steps:
     - name: Check overall status
       run: |
-        echo "🔍 МикроББокс CI Status Summary"
+        echo "🔍 МикРоББокс CI Status Summary"
         echo "=============================="
         
         if [[ "${{ needs.check.result }}" == "success" ]]; then

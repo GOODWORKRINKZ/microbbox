@@ -1,4 +1,4 @@
-name: МикроББокс Release
+name: МикРоББокс Release
 
 on:
   workflow_dispatch:
@@ -157,11 +157,11 @@ jobs:
         EPIC_NAME_EN="${{ steps.epic_name.outputs.epic_name_en }}"
         
         cat > RELEASE_NOTES.md << 'EOFMARKER'
-        # МикроББокс $VERSION — $EPIC_NAME_RU
+        # МикРоББокс $VERSION — $EPIC_NAME_RU
         
         > **"$EPIC_NAME_EN"** — Epic codename for this release
         
-        Автоматический релиз МикроББокс - миниатюрного робота на ESP32CAM.
+        Автоматический релиз МикРоББокс - миниатюрного робота на ESP32CAM.
         
         ## 📦 Файлы прошивки
         
@@ -173,7 +173,7 @@ jobs:
         ### Метод 1: Через веб-интерфейс (OTA Update)
         
         1. Подключитесь к роботу через WiFi:
-           - SSID: `МикроББокс`
+           - SSID: `МикРоББокс`
            - Пароль: `12345678`
         2. Откройте браузер и перейдите на `http://192.168.4.1`
         3. Нажмите кнопку **🔄 Обновление**
@@ -282,7 +282,7 @@ jobs:
       uses: softprops/action-gh-release@v1
       with:
         tag_name: ${{ inputs.version }}
-        name: МикроББокс ${{ inputs.version }} — ${{ steps.epic_name.outputs.epic_name_ru }}
+        name: МикРоББокс ${{ inputs.version }} — ${{ steps.epic_name.outputs.epic_name_ru }}
         body_path: RELEASE_NOTES.md
         files: |
           microbox-*.bin
