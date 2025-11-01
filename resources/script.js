@@ -1,25 +1,146 @@
 // МикроББокс - Система управления
 
-// Простой логгер с уровнями
+// Расширенный логгер с поддержкой консоли, API и страницы
 const Logger = {
     LEVELS: { ERROR: 0, WARN: 1, INFO: 2, DEBUG: 3 },
     currentLevel: 2, // INFO по умолчанию (ERROR=0, WARN=1, INFO=2, DEBUG=3)
     
+    // Настройки вывода
+    outputs: {
+        console: true,      // Логировать в консоль браузера
+        api: false,         // Логировать в API (Serial Monitor)
+        page: false,        // Логировать на страницу (для VR)
+        pageElementId: null // ID элемента для вывода на страницу
+    },
+    
+    // Буфер логов для страницы
+    pageBuffer: [],
+    maxPageBuffer: 100,
+    
     error: function(...args) {
-        if (this.currentLevel >= this.LEVELS.ERROR) console.error('[ERROR]', ...args);
+        if (this.currentLevel >= this.LEVELS.ERROR) {
+            this._log('ERROR', ...args);
+        }
     },
     warn: function(...args) {
-        if (this.currentLevel >= this.LEVELS.WARN) console.warn('[WARN]', ...args);
+        if (this.currentLevel >= this.LEVELS.WARN) {
+            this._log('WARN', ...args);
+        }
     },
     info: function(...args) {
-        if (this.currentLevel >= this.LEVELS.INFO) console.log('[INFO]', ...args);
+        if (this.currentLevel >= this.LEVELS.INFO) {
+            this._log('INFO', ...args);
+        }
     },
     debug: function(...args) {
-        if (this.currentLevel >= this.LEVELS.DEBUG) console.log('[DEBUG]', ...args);
+        if (this.currentLevel >= this.LEVELS.DEBUG) {
+            this._log('DEBUG', ...args);
+        }
+    },
+    
+    // Специальный метод для VR логов
+    vr: function(...args) {
+        this._log('VR', ...args);
+    },
+    
+    // Внутренний метод логирования
+    _log: function(level, ...args) {
+        const timestamp = new Date().toISOString().substring(11, 23); // HH:MM:SS.mmm
+        const message = args.map(arg => 
+            typeof arg === 'object' ? JSON.stringify(arg) : String(arg)
+        ).join(' ');
+        
+        const formattedMessage = `[${timestamp}] [${level}] ${message}`;
+        
+        // Вывод в консоль
+        if (this.outputs.console) {
+            switch(level) {
+                case 'ERROR': console.error(formattedMessage); break;
+                case 'WARN': console.warn(formattedMessage); break;
+                default: console.log(formattedMessage); break;
+            }
+        }
+        
+        // Вывод на страницу
+        if (this.outputs.page && this.outputs.pageElementId) {
+            this._logToPage(formattedMessage);
+        }
+        
+        // Вывод в API (Serial Monitor) - только для важных сообщений
+        if (this.outputs.api && (level === 'ERROR' || level === 'WARN' || level === 'VR')) {
+            this._logToAPI(level, message);
+        }
+    },
+    
+    // Логирование на страницу
+    _logToPage: function(message) {
+        this.pageBuffer.push(message);
+        if (this.pageBuffer.length > this.maxPageBuffer) {
+            this.pageBuffer.shift();
+        }
+        
+        const element = document.getElementById(this.outputs.pageElementId);
+        if (element) {
+            element.textContent = this.pageBuffer.join('\n');
+            // Автоскролл вниз
+            element.scrollTop = element.scrollHeight;
+        }
+    },
+    
+    // Логирование в API (Serial Monitor)
+    _logToAPI: async function(level, message) {
+        try {
+            const response = await fetch('/api/vr-log', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    level: level,
+                    message: message,
+                    timestamp: new Date().toISOString()
+                })
+            });
+            
+            if (!response.ok) {
+                throw new Error(`API returned ${response.status}: ${response.statusText}`);
+            }
+        } catch (error) {
+            // Если упало логирование в API - просто логируем в консоль и идём дальше
+            // Не создаём бесконечную рекурсию, просто console.error напрямую
+            console.error('[Logger] Failed to send to API:', error.message, '- continuing...');
+            // Продолжаем работу, не бросаем исключение
+        }
     },
     
     setLevel: function(level) {
         this.currentLevel = level;
+    },
+    
+    // Включить/выключить вывод в разные места
+    enableConsole: function(enable = true) {
+        this.outputs.console = enable;
+    },
+    
+    enableAPI: function(enable = true) {
+        this.outputs.api = enable;
+    },
+    
+    enablePage: function(elementId, enable = true) {
+        this.outputs.page = enable;
+        this.outputs.pageElementId = elementId;
+    },
+    
+    // Очистить буфер страницы
+    clearPageBuffer: function() {
+        this.pageBuffer = [];
+        const element = document.getElementById(this.outputs.pageElementId);
+        if (element) {
+            element.textContent = '';
+        }
+    },
+    
+    // Получить все логи как текст
+    getPageLogs: function() {
+        return this.pageBuffer.join('\n');
     }
 };
 
@@ -346,6 +467,45 @@ class MicroBoxController {
         const settingsBtn = document.getElementById('mobileSettings');
         if (settingsBtn) {
             settingsBtn.addEventListener('click', () => this.showSettings());
+        }
+
+        // VR Debug кнопка
+        const vrDebugBtn = document.getElementById('vrDebugBtn');
+        if (vrDebugBtn) {
+            vrDebugBtn.addEventListener('click', () => this.sendVRDebugLog());
+        }
+        
+        // VR Debug закрыть
+        const vrDebugClose = document.getElementById('vrDebugClose');
+        if (vrDebugClose) {
+            vrDebugClose.addEventListener('click', () => this.hideVRDebugPanel());
+        }
+        
+        // VR Live Log кнопка
+        const vrLiveLogBtn = document.getElementById('vrLiveLogBtn');
+        if (vrLiveLogBtn) {
+            vrLiveLogBtn.addEventListener('click', () => this.toggleVRLiveLog());
+        }
+        
+        // VR Live Log закрыть
+        const vrLiveLogClose = document.getElementById('vrLiveLogClose');
+        if (vrLiveLogClose) {
+            vrLiveLogClose.addEventListener('click', () => this.hideVRLiveLog());
+        }
+        
+        // VR Log очистить
+        const vrLogClear = document.getElementById('vrLogClear');
+        if (vrLogClear) {
+            vrLogClear.addEventListener('click', () => Logger.clearPageBuffer());
+        }
+        
+        // VR Log to Serial checkbox
+        const vrLogToSerial = document.getElementById('vrLogToSerial');
+        if (vrLogToSerial) {
+            vrLogToSerial.addEventListener('change', (e) => {
+                Logger.enableAPI(e.target.checked);
+                Logger.vr('Live logging to Serial Monitor:', e.target.checked ? 'ENABLED' : 'DISABLED');
+            });
         }
 
         // Модальные окна
@@ -888,27 +1048,45 @@ class MicroBoxController {
     }
 
     async checkVRSupport() {
+        Logger.info('🔍 Проверка поддержки VR...');
+        Logger.debug('User Agent:', navigator.userAgent);
+        Logger.debug('Platform:', navigator.platform);
+        
         if (navigator.xr) {
+            Logger.info('✓ WebXR API доступен');
+            
             try {
+                // Проверяем поддержку immersive-vr
                 const supported = await navigator.xr.isSessionSupported('immersive-vr');
+                Logger.debug('immersive-vr supported:', supported);
+                
                 if (supported) {
                     this.vrEnabled = true;
-                    console.log('VR поддерживается');
+                    Logger.info('✓ VR режим поддерживается!');
+                    Logger.info('🥽 Кнопка VR будет показана');
                     
                     // Показываем кнопку входа в VR
                     const vrBtn = document.getElementById('vrBtn');
                     if (vrBtn) {
                         vrBtn.classList.remove('hidden');
                         vrBtn.addEventListener('click', () => this.enterVR());
+                        Logger.debug('✓ Кнопка VR активирована');
+                    } else {
+                        Logger.warn('✗ Элемент vrBtn не найден в DOM');
                     }
                 } else {
-                    console.log('VR не поддерживается браузером');
+                    Logger.warn('✗ VR не поддерживается этим браузером');
+                    Logger.info('💡 Используйте Oculus Browser на Quest гарнитуре');
                 }
             } catch (error) {
-                console.log('Ошибка проверки VR поддержки:', error);
+                Logger.error('✗ Ошибка проверки VR поддержки:', error.message);
+                Logger.debug('Error details:', error);
             }
         } else {
-            console.log('WebXR API не доступен');
+            Logger.warn('✗ WebXR API не доступен');
+            Logger.info('💡 WebXR требуется для VR режима');
+            Logger.info('💡 Используйте современный браузер с поддержкой WebXR');
+            Logger.info('💡 Рекомендуется: Oculus Browser на Quest гарнитуре');
         }
     }
 
@@ -919,7 +1097,7 @@ class MicroBoxController {
         }
 
         try {
-            console.log('Запуск VR сессии...');
+            Logger.vr('🥽 Запуск VR сессии...');
             
             // Запрашиваем VR сессию с необходимыми функциями
             this.xrSession = await navigator.xr.requestSession('immersive-vr', {
@@ -927,7 +1105,7 @@ class MicroBoxController {
                 optionalFeatures: ['bounded-floor', 'hand-tracking']
             });
 
-            console.log('VR сессия создана:', this.xrSession);
+            Logger.vr('✓ VR сессия создана успешно');
 
             // Настройка событий сессии
             this.xrSession.addEventListener('end', () => this.onVRSessionEnded());
@@ -944,30 +1122,30 @@ class MicroBoxController {
             // Обновляем интерфейс
             this.updateVRUI(true);
             
-            console.log('VR режим активирован');
+            Logger.vr('✓ VR режим полностью активирован');
         } catch (error) {
-            console.error('Ошибка входа в VR:', error);
+            Logger.error('Ошибка входа в VR:', error.message);
             alert('Не удалось войти в VR режим: ' + error.message);
         }
     }
 
     setupVRControllers() {
-        console.log('Настройка VR контроллеров...');
+        Logger.vr('🎮 Настройка VR контроллеров...');
         
         // Слушаем подключение контроллеров
         this.xrSession.addEventListener('inputsourceschange', (event) => {
-            console.log('Изменение источников ввода:', event);
+            Logger.debug('Изменение источников ввода VR');
             
             if (event.added) {
                 event.added.forEach(inputSource => {
-                    console.log('Контроллер подключен:', inputSource.handedness, inputSource.targetRayMode);
+                    Logger.vr(`✓ Контроллер подключен: ${inputSource.handedness} (${inputSource.targetRayMode})`);
                     this.controllers.push(inputSource);
                 });
             }
             
             if (event.removed) {
                 event.removed.forEach(inputSource => {
-                    console.log('Контроллер отключен:', inputSource.handedness);
+                    Logger.vr(`✗ Контроллер отключен: ${inputSource.handedness}`);
                     const index = this.controllers.indexOf(inputSource);
                     if (index > -1) {
                         this.controllers.splice(index, 1);
@@ -1187,6 +1365,257 @@ class MicroBoxController {
         
         // Остановить робота
         this.sendMovementCommand(0, 0);
+    }
+
+    // Сбор VR диагностической информации
+    async collectVRDebugInfo() {
+        const debugInfo = {
+            timestamp: new Date().toISOString(),
+            browser: this.getBrowserName(),
+            userAgent: navigator.userAgent,
+            platform: navigator.platform,
+            language: navigator.language,
+            screenWidth: window.screen.width,
+            screenHeight: window.screen.height,
+            devicePixelRatio: window.devicePixelRatio,
+            
+            // WebXR информация
+            xrSupported: !!navigator.xr,
+            vrSessionActive: !!this.xrSession,
+            
+            // Информация о контроллерах
+            controllersCount: this.controllers.length,
+            controllers: []
+        };
+        
+        // Проверка поддержки различных VR сессий
+        if (navigator.xr) {
+            try {
+                debugInfo.immersiveVrSupported = await navigator.xr.isSessionSupported('immersive-vr');
+                debugInfo.immersiveArSupported = await navigator.xr.isSessionSupported('immersive-ar');
+                debugInfo.inlineSupported = await navigator.xr.isSessionSupported('inline');
+            } catch (error) {
+                debugInfo.sessionCheckError = error.message;
+            }
+        }
+        
+        // Детальная информация о контроллерах
+        if (this.xrSession && this.xrSession.inputSources) {
+            for (const inputSource of this.xrSession.inputSources) {
+                const controllerInfo = {
+                    handedness: inputSource.handedness,
+                    targetRayMode: inputSource.targetRayMode,
+                    profiles: inputSource.profiles,
+                    hasGamepad: !!inputSource.gamepad
+                };
+                
+                if (inputSource.gamepad) {
+                    controllerInfo.gamepad = {
+                        id: inputSource.gamepad.id,
+                        axesCount: inputSource.gamepad.axes.length,
+                        buttonsCount: inputSource.gamepad.buttons.length,
+                        axes: Array.from(inputSource.gamepad.axes),
+                        buttons: inputSource.gamepad.buttons.map(btn => ({
+                            pressed: btn.pressed,
+                            touched: btn.touched,
+                            value: btn.value
+                        }))
+                    };
+                }
+                
+                debugInfo.controllers.push(controllerInfo);
+            }
+        }
+        
+        // Информация о VR сессии
+        if (this.xrSession) {
+            debugInfo.vrSession = {
+                environmentBlendMode: this.xrSession.environmentBlendMode,
+                interactionMode: this.xrSession.interactionMode,
+                visibilityState: this.xrSession.visibilityState,
+                renderState: {
+                    depthNear: this.xrSession.renderState.depthNear,
+                    depthFar: this.xrSession.renderState.depthFar
+                }
+            };
+        }
+        
+        // Состояние приложения
+        debugInfo.app = {
+            deviceType: this.deviceType,
+            controlMode: this.controlMode,
+            effectMode: this.effectMode,
+            isConnected: this.isConnected,
+            vrEnabled: this.vrEnabled,
+            speedSensitivity: this.speedSensitivity,
+            turnSensitivity: this.turnSensitivity
+        };
+        
+        return debugInfo;
+    }
+    
+    // Определение имени браузера
+    getBrowserName() {
+        const ua = navigator.userAgent;
+        if (ua.indexOf('OculusBrowser') > -1) return 'Oculus Browser';
+        if (ua.indexOf('Chrome') > -1) return 'Chrome';
+        if (ua.indexOf('Safari') > -1) return 'Safari';
+        if (ua.indexOf('Firefox') > -1) return 'Firefox';
+        if (ua.indexOf('Edge') > -1) return 'Edge';
+        return 'Unknown';
+    }
+    
+    // Отправка VR диагностики на сервер И показ на странице
+    async sendVRDebugLog() {
+        try {
+            const debugInfo = await this.collectVRDebugInfo();
+            
+            console.log('Собрана VR debug информация:', debugInfo);
+            
+            // Показываем информацию на странице в VR
+            this.showVRDebugPanel(debugInfo);
+            
+            // Отправляем на сервер для Serial Monitor
+            const response = await fetch('/api/vr-log', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(debugInfo)
+            });
+            
+            const result = await response.json();
+            console.log('VR log отправлен на сервер:', result);
+            
+            return true;
+        } catch (error) {
+            console.error('Ошибка отправки VR log:', error);
+            
+            // Всё равно показываем информацию на странице
+            const debugInfo = await this.collectVRDebugInfo();
+            this.showVRDebugPanel(debugInfo, error.message);
+            
+            return false;
+        }
+    }
+    
+    // Показать debug панель в VR интерфейсе
+    showVRDebugPanel(debugInfo, errorMessage = null) {
+        const panel = document.getElementById('vrDebugPanel');
+        const output = document.getElementById('vrDebugOutput');
+        
+        if (!panel || !output) return;
+        
+        // Форматируем информацию для удобного чтения
+        let formattedInfo = '';
+        
+        // Основная информация
+        formattedInfo += '=== BROWSER INFO ===\n';
+        formattedInfo += `Browser: ${debugInfo.browser}\n`;
+        formattedInfo += `User Agent: ${debugInfo.userAgent}\n`;
+        formattedInfo += `Platform: ${debugInfo.platform}\n`;
+        formattedInfo += `Screen: ${debugInfo.screenWidth}x${debugInfo.screenHeight}\n`;
+        formattedInfo += `DPI: ${debugInfo.devicePixelRatio}\n\n`;
+        
+        // WebXR поддержка
+        formattedInfo += '=== WEBXR SUPPORT ===\n';
+        formattedInfo += `XR Supported: ${debugInfo.xrSupported ? 'YES ✓' : 'NO ✗'}\n`;
+        if (debugInfo.xrSupported) {
+            formattedInfo += `Immersive VR: ${debugInfo.immersiveVrSupported ? 'YES ✓' : 'NO ✗'}\n`;
+            formattedInfo += `Immersive AR: ${debugInfo.immersiveArSupported ? 'YES ✓' : 'NO ✗'}\n`;
+            formattedInfo += `Inline: ${debugInfo.inlineSupported ? 'YES ✓' : 'NO ✗'}\n`;
+        }
+        formattedInfo += '\n';
+        
+        // VR сессия
+        formattedInfo += '=== VR SESSION ===\n';
+        formattedInfo += `Session Active: ${debugInfo.vrSessionActive ? 'YES ✓' : 'NO ✗'}\n`;
+        if (debugInfo.vrSession) {
+            formattedInfo += `Blend Mode: ${debugInfo.vrSession.environmentBlendMode}\n`;
+            formattedInfo += `Interaction: ${debugInfo.vrSession.interactionMode}\n`;
+            formattedInfo += `Visibility: ${debugInfo.vrSession.visibilityState}\n`;
+        }
+        formattedInfo += '\n';
+        
+        // Контроллеры
+        formattedInfo += '=== CONTROLLERS ===\n';
+        formattedInfo += `Count: ${debugInfo.controllersCount}\n`;
+        if (debugInfo.controllers && debugInfo.controllers.length > 0) {
+            debugInfo.controllers.forEach((ctrl, idx) => {
+                formattedInfo += `\nController ${idx + 1}:\n`;
+                formattedInfo += `  Hand: ${ctrl.handedness}\n`;
+                formattedInfo += `  Mode: ${ctrl.targetRayMode}\n`;
+                formattedInfo += `  Profiles: ${ctrl.profiles.join(', ')}\n`;
+                if (ctrl.gamepad) {
+                    formattedInfo += `  Gamepad: ${ctrl.gamepad.id}\n`;
+                    formattedInfo += `  Axes: [${ctrl.gamepad.axes.map(a => a.toFixed(2)).join(', ')}]\n`;
+                    formattedInfo += `  Buttons: ${ctrl.gamepad.buttonsCount} (${ctrl.gamepad.buttons.filter(b => b.pressed).length} pressed)\n`;
+                }
+            });
+        }
+        formattedInfo += '\n';
+        
+        // Состояние приложения
+        formattedInfo += '=== APP STATE ===\n';
+        formattedInfo += `Device Type: ${debugInfo.app.deviceType}\n`;
+        formattedInfo += `Control Mode: ${debugInfo.app.controlMode}\n`;
+        formattedInfo += `Effect Mode: ${debugInfo.app.effectMode}\n`;
+        formattedInfo += `Connected: ${debugInfo.app.isConnected ? 'YES ✓' : 'NO ✗'}\n`;
+        formattedInfo += `VR Enabled: ${debugInfo.app.vrEnabled ? 'YES ✓' : 'NO ✗'}\n`;
+        
+        // Ошибка если есть
+        if (errorMessage) {
+            formattedInfo += '\n=== ERROR ===\n';
+            formattedInfo += `Server Error: ${errorMessage}\n`;
+            formattedInfo += '(Info shown locally only)\n';
+        } else {
+            formattedInfo += '\n✓ Sent to Serial Monitor (115200 baud)\n';
+        }
+        
+        output.textContent = formattedInfo;
+        panel.classList.remove('hidden');
+    }
+    
+    // Скрыть debug панель
+    hideVRDebugPanel() {
+        const panel = document.getElementById('vrDebugPanel');
+        if (panel) {
+            panel.classList.add('hidden');
+        }
+    }
+    
+    // Переключить Live Log панель
+    toggleVRLiveLog() {
+        const panel = document.getElementById('vrLiveLogPanel');
+        if (!panel) return;
+        
+        if (panel.classList.contains('hidden')) {
+            // Показываем панель
+            panel.classList.remove('hidden');
+            
+            // Включаем логирование на страницу
+            Logger.enablePage('vrLiveLogOutput', true);
+            Logger.vr('Live logging started');
+            
+            // Примеры логов для демонстрации
+            Logger.info('VR Live Log активирован');
+            Logger.debug('Этот лог будет виден в реальном времени');
+        } else {
+            // Скрываем панель
+            this.hideVRLiveLog();
+        }
+    }
+    
+    // Скрыть Live Log панель
+    hideVRLiveLog() {
+        const panel = document.getElementById('vrLiveLogPanel');
+        if (panel) {
+            panel.classList.add('hidden');
+            
+            // Отключаем логирование на страницу (но оставляем в консоли)
+            Logger.enablePage('vrLiveLogOutput', false);
+            Logger.info('VR Live Log деактивирован');
+        }
     }
 
     handleGamepadConnected(e) {

@@ -792,6 +792,88 @@ void MicroBoxRobot::initWebServer() {
         }
     );
     
+    // VR Debug логирование - POST JSON с диагностической информацией
+    // ПРИМЕЧАНИЕ: Статическая переменная vrLogBody может вызвать проблемы при одновременных запросах.
+    // Для production использования рекомендуется добавить мьютекс или request-specific storage.
+    // Однако для debug endpoint это приемлемо, так как запросы редкие и последовательные.
+    server->on("/api/vr-log", HTTP_POST,
+        [](AsyncWebServerRequest *request) {
+            // Ответ будет отправлен в onBody
+        },
+        NULL,
+        [](AsyncWebServerRequest *request, uint8_t *data, size_t len, size_t index, size_t total) {
+            static String vrLogBody = "";
+            
+            // Накапливаем данные
+            for (size_t i = 0; i < len; i++) {
+                vrLogBody += (char)data[i];
+            }
+            
+            // Когда получены все данные
+            if (index + len == total) {
+                Serial.println("\n========== VR DEBUG LOG ==========");
+                
+                // Простой парсинг для вывода основных полей
+                // ПРИМЕЧАНИЕ: Это упрощенный парсинг для отладочных целей.
+                // Он не обрабатывает escaped quotes или сложные вложенные структуры.
+                // Для точного парсинга используйте библиотеку ArduinoJson.
+                
+                if (vrLogBody.indexOf("\"browser\"") >= 0) {
+                    int browserPos = vrLogBody.indexOf("\"browser\":\"") + 11;
+                    int browserEnd = vrLogBody.indexOf("\"", browserPos);
+                    if (browserEnd > browserPos) {
+                        String browser = vrLogBody.substring(browserPos, browserEnd);
+                        Serial.print("Browser: ");
+                        Serial.println(browser);
+                    }
+                }
+                
+                if (vrLogBody.indexOf("\"userAgent\"") >= 0) {
+                    int uaPos = vrLogBody.indexOf("\"userAgent\":\"") + 13;
+                    int uaEnd = vrLogBody.indexOf("\"", uaPos);
+                    if (uaEnd > uaPos) {
+                        String ua = vrLogBody.substring(uaPos, uaEnd);
+                        Serial.print("User Agent: ");
+                        Serial.println(ua);
+                    }
+                }
+                
+                if (vrLogBody.indexOf("\"xrSupported\"") >= 0) {
+                    bool xrSupported = vrLogBody.indexOf("\"xrSupported\":true") >= 0;
+                    Serial.print("WebXR Supported: ");
+                    Serial.println(xrSupported ? "YES" : "NO");
+                }
+                
+                if (vrLogBody.indexOf("\"vrSessionActive\"") >= 0) {
+                    bool vrActive = vrLogBody.indexOf("\"vrSessionActive\":true") >= 0;
+                    Serial.print("VR Session Active: ");
+                    Serial.println(vrActive ? "YES" : "NO");
+                }
+                
+                if (vrLogBody.indexOf("\"controllersCount\"") >= 0) {
+                    int countPos = vrLogBody.indexOf("\"controllersCount\":") + 19;
+                    int countEnd = vrLogBody.indexOf(",", countPos);
+                    if (countEnd < 0) countEnd = vrLogBody.indexOf("}", countPos);
+                    if (countEnd > countPos) {
+                        String count = vrLogBody.substring(countPos, countEnd);
+                        Serial.print("Controllers Count: ");
+                        Serial.println(count);
+                    }
+                }
+                
+                // Выводим полный JSON для детальной отладки
+                Serial.println("\nFull VR Debug Data:");
+                Serial.println(vrLogBody);
+                Serial.println("==================================\n");
+                
+                // Отправляем успешный ответ
+                request->send(200, "application/json", "{\"status\":\"ok\",\"message\":\"VR log received\"}");
+                
+                vrLogBody = "";
+            }
+        }
+    );
+    
     // Перезагрузка устройства - требует подтверждения
     server->on("/api/restart", HTTP_POST, [](AsyncWebServerRequest *request) {
         // Простая проверка безопасности - требуем параметр confirm
