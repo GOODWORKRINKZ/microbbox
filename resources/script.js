@@ -23,6 +23,14 @@ class MicroBoxController {
         this.xrSession = null;
         this.controllers = [];
         
+        // VR состояния кнопок
+        this.vrTriggerPressed = false;
+        this.vrGripPressed = false;
+        this.vrButtonAPressed = false;
+        this.vrButtonBPressed = false;
+        this.lastVRLeftSpeed = 0;
+        this.lastVRRightSpeed = 0;
+        
         this.init();
     }
 
@@ -70,11 +78,11 @@ class MicroBoxController {
     detectDeviceType() {
         const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
         const isTablet = /iPad|Android/i.test(navigator.userAgent) && window.innerWidth > 768;
-        const isVR = navigator.xr !== undefined;
+        const isOculusBrowser = /OculusBrowser/i.test(navigator.userAgent);
         
-        if (isVR && navigator.xr.isSessionSupported) {
-            this.deviceType = 'vr';
-        } else if (isMobile && !isTablet) {
+        // Если это Oculus браузер, не определяем как VR автоматически
+        // Пользователь должен нажать кнопку входа в VR
+        if (isOculusBrowser || isMobile) {
             this.deviceType = 'mobile';
         } else if (isTablet) {
             this.deviceType = 'tablet';
@@ -84,6 +92,7 @@ class MicroBoxController {
         
         document.getElementById('deviceType').textContent = this.getDeviceTypeText();
         console.log('Тип устройства:', this.deviceType);
+        console.log('Oculus Browser:', isOculusBrowser);
     }
 
     getDeviceTypeText() {
@@ -107,7 +116,8 @@ class MicroBoxController {
         mobileControls.classList.add('hidden');
         vrControls.classList.add('hidden');
 
-        // Показать нужный
+        // Показать нужный в зависимости от активной сессии
+        // VR контролы показываются только когда активна VR сессия
         switch (this.deviceType) {
             case 'desktop':
                 pcControls.classList.remove('hidden');
@@ -116,9 +126,6 @@ class MicroBoxController {
             case 'tablet':
                 mobileControls.classList.remove('hidden');
                 this.setupMobileJoysticks();
-                break;
-            case 'vr':
-                vrControls.classList.remove('hidden');
                 break;
         }
     }
@@ -503,12 +510,314 @@ class MicroBoxController {
                 if (supported) {
                     this.vrEnabled = true;
                     console.log('VR поддерживается');
-                    // Можно добавить кнопку для входа в VR
+                    
+                    // Показываем кнопку входа в VR
+                    const vrBtn = document.getElementById('vrBtn');
+                    if (vrBtn) {
+                        vrBtn.classList.remove('hidden');
+                        vrBtn.addEventListener('click', () => this.enterVR());
+                    }
+                } else {
+                    console.log('VR не поддерживается браузером');
                 }
             } catch (error) {
-                console.log('VR не поддерживается:', error);
+                console.log('Ошибка проверки VR поддержки:', error);
+            }
+        } else {
+            console.log('WebXR API не доступен');
+        }
+    }
+
+    async enterVR() {
+        if (!this.vrEnabled) {
+            alert('VR режим не поддерживается в этом браузере');
+            return;
+        }
+
+        try {
+            console.log('Запуск VR сессии...');
+            
+            // Запрашиваем VR сессию с необходимыми функциями
+            this.xrSession = await navigator.xr.requestSession('immersive-vr', {
+                requiredFeatures: ['local-floor'],
+                optionalFeatures: ['bounded-floor', 'hand-tracking']
+            });
+
+            console.log('VR сессия создана:', this.xrSession);
+
+            // Настройка событий сессии
+            this.xrSession.addEventListener('end', () => this.onVRSessionEnded());
+            
+            // Получаем reference space
+            this.xrReferenceSpace = await this.xrSession.requestReferenceSpace('local-floor');
+            
+            // Настройка контроллеров
+            this.setupVRControllers();
+            
+            // Запуск VR рендер цикла
+            this.xrSession.requestAnimationFrame((time, frame) => this.onVRFrame(time, frame));
+            
+            // Обновляем интерфейс
+            this.updateVRUI(true);
+            
+            console.log('VR режим активирован');
+        } catch (error) {
+            console.error('Ошибка входа в VR:', error);
+            alert('Не удалось войти в VR режим: ' + error.message);
+        }
+    }
+
+    setupVRControllers() {
+        console.log('Настройка VR контроллеров...');
+        
+        // Слушаем подключение контроллеров
+        this.xrSession.addEventListener('inputsourceschange', (event) => {
+            console.log('Изменение источников ввода:', event);
+            
+            if (event.added) {
+                event.added.forEach(inputSource => {
+                    console.log('Контроллер подключен:', inputSource.handedness, inputSource.targetRayMode);
+                    this.controllers.push(inputSource);
+                });
+            }
+            
+            if (event.removed) {
+                event.removed.forEach(inputSource => {
+                    console.log('Контроллер отключен:', inputSource.handedness);
+                    const index = this.controllers.indexOf(inputSource);
+                    if (index > -1) {
+                        this.controllers.splice(index, 1);
+                    }
+                });
+            }
+            
+            this.updateVRStatus();
+        });
+    }
+
+    onVRFrame(time, frame) {
+        if (!this.xrSession) return;
+        
+        // Запрашиваем следующий кадр
+        this.xrSession.requestAnimationFrame((time, frame) => this.onVRFrame(time, frame));
+        
+        // Получаем источники ввода
+        const inputSources = this.xrSession.inputSources;
+        
+        // Обрабатываем контроллеры
+        this.processVRControllers(frame, inputSources);
+    }
+
+    processVRControllers(frame, inputSources) {
+        let leftThumbstick = { x: 0, y: 0 };
+        let rightThumbstick = { x: 0, y: 0 };
+        let triggerPressed = false;
+        let gripPressed = false;
+        let buttonAPressed = false;
+        let buttonBPressed = false;
+        
+        for (const inputSource of inputSources) {
+            if (!inputSource.gamepad) continue;
+            
+            const gamepad = inputSource.gamepad;
+            const hand = inputSource.handedness; // 'left' или 'right'
+            
+            // Обработка стиков (axes)
+            // В WebXR для Oculus Quest: axes[0] и axes[1] - это thumbstick X и Y
+            // axes[2] и axes[3] - touchpad (если есть)
+            if (gamepad.axes && gamepad.axes.length >= 2) {
+                if (hand === 'left') {
+                    // Левый стик для поворота/левой стороны
+                    leftThumbstick.x = gamepad.axes[0] || 0;
+                    leftThumbstick.y = gamepad.axes[1] || 0;
+                } else if (hand === 'right') {
+                    // Правый стик для движения/правой стороны
+                    rightThumbstick.x = gamepad.axes[0] || 0;
+                    rightThumbstick.y = gamepad.axes[1] || 0;
+                }
+            }
+            
+            // Обработка кнопок
+            // В Oculus Quest:
+            // buttons[0] - trigger
+            // buttons[1] - grip
+            // buttons[3] - thumbstick press
+            // buttons[4] - button A/X
+            // buttons[5] - button B/Y
+            if (gamepad.buttons && gamepad.buttons.length > 0) {
+                // Trigger (index 0) - сигнал
+                if (gamepad.buttons[0] && gamepad.buttons[0].pressed) {
+                    triggerPressed = true;
+                }
+                
+                // Grip (index 1) - фонарик
+                if (gamepad.buttons[1] && gamepad.buttons[1].pressed) {
+                    gripPressed = true;
+                }
+                
+                // Кнопка A/X (index 4) 
+                if (gamepad.buttons.length > 4 && gamepad.buttons[4] && gamepad.buttons[4].pressed) {
+                    buttonAPressed = true;
+                }
+                
+                // Кнопка B/Y (index 5)
+                if (gamepad.buttons.length > 5 && gamepad.buttons[5] && gamepad.buttons[5].pressed) {
+                    buttonBPressed = true;
+                }
             }
         }
+        
+        // Применяем движение
+        this.updateVRMovement(leftThumbstick, rightThumbstick);
+        
+        // Обрабатываем кнопки
+        this.handleVRButtons(triggerPressed, gripPressed, buttonAPressed, buttonBPressed);
+    }
+
+    updateVRMovement(leftStick, rightStick) {
+        // Применяем deadzone
+        const deadzone = 0.15;
+        
+        if (Math.abs(leftStick.x) < deadzone) leftStick.x = 0;
+        if (Math.abs(leftStick.y) < deadzone) leftStick.y = 0;
+        if (Math.abs(rightStick.x) < deadzone) rightStick.x = 0;
+        if (Math.abs(rightStick.y) < deadzone) rightStick.y = 0;
+        
+        let leftSpeed = 0;
+        let rightSpeed = 0;
+        
+        if (this.controlMode === 'tank') {
+            // Танковый режим: левый стик = левая сторона, правый стик = правая сторона
+            leftSpeed = -leftStick.y * this.speedSensitivity;
+            rightSpeed = -rightStick.y * this.speedSensitivity;
+        } else if (this.controlMode === 'differential') {
+            // Дифференциальный: правый стик Y = скорость, правый стик X = поворот
+            const speed = -rightStick.y * this.speedSensitivity;
+            const turn = rightStick.x * this.turnSensitivity;
+            
+            leftSpeed = speed - turn;
+            rightSpeed = speed + turn;
+        }
+        
+        // Ограничение значений
+        leftSpeed = Math.max(-100, Math.min(100, leftSpeed));
+        rightSpeed = Math.max(-100, Math.min(100, rightSpeed));
+        
+        // Отправляем команды только если есть изменения
+        if (leftSpeed !== this.lastVRLeftSpeed || rightSpeed !== this.lastVRRightSpeed) {
+            this.sendMovementCommand(leftSpeed, rightSpeed);
+            this.lastVRLeftSpeed = leftSpeed;
+            this.lastVRRightSpeed = rightSpeed;
+        }
+    }
+
+    handleVRButtons(trigger, grip, buttonA, buttonB) {
+        // Trigger - сигнал (удерживать)
+        if (trigger && !this.vrTriggerPressed) {
+            this.startHorn();
+            this.vrTriggerPressed = true;
+        } else if (!trigger && this.vrTriggerPressed) {
+            this.stopHorn();
+            this.vrTriggerPressed = false;
+        }
+        
+        // Grip - фонарик (переключение по нажатию)
+        if (grip && !this.vrGripPressed) {
+            this.toggleFlashlight();
+            this.vrGripPressed = true;
+        } else if (!grip) {
+            this.vrGripPressed = false;
+        }
+        
+        // Кнопка A - смена эффекта
+        if (buttonA && !this.vrButtonAPressed) {
+            this.cycleEffectMode();
+            this.vrButtonAPressed = true;
+        } else if (!buttonA) {
+            this.vrButtonAPressed = false;
+        }
+        
+        // Кнопка B - смена режима управления
+        if (buttonB && !this.vrButtonBPressed) {
+            this.toggleControlMode();
+            this.vrButtonBPressed = true;
+        } else if (!buttonB) {
+            this.vrButtonBPressed = false;
+        }
+    }
+
+    cycleEffectMode() {
+        const modes = ['normal', 'police', 'fire', 'ambulance'];
+        const currentIndex = modes.indexOf(this.effectMode);
+        const nextIndex = (currentIndex + 1) % modes.length;
+        this.effectMode = modes[nextIndex];
+        
+        this.sendCommand('setEffectMode', { mode: this.effectMode });
+        console.log('Режим эффекта:', this.effectMode);
+    }
+
+    toggleControlMode() {
+        this.controlMode = this.controlMode === 'tank' ? 'differential' : 'tank';
+        this.sendCommand('setControlMode', { mode: this.controlMode });
+        console.log('Режим управления:', this.controlMode);
+    }
+
+    updateVRStatus() {
+        const vrStatus = document.getElementById('vrStatus');
+        if (vrStatus) {
+            const controllerCount = this.controllers.length;
+            if (controllerCount === 0) {
+                vrStatus.textContent = 'Поиск контроллеров...';
+            } else {
+                const leftController = this.controllers.find(c => c.handedness === 'left');
+                const rightController = this.controllers.find(c => c.handedness === 'right');
+                
+                let status = `Контроллеры: ${controllerCount}\n`;
+                if (leftController) status += '✓ Левый ';
+                if (rightController) status += '✓ Правый';
+                
+                vrStatus.textContent = status;
+            }
+        }
+    }
+
+    updateVRUI(inVR) {
+        const vrBtn = document.getElementById('vrBtn');
+        const vrControls = document.getElementById('vrControls');
+        const pcControls = document.getElementById('pcControls');
+        const mobileControls = document.getElementById('mobileControls');
+        
+        if (inVR) {
+            if (vrBtn) vrBtn.classList.add('active');
+            if (vrControls) vrControls.classList.remove('hidden');
+            // Скрыть другие контролы в VR режиме
+            if (pcControls) pcControls.classList.add('hidden');
+            if (mobileControls) mobileControls.classList.add('hidden');
+        } else {
+            if (vrBtn) vrBtn.classList.remove('active');
+            if (vrControls) vrControls.classList.add('hidden');
+            // Восстановить интерфейс
+            this.setupInterface();
+        }
+    }
+
+    onVRSessionEnded() {
+        console.log('VR сессия завершена');
+        this.xrSession = null;
+        this.xrReferenceSpace = null;
+        this.controllers = [];
+        this.updateVRUI(false);
+        
+        // Сброс состояния кнопок
+        this.vrTriggerPressed = false;
+        this.vrGripPressed = false;
+        this.vrButtonAPressed = false;
+        this.vrButtonBPressed = false;
+        this.lastVRLeftSpeed = 0;
+        this.lastVRRightSpeed = 0;
+        
+        // Остановить робота
+        this.sendMovementCommand(0, 0);
     }
 
     handleGamepadConnected(e) {

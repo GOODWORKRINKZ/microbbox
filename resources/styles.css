@@ -47,6 +47,38 @@ body {
     transform: scale(0.95);
 }
 
+/* Кнопка VR */
+.vr-btn {
+    position: fixed;
+    top: 10px;
+    right: 65px;
+    z-index: 999;
+    background: rgba(138, 43, 226, 0.8);
+    border: 2px solid rgba(186, 85, 211, 0.5);
+    color: white;
+    font-size: 16px;
+    padding: 10px 15px;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.3s;
+    font-weight: bold;
+}
+
+.vr-btn:hover {
+    background: rgba(186, 85, 211, 0.9);
+    border-color: #ba55d3;
+    transform: scale(1.05);
+}
+
+.vr-btn:active {
+    transform: scale(0.95);
+}
+
+.vr-btn.active {
+    background: linear-gradient(145deg, #00ff88, #00cc66);
+    border-color: #00ff88;
+}
+
 /* Экран загрузки */
 .loading-screen {
     position: fixed;
