@@ -24,9 +24,9 @@ build_date = datetime.datetime.now().strftime("%Y-%m-%d")
 # Добавляем версии в CPPDEFINES
 env.Append(
     CPPDEFINES=[
-        ("GIT_VERSION", '"{}"'.format(git_version)),
-        ("PROJECT_NAME", '"MicRoBBox"'),
-        ("BUILD_DATE", '"{}"'.format(build_date))
+        ('GIT_VERSION', r'\"{}\"'.format(git_version)),
+        ('PROJECT_NAME', r'\"MicRoBBox\"'),
+        ('BUILD_DATE', r'\"{}\"'.format(build_date))
     ]
 )
 
