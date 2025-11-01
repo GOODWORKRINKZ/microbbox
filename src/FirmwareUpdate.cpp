@@ -67,8 +67,8 @@ void FirmwareUpdate::registerUpdateHandlers(AsyncWebServer* server) {
                 updateStatus = "Обновление завершено";
                 request->send(response);
                 
-                // Перезагрузка в отдельной задаче с минимальной задержкой
-                // чтобы не блокировать сервер
+                // Минимальная задержка чтобы ответ успел отправиться перед перезагрузкой
+                // В идеале использовать таймер, но delay(100) достаточно короткий
                 delay(100);
                 ESP.restart();
             }
@@ -115,7 +115,9 @@ void FirmwareUpdate::registerUpdateHandlers(AsyncWebServer* server) {
                     int colonPos = body.indexOf(":", autoUpdatePos);
                     if (colonPos >= 0) {
                         // Берем небольшой участок строки после : и ищем true
-                        String valueSection = body.substring(colonPos + 1, min(colonPos + 10, (int)body.length()));
+                        int endPos = colonPos + 10;
+                        if (endPos > (int)body.length()) endPos = body.length();
+                        String valueSection = body.substring(colonPos + 1, endPos);
                         valueSection.trim();
                         enabled = valueSection.startsWith("true");
                     }
@@ -126,7 +128,9 @@ void FirmwareUpdate::registerUpdateHandlers(AsyncWebServer* server) {
                 if (dontOfferPos >= 0) {
                     int colonPos = body.indexOf(":", dontOfferPos);
                     if (colonPos >= 0) {
-                        String valueSection = body.substring(colonPos + 1, min(colonPos + 10, (int)body.length()));
+                        int endPos = colonPos + 10;
+                        if (endPos > (int)body.length()) endPos = body.length();
+                        String valueSection = body.substring(colonPos + 1, endPos);
                         valueSection.trim();
                         dontOffer = valueSection.startsWith("true");
                     }
@@ -343,8 +347,8 @@ bool FirmwareUpdate::parseGitHubRelease(const String& json, ReleaseInfo& release
             int urlStart = urlPos + 24;
             int urlEnd = assetsSection.indexOf("\"", urlStart);
             String url = assetsSection.substring(urlStart, urlEnd);
-            // Ищем .bin файл с release в имени (более строгая проверка)
-            if (url.endsWith(".bin") && url.indexOf("-release.bin") > 0) {
+            // Ищем .bin файл с -release.bin в конце имени
+            if (url.endsWith("-release.bin")) {
                 releaseInfo.downloadUrl = url;
             }
         }
