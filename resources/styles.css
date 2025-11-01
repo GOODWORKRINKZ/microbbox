@@ -972,7 +972,7 @@ body {
 }
 
 /* Mobile responsive adjustments for T-800 overlay */
-@media (max-width: 768px) and (orientation: landscape) {
+@media (max-width: 768px) {
     .t800-data {
         padding: 5px;
         font-size: 10px;
@@ -1006,5 +1006,22 @@ body {
     .t800-data.top-right,
     .t800-data.bottom-right {
         right: 10px;
+    }
+}
+
+/* Additional adjustments for portrait mode */
+@media (max-width: 768px) and (orientation: portrait) {
+    .t800-data {
+        padding: 8px;
+        font-size: 11px;
+    }
+    
+    .t800-text {
+        font-size: 10px;
+    }
+    
+    .t800-reticle {
+        width: 70px;
+        height: 70px;
     }
 }
