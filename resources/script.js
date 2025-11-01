@@ -1389,6 +1389,14 @@ class MicroBoxController {
             FAILED: 4
         };
         
+        // Константы для опроса статуса
+        const POLL_INTERVAL_MS = 1000; // Опрос каждую секунду
+        const TOTAL_TIMEOUT_MS = 120000; // Общий таймаут 2 минуты
+        const MAX_CONSECUTIVE_ERRORS = 5; // Максимум последовательных ошибок
+        const EARLY_ERROR_THRESHOLD = 30; // Порог "ранних" ошибок (первые 30 секунд)
+        
+        const maxPolls = TOTAL_TIMEOUT_MS / POLL_INTERVAL_MS;
+        
         const progressDiv = document.getElementById('uploadProgress');
         const progressFill = document.getElementById('progressFill');
         const progressText = document.getElementById('progressText');
@@ -1423,9 +1431,7 @@ class MicroBoxController {
                 
                 // Начинаем опрос статуса обновления
                 let pollCount = 0;
-                const maxPolls = 120; // 2 минуты максимум
                 let consecutiveErrors = 0;
-                const maxConsecutiveErrors = 5; // Разрешаем 5 последовательных ошибок (во время перезагрузки)
                 
                 const pollInterval = setInterval(async () => {
                     pollCount++;
@@ -1466,7 +1472,7 @@ class MicroBoxController {
                         console.log('Poll attempt ' + pollCount + ', error count: ' + consecutiveErrors, error.message);
                         
                         // Если слишком много последовательных ошибок в начале процесса - это проблема
-                        if (consecutiveErrors >= maxConsecutiveErrors && pollCount < 30) {
+                        if (consecutiveErrors >= MAX_CONSECUTIVE_ERRORS && pollCount < EARLY_ERROR_THRESHOLD) {
                             clearInterval(pollInterval);
                             throw new Error('Не удалось получить статус обновления. Возможно, устройство недоступно.');
                         }
@@ -1479,7 +1485,7 @@ class MicroBoxController {
                         downloadBtn.disabled = false;
                         downloadBtn.textContent = 'Скачать и установить автоматически';
                     }
-                }, 1000);
+                }, POLL_INTERVAL_MS);
             } else {
                 throw new Error(data.message || 'Неизвестная ошибка');
             }

@@ -512,8 +512,15 @@ bool FirmwareUpdate::downloadAndInstallFirmware(const String& url) {
     updateSize = http.getSize();
     DEBUG_PRINTF("Размер прошивки: %d байт\n", updateSize);
     
+    // Проверяем размер файла
+    if (updateSize <= 0) {
+        DEBUG_PRINTLN("Не удалось получить размер прошивки, используем режим неизвестного размера");
+        updateSize = 0; // Будем использовать UPDATE_SIZE_UNKNOWN
+    }
+    
     // Начинаем OTA обновление
-    if (!Update.begin(updateSize)) {
+    size_t updateCapacity = (updateSize > 0) ? updateSize : UPDATE_SIZE_UNKNOWN;
+    if (!Update.begin(updateCapacity)) {
         Update.printError(Serial);
         currentState = UpdateState::FAILED;
         updateStatus = "Ошибка начала обновления";
@@ -529,6 +536,8 @@ bool FirmwareUpdate::downloadAndInstallFirmware(const String& url) {
     WiFiClient* stream = http.getStreamPtr();
     
     uint8_t buff[512] = { 0 };
+    unsigned long lastDataTime = millis();
+    const unsigned long DOWNLOAD_TIMEOUT_MS = 30000; // 30 секунд таймаут без данных
     
     // Скачиваем файл полностью
     // Используем updateSize если известен, иначе читаем до конца потока
@@ -536,6 +545,9 @@ bool FirmwareUpdate::downloadAndInstallFirmware(const String& url) {
         size_t available = stream->available();
         
         if (available) {
+            // Сбрасываем таймер при получении данных
+            lastDataTime = millis();
+            
             // Читаем данные порциями
             int readLen = stream->readBytes(buff, ((available > sizeof(buff)) ? sizeof(buff) : available));
             
@@ -565,6 +577,16 @@ bool FirmwareUpdate::downloadAndInstallFirmware(const String& url) {
                 if (updateSize > 0 && updateReceived >= updateSize) {
                     break;
                 }
+            }
+        } else {
+            // Проверяем таймаут без данных
+            if (millis() - lastDataTime > DOWNLOAD_TIMEOUT_MS) {
+                DEBUG_PRINTLN("Таймаут загрузки - нет данных более 30 секунд");
+                currentState = UpdateState::FAILED;
+                updateStatus = "Таймаут загрузки";
+                http.end();
+                updating = false;
+                return false;
             }
         }
         
