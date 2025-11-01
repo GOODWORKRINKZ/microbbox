@@ -10,10 +10,15 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="screen-orientation" content="landscape">
+    <!-- WebXR требует HTTPS или localhost -->
+    <meta http-equiv="origin-trial" content="">
 </head>
 <body>
     <!-- Кнопка fullscreen -->
     <button id="fullscreenBtn" class="fullscreen-btn" title="Полноэкранный режим">⛶</button>
+    
+    <!-- Кнопка входа в VR -->
+    <button id="vrBtn" class="vr-btn hidden" title="Войти в VR режим">🥽 VR</button>
     
     <div id="loading" class="loading-screen">
         <div class="loader"></div>
