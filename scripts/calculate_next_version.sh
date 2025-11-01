@@ -18,8 +18,11 @@ if [[ ! "$RELEASE_TYPE" =~ ^(major|minor|patch)$ ]]; then
   exit 1
 fi
 
+# Default initial version if no tags exist
+DEFAULT_VERSION="v0.0.0"
+
 # Get the latest tag that matches v*.*.* pattern
-LATEST_TAG=$(git describe --tags --abbrev=0 --match='v*.*.*' 2>/dev/null || echo "v0.0.0")
+LATEST_TAG=$(git describe --tags --abbrev=0 --match='v*.*.*' 2>/dev/null || echo "$DEFAULT_VERSION")
 
 echo "Latest tag: $LATEST_TAG" >&2
 
@@ -27,10 +30,10 @@ echo "Latest tag: $LATEST_TAG" >&2
 VERSION_WITHOUT_V=${LATEST_TAG#v}
 IFS='.' read -r MAJOR MINOR PATCH <<< "$VERSION_WITHOUT_V"
 
-# Default to 0 if components are empty
-MAJOR=${MAJOR:-0}
-MINOR=${MINOR:-0}
-PATCH=${PATCH:-0}
+# Validate semantic versioning format and default to 0 if components are empty or invalid
+if ! [[ "$MAJOR" =~ ^[0-9]+$ ]]; then MAJOR=0; fi
+if ! [[ "$MINOR" =~ ^[0-9]+$ ]]; then MINOR=0; fi
+if ! [[ "$PATCH" =~ ^[0-9]+$ ]]; then PATCH=0; fi
 
 echo "Current version: $MAJOR.$MINOR.$PATCH" >&2
 
