@@ -31,6 +31,10 @@ class MicroBoxController {
         this.lastVRLeftSpeed = 0;
         this.lastVRRightSpeed = 0;
         
+        // T-800 overlay state
+        this.t800Interval = null;
+        this.t800StartTime = null;
+        
         this.init();
     }
 
@@ -169,6 +173,7 @@ class MicroBoxController {
             effectModeSelect.addEventListener('change', (e) => {
                 this.effectMode = e.target.value;
                 this.sendCommand('setEffectMode', { mode: this.effectMode });
+                this.updateT800Overlay();
             });
         }
 
@@ -492,7 +497,7 @@ class MicroBoxController {
     }
 
     setEffectMode(mode) {
-        const modes = ['normal', 'police', 'fire', 'ambulance'];
+        const modes = ['normal', 'police', 'fire', 'ambulance', 'terminator'];
         this.effectMode = modes[mode] || 'normal';
         
         this.sendCommand('setEffectMode', { mode: this.effectMode });
@@ -500,6 +505,92 @@ class MicroBoxController {
         const select = document.getElementById('effectMode');
         if (select) {
             select.value = this.effectMode;
+        }
+        
+        // Handle T-800 overlay
+        this.updateT800Overlay();
+    }
+    
+    updateT800Overlay() {
+        const overlay = document.getElementById('t800Overlay');
+        if (!overlay) return;
+        
+        if (this.effectMode === 'terminator') {
+            // Show T-800 overlay
+            overlay.classList.remove('hidden');
+            this.startT800Updates();
+        } else {
+            // Hide T-800 overlay
+            overlay.classList.add('hidden');
+            this.stopT800Updates();
+        }
+    }
+    
+    startT800Updates() {
+        // Initialize start time
+        this.t800StartTime = Date.now();
+        
+        // Update T-800 HUD elements
+        if (this.t800Interval) {
+            clearInterval(this.t800Interval);
+        }
+        
+        this.t800Interval = setInterval(() => {
+            this.updateT800HUD();
+        }, 100); // Update every 100ms
+    }
+    
+    stopT800Updates() {
+        if (this.t800Interval) {
+            clearInterval(this.t800Interval);
+            this.t800Interval = null;
+        }
+    }
+    
+    updateT800HUD() {
+        // Update time display
+        const elapsed = Date.now() - this.t800StartTime;
+        const hours = Math.floor(elapsed / 3600000);
+        const minutes = Math.floor((elapsed % 3600000) / 60000);
+        const seconds = Math.floor((elapsed % 60000) / 1000);
+        
+        const timeStr = `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+        
+        const timeEl = document.getElementById('t800Time');
+        if (timeEl) {
+            timeEl.textContent = timeStr;
+        }
+        
+        // Update threat level based on movement
+        const isMoving = this.leftJoystick.active || this.rightJoystick.active || 
+                        Object.values(this.keyStates).some(state => state);
+        
+        const threatEl = document.getElementById('t800Threat');
+        if (threatEl) {
+            if (isMoving) {
+                threatEl.textContent = 'MEDIUM';
+                threatEl.style.color = '#ffaa00';
+            } else {
+                threatEl.textContent = 'LOW';
+                threatEl.style.color = '#ff0000';
+            }
+        }
+        
+        // Update mode based on control mode
+        const modeEl = document.getElementById('t800Mode');
+        if (modeEl) {
+            if (isMoving) {
+                modeEl.textContent = 'ENGAGE';
+            } else {
+                modeEl.textContent = 'PATROL';
+            }
+        }
+        
+        // Simulate power fluctuation
+        const powerEl = document.getElementById('t800Power');
+        if (powerEl) {
+            const power = 95 + Math.floor(Math.random() * 5);
+            powerEl.textContent = `${power}%`;
         }
     }
 
@@ -747,12 +838,13 @@ class MicroBoxController {
     }
 
     cycleEffectMode() {
-        const modes = ['normal', 'police', 'fire', 'ambulance'];
+        const modes = ['normal', 'police', 'fire', 'ambulance', 'terminator'];
         const currentIndex = modes.indexOf(this.effectMode);
         const nextIndex = (currentIndex + 1) % modes.length;
         this.effectMode = modes[nextIndex];
         
         this.sendCommand('setEffectMode', { mode: this.effectMode });
+        this.updateT800Overlay();
         console.log('Режим эффекта:', this.effectMode);
     }
 
@@ -932,6 +1024,7 @@ class MicroBoxController {
         if (effectMode) {
             this.effectMode = effectMode.value;
             this.sendCommand('setEffectMode', { mode: this.effectMode });
+            this.updateT800Overlay();
         }
         
         // Сохранить в localStorage
