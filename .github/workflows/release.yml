@@ -55,9 +55,7 @@ jobs:
     - name: Cache PlatformIO
       uses: actions/cache@v4
       with:
-        path: |
-          ~/.platformio
-          .pio/libdeps
+        path: ~/.platformio
         key: ${{ runner.os }}-pio-${{ hashFiles('**/platformio.ini') }}
         restore-keys: |
           ${{ runner.os }}-pio-
@@ -164,7 +162,22 @@ jobs:
       run: |
         VERSION=${{ steps.version.outputs.version }}
         
-        # Копируем и переименовываем файлы
+        # Check for built firmware files
+        echo "Checking for firmware files..."
+        ls -la .pio/build/release/ || echo "Release build directory not found!"
+        ls -la .pio/build/debug/ || echo "Debug build directory not found!"
+        
+        if [ ! -f ".pio/build/release/firmware.bin" ]; then
+          echo "ERROR: Release firmware.bin not found!"
+          exit 1
+        fi
+        
+        if [ ! -f ".pio/build/debug/firmware.bin" ]; then
+          echo "ERROR: Debug firmware.bin not found!"
+          exit 1
+        fi
+        
+        # Copy and rename firmware files
         cp .pio/build/release/firmware.bin microbox-${VERSION}-release.bin
         cp .pio/build/debug/firmware.bin microbox-${VERSION}-debug.bin
         
