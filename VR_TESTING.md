@@ -5,7 +5,7 @@ This document provides a comprehensive testing checklist for the VR mode impleme
 ## Prerequisites
 
 - Oculus Quest (1, 2, 3, or Pro) with updated firmware
-- МикроББокс robot powered on and connected to WiFi
+- МикРоББокс robot powered on and connected to WiFi
 - Robot and Quest on the same network
 - Fully charged Quest controllers
 
