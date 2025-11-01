@@ -1727,6 +1727,53 @@ body {
     }
 }
 
+/* Адаптация firmware-update для мобильных устройств */
+@media (max-width: 768px) {
+    .firmware-glitch-text {
+        font-size: 1.8em;
+        margin-bottom: 20px;
+    }
+    
+    .firmware-status {
+        font-size: 1.1em;
+        margin: 15px 10px;
+        padding: 0 10px;
+    }
+    
+    .firmware-progress {
+        width: 90vw;
+        max-width: 350px;
+        height: 25px;
+        margin: 15px 0;
+    }
+    
+    .firmware-progress-text {
+        font-size: 1em;
+    }
+    
+    .firmware-release-info {
+        max-width: 90vw;
+        padding: 15px;
+        margin: 15px 10px;
+        font-size: 0.95em;
+    }
+    
+    .firmware-release-info h3 {
+        font-size: 1.2em;
+    }
+    
+    .firmware-release-info p {
+        font-size: 1em;
+    }
+    
+    .firmware-warnings {
+        max-width: 90vw;
+        padding: 15px;
+        margin: 15px 10px;
+        font-size: 0.9em;
+    }
+}
+
 /* Адаптивность для мобильных */
 @media (max-width: 768px) {
     .update-success-notification {

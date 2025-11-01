@@ -109,6 +109,7 @@ class MicroBoxController {
                 console.log('Обновление обнаружено:', savedVersion, '->', currentVersion);
                 
                 // Показываем уведомление об успешном обновлении
+                console.log('[UPDATE] Calling showUpdateSuccessNotification...');
                 this.showUpdateSuccessNotification(savedVersion, currentVersion);
                 
                 // Сохраняем новую версию
@@ -124,6 +125,7 @@ class MicroBoxController {
     }
     
     showUpdateSuccessNotification(oldVersion, newVersion) {
+        console.log('[UPDATE] showUpdateSuccessNotification called:', oldVersion, '->', newVersion);
         // Создаем красивое уведомление о успешном обновлении
         const notification = document.createElement('div');
         notification.className = 'update-success-notification';
@@ -138,7 +140,9 @@ class MicroBoxController {
             </div>
         `;
         
+        console.log('[UPDATE] Appending notification to body...');
         document.body.appendChild(notification);
+        console.log('[UPDATE] Notification appended successfully');
         
         // Автоматически скрыть через 10 секунд
         setTimeout(() => {
@@ -1489,13 +1493,29 @@ class MicroBoxController {
     
     // Функция для обновления статуса на экране обновления
     updateFirmwareStatus(status, progress) {
+        console.log('[OTA DEBUG] updateFirmwareStatus called:', status, progress + '%');
         const statusEl = document.getElementById('firmwareStatus');
         const progressFill = document.getElementById('firmwareProgressFill');
         const progressText = document.getElementById('firmwareProgressText');
         
-        if (statusEl) statusEl.textContent = status;
-        if (progressFill) progressFill.style.width = progress + '%';
-        if (progressText) progressText.textContent = progress + '%';
+        console.log('[OTA DEBUG] Elements found:', {
+            statusEl: !!statusEl,
+            progressFill: !!progressFill,
+            progressText: !!progressText
+        });
+        
+        if (statusEl) {
+            statusEl.textContent = status;
+            console.log('[OTA DEBUG] Status updated to:', status);
+        }
+        if (progressFill) {
+            progressFill.style.width = progress + '%';
+            console.log('[OTA DEBUG] Progress bar width set to:', progress + '%');
+        }
+        if (progressText) {
+            progressText.textContent = progress + '%';
+            console.log('[OTA DEBUG] Progress text set to:', progress + '%');
+        }
     }
     
     // Функция для скрытия оверлея с финальным глитч-эффектом и перезагрузкой страницы
@@ -1555,15 +1575,22 @@ class MicroBoxController {
     }
 
     async downloadAndInstallUpdate() {
+        console.log('[OTA] downloadAndInstallUpdate started');
+        
         // Проверяем что есть информация о релизе
         if (!this.updateDownloadUrl || !this.latestReleaseInfo) {
+            console.log('[OTA] No download URL or release info');
             alert('URL обновления не найден. Сначала проверьте наличие обновлений.');
             return;
         }
         
+        console.log('[OTA] Showing confirmation dialog');
         if (!confirm('Начать загрузку и установку обновления? Это займет несколько минут.')) {
+            console.log('[OTA] User cancelled');
             return;
         }
+        
+        console.log('[OTA] User confirmed, starting update');
         
         // Константы для состояний обновления (соответствуют UpdateState в FirmwareUpdate.h)
         const UpdateState = {
@@ -1584,12 +1611,15 @@ class MicroBoxController {
         const maxPolls = TOTAL_TIMEOUT_MS / POLL_INTERVAL_MS;
         
         try {
+            console.log('[OTA] Calling showFirmwareUpdateScreen with releaseInfo:', this.latestReleaseInfo);
             // Показываем экран обновления с глитч-эффектом
             const overlay = this.showFirmwareUpdateScreen(this.latestReleaseInfo);
+            console.log('[OTA] Overlay created:', overlay);
             
             // Небольшая задержка для эффекта
             await new Promise(resolve => setTimeout(resolve, 1000));
             
+            console.log('[OTA] Sending update request to backend');
             // Отправляем запрос на бэкенд для скачивания и установки
             this.updateFirmwareStatus('Отправка запроса на сервер...', 0);
             
@@ -1683,11 +1713,14 @@ class MicroBoxController {
         try {
             pollInterval = setInterval(async () => {
                     pollCount++;
+                    console.log('[OTA DEBUG] Poll attempt #' + pollCount);
                     
                     try {
                         const statusResponse = await fetch('/api/update/status');
+                        console.log('[OTA DEBUG] Status response OK:', statusResponse.ok);
                         if (statusResponse.ok) {
                             const status = await statusResponse.json();
+                            console.log('[OTA DEBUG] Status data:', JSON.stringify(status));
                             
                             // Сбрасываем счетчик ошибок при успешном ответе
                             consecutiveErrors = 0;
@@ -1700,6 +1733,7 @@ class MicroBoxController {
                                 statusText = 'Установка прошивки: ' + statusText;
                             }
                             
+                            console.log('[OTA DEBUG] About to call updateFirmwareStatus with:', statusText, status.progress);
                             this.updateFirmwareStatus(statusText, status.progress);
                             
                             // Проверяем состояние

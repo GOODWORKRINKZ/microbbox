@@ -340,6 +340,26 @@ IPAddress MicroBoxRobot::getIP() {
 bool MicroBoxRobot::initCamera() {
     DEBUG_PRINTLN("Инициализация камеры...");
     
+    // КРИТИЧНО: Hardware reset камеры для корректной работы после OTA обновления
+    // ESP32-CAM нуждается в полном сбросе камеры после soft reset
+    if (PWDN_GPIO_NUM != -1) {
+        pinMode(PWDN_GPIO_NUM, OUTPUT);
+        digitalWrite(PWDN_GPIO_NUM, HIGH); // Power down
+        delay(100);
+        digitalWrite(PWDN_GPIO_NUM, LOW);  // Power up
+        delay(100);
+        DEBUG_PRINTLN("Камера сброшена через PWDN");
+    }
+    
+    if (RESET_GPIO_NUM != -1) {
+        pinMode(RESET_GPIO_NUM, OUTPUT);
+        digitalWrite(RESET_GPIO_NUM, LOW);  // Reset
+        delay(100);
+        digitalWrite(RESET_GPIO_NUM, HIGH); // Release reset
+        delay(100);
+        DEBUG_PRINTLN("Камера сброшена через RESET");
+    }
+    
     camera_config_t config;
     config.ledc_channel = LEDC_CHANNEL_0;
     config.ledc_timer = LEDC_TIMER_0;
