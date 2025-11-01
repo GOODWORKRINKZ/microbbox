@@ -1,4 +1,5 @@
 #include "FirmwareUpdate.h"
+#include "esp_task_wdt.h"
 
 FirmwareUpdate::FirmwareUpdate() :
     updating(false),
@@ -8,6 +9,8 @@ FirmwareUpdate::FirmwareUpdate() :
     updateReceived(0),
     updateStartTime(0),
     currentProgress(0),
+    shouldReboot(false),
+    rebootScheduledTime(0),
     autoUpdateEnabled(false),
     dontOfferUpdates(false)
 {
@@ -36,8 +39,11 @@ bool FirmwareUpdate::init(AsyncWebServer* server) {
 }
 
 void FirmwareUpdate::loop() {
-    // В новой системе не нужен отдельный loop для режима обновления
-    // Обновления происходят напрямую через HTTP upload
+    // Проверяем, нужна ли отложенная перезагрузка
+    if (shouldReboot && millis() >= rebootScheduledTime) {
+        DEBUG_PRINTLN("Выполняем отложенную перезагрузку...");
+        ESP.restart();
+    }
 }
 
 void FirmwareUpdate::shutdown() {
@@ -67,10 +73,10 @@ void FirmwareUpdate::registerUpdateHandlers(AsyncWebServer* server) {
                 updateStatus = "Обновление завершено";
                 request->send(response);
                 
-                // Минимальная задержка чтобы ответ успел отправиться перед перезагрузкой
-                // В идеале использовать таймер, но delay(100) достаточно короткий
-                delay(100);
-                ESP.restart();
+                // Планируем перезагрузку через 1 секунду, чтобы ответ успел отправиться
+                shouldReboot = true;
+                rebootScheduledTime = millis() + 1000;
+                DEBUG_PRINTLN("Перезагрузка запланирована через 1 секунду");
             }
         },
         [this](AsyncWebServerRequest *request, String filename, size_t index, uint8_t *data, size_t len, bool final) {
@@ -449,28 +455,40 @@ void FirmwareUpdate::handleDownloadAndInstall(AsyncWebServerRequest *request) {
         return;
     }
     
-    // Сначала отправляем ответ, что начали скачивание
+    // ВАЖНО: Устанавливаем статус ПЕРЕД отправкой ответа
+    // Это позволит фронтенду сразу увидеть начало процесса
+    updating = true;
+    currentState = UpdateState::DOWNLOADING;
+    updateStatus = "Подготовка к скачиванию прошивки";
+    updateStartTime = millis();
+    updateReceived = 0;
+    currentProgress = 0;
+    
+    // Отправляем ответ с информацией о начале процесса
     AsyncWebServerResponse *response = request->beginResponse(200, "application/json", 
-        "{\"status\":\"ok\",\"message\":\"Начато скачивание прошивки\"}");
+        "{\"status\":\"ok\",\"message\":\"Начато скачивание прошивки\",\"updating\":true}");
     response->addHeader("Access-Control-Allow-Origin", "*");
     request->send(response);
     
     // ВАЖНО: Блокирующая операция скачивания и установки прошивки
     // Это нормально для OTA обновления - нельзя прерывать процесс
     // Веб-сервер будет недоступен во время обновления (~30-60 секунд)
-    delay(100); // Даем время отправиться ответу
+    // НО мы используем yield() и esp_task_wdt_reset() внутри для предотвращения watchdog timeout
+    // Фронтенд должен опрашивать /api/update/status для отображения прогресса
     
     // Скачиваем и устанавливаем
     bool success = downloadAndInstallFirmware(url);
     
     if (success) {
-        DEBUG_PRINTLN("Прошивка успешно установлена, перезагрузка...");
-        delay(500);
-        ESP.restart();
+        DEBUG_PRINTLN("Прошивка успешно установлена, планируем перезагрузку...");
+        // Планируем перезагрузку через 2 секунды
+        shouldReboot = true;
+        rebootScheduledTime = millis() + 2000;
     } else {
         DEBUG_PRINTLN("Ошибка установки прошивки");
         currentState = UpdateState::FAILED;
         updateStatus = "Ошибка установки прошивки";
+        updating = false; // Сбрасываем флаг при ошибке
     }
 }
 
@@ -484,12 +502,9 @@ bool FirmwareUpdate::downloadAndInstallFirmware(const String& url) {
     
     DEBUG_PRINTF("Скачивание прошивки с: %s\n", url.c_str());
     
-    updating = true;
+    // Обновляем статус (уже должен быть установлен в вызывающем коде, но на всякий случай)
     currentState = UpdateState::DOWNLOADING;
     updateStatus = "Скачивание прошивки с GitHub";
-    updateStartTime = millis();
-    updateReceived = 0;
-    currentProgress = 0;
     
     HTTPClient http;
     http.begin(url);
@@ -604,8 +619,10 @@ bool FirmwareUpdate::downloadAndInstallFirmware(const String& url) {
             }
         }
         
-        // Даем время другим задачам
+        // КРИТИЧНО: Сбрасываем watchdog и даем время другим задачам
+        esp_task_wdt_reset();
         yield();
+        delay(1); // Минимальная задержка для стабильности async_tcp
     }
     
     http.end();
