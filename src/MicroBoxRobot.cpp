@@ -175,9 +175,7 @@ bool MicroBoxRobot::initSafeModeForOTA() {
     delay(2000);
     ESP.restart();
     
-    // Никогда не достигается из-за ESP.restart() выше,
-    // но возвращаем success для соблюдения сигнатуры функции
-    return success;
+    return success;  // Unreachable, но компилятор требует return для bool функции
 }
 
 void MicroBoxRobot::loop() {
