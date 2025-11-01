@@ -1021,11 +1021,14 @@ void MicroBoxRobot::setControlMode(ControlMode mode) {
 void MicroBoxRobot::processControlInput(int leftX, int leftY, int rightX, int rightY) {
     // Дифференциальный режим управления (единственный доступный)
     // rightY = скорость (вперед/назад), leftX = поворот (лево/право)
+    // Формула соответствует ROS diff_drive_controller и ArduPilot:
+    // left_motor = throttle + steering (поворот вправо: левый быстрее)
+    // right_motor = throttle - steering (поворот вправо: правый медленнее)
     int speed = rightY;
     int turn = leftX;
     
-    int leftSpeed = speed - turn;
-    int rightSpeed = speed + turn;
+    int leftSpeed = speed + turn;
+    int rightSpeed = speed - turn;
     
     setMotorSpeed(leftSpeed, rightSpeed);
 }

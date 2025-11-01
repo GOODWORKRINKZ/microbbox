@@ -459,11 +459,14 @@ class MicroBoxController {
         let rightSpeed = 0;
         
         // Дифференциальный режим: правый стик = скорость (только вертикаль), левый стик = поворот (только горизонталь)
+        // Формула соответствует ROS diff_drive_controller и ArduPilot:
+        // left_motor = speed + turn (поворот вправо: левый быстрее)
+        // right_motor = speed - turn (поворот вправо: правый медленнее)
         const speed = this.rightJoystick.y * this.speedSensitivity;
         const turn = this.leftJoystick.x * this.turnSensitivity;
         
-        leftSpeed = speed - turn;
-        rightSpeed = speed + turn;
+        leftSpeed = speed + turn;
+        rightSpeed = speed - turn;
         
         // Ограничение значений
         leftSpeed = Math.max(-100, Math.min(100, leftSpeed));
@@ -872,11 +875,14 @@ class MicroBoxController {
         
         // Дифференциальный режим: правый стик Y = скорость, левый стик X = поворот
         // (согласовано с мобильным управлением: левый = поворот, правый = скорость)
+        // Формула соответствует ROS diff_drive_controller и ArduPilot:
+        // left_motor = speed + turn (поворот вправо: левый быстрее)
+        // right_motor = speed - turn (поворот вправо: правый медленнее)
         const speed = -rightStick.y * this.speedSensitivity;
         const turn = -leftStick.x * this.turnSensitivity;
         
-        leftSpeed = speed - turn;
-        rightSpeed = speed + turn;
+        leftSpeed = speed + turn;
+        rightSpeed = speed - turn;
         
         // Ограничение значений
         leftSpeed = Math.max(-100, Math.min(100, leftSpeed));
