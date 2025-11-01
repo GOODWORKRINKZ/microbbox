@@ -56,34 +56,26 @@
 
 Папка **`diagrams/`** содержит схемы и диаграммы:
 
-**✅ Готовые диаграммы:**
-- **[system_architecture.md](diagrams/system_architecture.md)** - Mermaid диаграммы архитектуры (рендерятся на GitHub)
-  - Блок-схема компонентов и связей
-  - Последовательность обмена данными
-  - Состояния системы
-  - Схема питания с детализацией
-  - Варианты конфигураций
+**✅ Схемы из Fritzing:**
+- **[microbbox_breadboard.svg](diagrams/microbbox_breadboard.svg)** - Визуальная схема монтажа
+  - Все компоненты с реалистичным видом
+  - Показывает все соединения наглядно
+  - Идеально для сборки
   
-- **[connection_schematic.svg](diagrams/connection_schematic.svg)** - Схема подключения компонентов
-  - ESP32-CAM с распиновкой
-  - MX1508 с pull-down резисторами
-  - NeoPixel LED цепочка
-  - Бузер
-  - Все соединения с подписями
-  
-- **[power_distribution.svg](diagrams/power_distribution.svg)** - Схема распределения питания
-  - От батареи до всех компонентов
-  - Buck converter для 5V
-  - Конденсаторы развязки
-  - Расчет токов и нагрузки
+- **[microbbox_schematic.svg](diagrams/microbbox_schematic.svg)** - Принципиальная электрическая схема
+  - Стандартные символы компонентов
+  - Логические соединения
+  - Для технического анализа
 
-**Генераторы схем:**
-- `generate_svg_schematics.py` - Python скрипт для создания SVG схем
-- `generate_schematics.py` - Альтернативный генератор (schemdraw)
+- **[microbbox_pcb.svg](diagrams/microbbox_pcb.svg)** - Схема разводки PCB
+  - Физическое размещение компонентов
+  - Основа для создания печатной платы
+
 
 **Fritzing схемы** (`fritzing/`):
-- `microbbox.fzz` - Проект Fritzing со схемой подключения
+- `microbbox.fzz` - Исходный проект Fritzing
 - `microbbox.fzb` - Бинарный файл Fritzing
+- Экспортированные SVG схемы (breadboard, schematic, PCB)
 
 **Фото сборки** (`assembly/`):
 - `photo_1.jpg` - `photo_6.jpg` - Этапы сборки робота

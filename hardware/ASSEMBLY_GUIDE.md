@@ -77,13 +77,12 @@
 
 ### Схема подключения / Wiring Schematic
 
-Схемы Fritzing находятся в `hardware/diagrams/fritzing/`:
-- `microbbox.fzz` - Основной файл проекта Fritzing / Main Fritzing project file
-- `microbbox.fzb` - Бинарный файл Fritzing / Fritzing binary file
+Схемы находятся в `hardware/diagrams/`:
+- `microbbox_breadboard.svg` - **Визуальная схема монтажа (рекомендуется для сборки)**
+- `microbbox_schematic.svg` - Принципиальная электрическая схема
+- `microbbox_pcb.svg` - Схема разводки PCB
 
-Также см. существующие схемы в `hardware/diagrams/`:
-- `connection_schematic.svg` - Схема подключения компонентов
-- `power_distribution.svg` - Схема распределения питания
+Исходный файл Fritzing: `hardware/diagrams/fritzing/microbbox.fzz`
 
 ### Порядок подключения / Connection Order
 
