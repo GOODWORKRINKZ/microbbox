@@ -871,6 +871,7 @@ class MicroBoxController {
         let rightSpeed = 0;
         
         // Дифференциальный режим: правый стик Y = скорость, левый стик X = поворот
+        // (согласовано с мобильным управлением: левый = поворот, правый = скорость)
         const speed = -rightStick.y * this.speedSensitivity;
         const turn = -leftStick.x * this.turnSensitivity;
         
@@ -1138,7 +1139,6 @@ class MicroBoxController {
         localStorage.setItem('microbox-settings', JSON.stringify({
             speedSensitivity: this.speedSensitivity,
             turnSensitivity: this.turnSensitivity,
-            controlMode: this.controlMode,
             effectMode: this.effectMode
         }));
         
