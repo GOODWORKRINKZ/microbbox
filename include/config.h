@@ -23,7 +23,7 @@
 #endif
 
 #ifndef PROJECT_NAME
-#define PROJECT_NAME "MicroBox"
+#define PROJECT_NAME "MicRoBBox"
 #endif
 
 // GitHub repository для проверки обновлений
