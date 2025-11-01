@@ -104,6 +104,7 @@
                     <button id="flashlightBtn" class="feature-btn">💡 Фонарик</button>
                     <button id="hornBtn" class="feature-btn">🔊 Сигнал</button>
                     <button id="updateBtn" class="feature-btn update-btn">🔄 Обновление</button>
+                    <button id="helpBtn" class="feature-btn">❓ Справка</button>
                 </div>
             </div>
         </div>
@@ -131,6 +132,7 @@
                 <button id="mobileHorn" class="panel-btn">🔊</button>
                 <button id="mobileEffects" class="panel-btn">✨</button>
                 <button id="mobileUpdate" class="panel-btn">🔄</button>
+                <button id="mobileHelp" class="panel-btn">❓</button>
             </div>
         </div>
 
@@ -239,6 +241,122 @@
                 </div>
 
                 <button id="saveSettings" class="btn-primary">Сохранить</button>
+            </div>
+        </div>
+
+        <!-- Модальное окно справки -->
+        <div id="helpModal" class="modal hidden">
+            <div class="modal-content help-modal-content">
+                <span class="close help-close">&times;</span>
+                <h2>🤖 МикРоББокс - Дифференциальное Управление</h2>
+                <p>Демонстрация работы джойстиков в дифференциальном режиме</p>
+                
+                <div class="help-section">
+                    <h3>✨ Особенности Дифференциального Режима</h3>
+                    <div class="help-feature-grid">
+                        <div class="help-feature-box">
+                            <h4>◄═══► Левый Слот</h4>
+                            <p><strong>Горизонтальный слайдер</strong></p>
+                            <p>Управление поворотом робота (влево/вправо)</p>
+                            <p>Круг движется только по горизонтали</p>
+                        </div>
+                        <div class="help-feature-box">
+                            <h4>▲ Правый Слот ▼</h4>
+                            <p><strong>Вертикальный слайдер</strong></p>
+                            <p>Управление скоростью (вперед/назад)</p>
+                            <p>Круг движется только по вертикали</p>
+                        </div>
+                        <div class="help-feature-box">
+                            <h4>⚙️ Принцип Работы</h4>
+                            <p><strong>Дифференциальная передача</strong></p>
+                            <p>Левый мотор = Скорость + Поворот</p>
+                            <p>Правый мотор = Скорость - Поворот</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="demo-area-help">
+                    <div class="joystick-demo-help">
+                        <div class="joystick-label-help">
+                            ЛЕВЫЙ СЛОТ (Поворот)
+                            <div class="axis-label-help">◄────── X-axis ──────►</div>
+                        </div>
+                        <div class="joystick-container-help left">
+                            <div class="center-mark-help"></div>
+                            <div class="direction-arrows-help">
+                                <div class="arrow-help left">◄</div>
+                                <div class="arrow-help right">►</div>
+                            </div>
+                            <div class="joystick-knob-help" id="leftKnobDemo"></div>
+                        </div>
+                        <div class="value-display-help">
+                            Поворот: <span id="leftXDemo">0</span>%
+                        </div>
+                    </div>
+
+                    <div class="joystick-demo-help">
+                        <div class="joystick-label-help">
+                            ПРАВЫЙ СЛОТ (Скорость)
+                            <div class="axis-label-help">▲ Y-axis ▼</div>
+                        </div>
+                        <div class="joystick-container-help right">
+                            <div class="center-mark-help"></div>
+                            <div class="direction-arrows-help">
+                                <div class="arrow-help up">▲</div>
+                                <div class="arrow-help down">▼</div>
+                            </div>
+                            <div class="joystick-knob-help" id="rightKnobDemo"></div>
+                        </div>
+                        <div class="value-display-help">
+                            Скорость: <span id="rightYDemo">0</span>%
+                        </div>
+                    </div>
+                </div>
+
+                <div class="help-diagram">
+                    <h3>📐 Формулы Расчета Скорости Моторов</h3>
+                    <div class="help-formula">
+                        <strong>Входные данные:</strong><br>
+                        • speed = rightJoystick.y × speedSensitivity<br>
+                        • turn = leftJoystick.x × turnSensitivity
+                    </div>
+                    <div class="help-formula">
+                        <strong>Расчет скорости моторов:</strong><br>
+                        • leftMotorSpeed = speed + turn<br>
+                        • rightMotorSpeed = speed - turn
+                    </div>
+                    <div class="help-formula">
+                        <strong>Примеры:</strong><br>
+                        📍 Движение вперед: speed=80, turn=0 → Left=80, Right=80<br>
+                        📍 Поворот направо: speed=80, turn=40 → Left=120, Right=40<br>
+                        📍 Поворот налево: speed=80, turn=-40 → Left=40, Right=120<br>
+                        📍 Разворот на месте: speed=0, turn=60 → Left=60, Right=-60
+                    </div>
+                </div>
+
+                <div class="help-section">
+                    <h3>🎮 Как Использовать</h3>
+                    <div class="help-feature-grid">
+                        <div class="help-feature-box">
+                            <h4>1️⃣ Движение Вперед/Назад</h4>
+                            <p>Используйте <strong>ПРАВЫЙ СЛОТ</strong></p>
+                            <p>▲ Сдвиньте круг вверх = вперед</p>
+                            <p>▼ Сдвиньте круг вниз = назад</p>
+                        </div>
+                        <div class="help-feature-box">
+                            <h4>2️⃣ Повороты</h4>
+                            <p>Используйте <strong>ЛЕВЫЙ СЛОТ</strong></p>
+                            <p>◄ Сдвиньте круг влево = поворот налево</p>
+                            <p>► Сдвиньте круг вправо = поворот направо</p>
+                        </div>
+                        <div class="help-feature-box">
+                            <h4>3️⃣ Комбинированное Управление</h4>
+                            <p>Используйте <strong>ОБА СЛОТА</strong></p>
+                            <p>Для плавных поворотов на ходу</p>
+                            <p>Комбинируйте скорость и поворот одновременно</p>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
 

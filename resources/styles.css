@@ -1138,3 +1138,259 @@ body {
     opacity: 0.5;
     cursor: not-allowed;
 }
+
+/* ===== Help Modal Styles ===== */
+.help-modal-content {
+    max-width: 1000px;
+    max-height: 90vh;
+    overflow-y: auto;
+}
+
+.help-section {
+    margin: 30px 0;
+}
+
+.help-section h3 {
+    color: #00ff88;
+    margin-bottom: 20px;
+    font-size: 1.5em;
+    text-align: center;
+}
+
+.help-feature-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 20px;
+    margin-top: 20px;
+}
+
+.help-feature-box {
+    background: rgba(255, 255, 255, 0.1);
+    padding: 20px;
+    border-radius: 10px;
+    border: 2px solid rgba(0, 255, 136, 0.3);
+    transition: all 0.3s;
+}
+
+.help-feature-box:hover {
+    border-color: #00ff88;
+    transform: translateY(-5px);
+    box-shadow: 0 5px 20px rgba(0, 255, 136, 0.3);
+}
+
+.help-feature-box h4 {
+    color: #00ff88;
+    margin-bottom: 10px;
+    font-size: 1.2em;
+}
+
+.help-feature-box p {
+    line-height: 1.6;
+    opacity: 0.9;
+    margin: 5px 0;
+}
+
+.demo-area-help {
+    display: flex;
+    justify-content: space-around;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 80px;
+    padding: 40px 20px;
+    background: rgba(0, 0, 0, 0.3);
+    border-radius: 15px;
+    margin: 30px 0;
+}
+
+.joystick-demo-help {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 20px;
+}
+
+/* Horizontal slot for left joystick */
+.joystick-container-help.left {
+    position: relative;
+    width: 300px;
+    height: 80px;
+    border: 4px solid #00ff88;
+    border-radius: 40px;
+    background: rgba(0, 255, 136, 0.1);
+    box-shadow: 0 0 30px rgba(0, 255, 136, 0.3),
+                inset 0 0 20px rgba(0, 0, 0, 0.5);
+}
+
+/* Vertical slot for right joystick */
+.joystick-container-help.right {
+    position: relative;
+    width: 80px;
+    height: 300px;
+    border: 4px solid #ff4444;
+    border-radius: 40px;
+    background: rgba(255, 68, 68, 0.1);
+    box-shadow: 0 0 30px rgba(255, 68, 68, 0.3),
+                inset 0 0 20px rgba(0, 0, 0, 0.5);
+}
+
+.joystick-knob-help {
+    position: absolute;
+    width: 60px;
+    height: 60px;
+    background: linear-gradient(145deg, #00ff88, #00cc66);
+    border-radius: 50%;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.5),
+                0 0 20px rgba(0, 255, 136, 0.5);
+    transition: all 0.1s ease-out;
+    border: 3px solid rgba(255, 255, 255, 0.3);
+}
+
+.joystick-container-help.right .joystick-knob-help {
+    background: linear-gradient(145deg, #ff4444, #cc3333);
+    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.5),
+                0 0 20px rgba(255, 68, 68, 0.5);
+}
+
+.center-mark-help {
+    position: absolute;
+    width: 3px;
+    height: 3px;
+    background: rgba(255, 255, 255, 0.5);
+    border-radius: 50%;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    box-shadow: 0 0 10px rgba(255, 255, 255, 0.8);
+}
+
+.center-mark-help::before {
+    content: '';
+    position: absolute;
+    width: 20px;
+    height: 20px;
+    border: 2px dashed rgba(255, 255, 255, 0.3);
+    border-radius: 50%;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+}
+
+.direction-arrows-help {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+}
+
+.arrow-help {
+    position: absolute;
+    color: rgba(255, 255, 255, 0.7);
+    font-size: 28px;
+    font-weight: bold;
+    text-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
+}
+
+/* Arrows for horizontal slot */
+.joystick-container-help.left .arrow-help.left { 
+    left: 15px; 
+    top: 50%; 
+    transform: translateY(-50%); 
+}
+.joystick-container-help.left .arrow-help.right { 
+    right: 15px; 
+    top: 50%; 
+    transform: translateY(-50%); 
+}
+
+/* Arrows for vertical slot */
+.joystick-container-help.right .arrow-help.up { 
+    top: 15px; 
+    left: 50%; 
+    transform: translateX(-50%); 
+}
+.joystick-container-help.right .arrow-help.down { 
+    bottom: 15px; 
+    left: 50%; 
+    transform: translateX(-50%); 
+}
+
+.joystick-label-help {
+    font-size: 1.2em;
+    color: #00ff88;
+    text-align: center;
+    font-weight: bold;
+    text-shadow: 0 0 10px rgba(0, 255, 136, 0.5);
+}
+
+.joystick-container-help.right + .joystick-label-help {
+    color: #ff4444;
+    text-shadow: 0 0 10px rgba(255, 68, 68, 0.5);
+}
+
+.axis-label-help {
+    font-size: 0.9em;
+    opacity: 0.8;
+    margin-top: 5px;
+}
+
+.value-display-help {
+    margin-top: 10px;
+    padding: 10px 20px;
+    background: rgba(0, 0, 0, 0.5);
+    border-radius: 8px;
+    font-family: 'Courier New', monospace;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.help-diagram {
+    background: rgba(0, 0, 0, 0.3);
+    border-radius: 15px;
+    padding: 30px;
+    border: 2px solid rgba(0, 255, 136, 0.3);
+    margin: 30px 0;
+}
+
+.help-diagram h3 {
+    color: #00ff88;
+    margin-bottom: 20px;
+    text-align: center;
+}
+
+.help-formula {
+    background: rgba(255, 255, 255, 0.1);
+    padding: 15px;
+    border-radius: 8px;
+    margin: 10px 0;
+    font-family: 'Courier New', monospace;
+    border-left: 4px solid #00ff88;
+    line-height: 1.8;
+}
+
+@media (max-width: 768px) {
+    .help-modal-content {
+        padding: 20px;
+    }
+    
+    .demo-area-help {
+        flex-direction: column;
+        gap: 40px;
+    }
+    
+    .joystick-container-help.left {
+        width: 250px;
+        height: 70px;
+    }
+    
+    .joystick-container-help.right {
+        width: 70px;
+        height: 250px;
+    }
+    
+    .joystick-knob-help {
+        width: 50px;
+        height: 50px;
+    }
+}

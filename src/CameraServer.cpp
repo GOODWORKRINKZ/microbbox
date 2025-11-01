@@ -82,7 +82,6 @@ void startCameraStreamServer() {
     // Конфигурация httpd сервера
     httpd_config_t config = HTTPD_DEFAULT_CONFIG();
     config.server_port = 81; // Используем порт 81 для камеры (AsyncWebServer на 80)
-    config.ctrl_port = 32769;
     
     // Регистрация URI обработчика для стрима
     httpd_uri_t stream_uri = {
