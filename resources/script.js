@@ -612,36 +612,65 @@ class MicroBoxController {
             timeEl.textContent = timeStr;
         }
         
-        // Update threat level based on movement
+        // Update memory address (simulate changing hex values)
+        const memEl = document.getElementById('t800Mem');
+        if (memEl) {
+            const memAddr = 0x2000 + Math.floor(Math.random() * 0x1000);
+            memEl.textContent = '0x' + memAddr.toString(16).toUpperCase();
+        }
+        
+        // Check if moving
         const isMoving = this.leftJoystick.active || this.rightJoystick.active || 
                         (this.keyStates && Object.values(this.keyStates).some(state => state));
         
+        // Update scan status
+        const scanEl = document.getElementById('t800Scan');
+        if (scanEl) {
+            scanEl.textContent = isMoving ? 'TRACKING' : 'ACTIVE';
+        }
+        
+        // Update threat assessment
         const threatEl = document.getElementById('t800Threat');
         if (threatEl) {
             if (isMoving) {
-                threatEl.textContent = 'MEDIUM';
+                threatEl.textContent = 'DETECTED';
                 threatEl.style.color = '#ffaa00';
             } else {
-                threatEl.textContent = 'LOW';
+                threatEl.textContent = 'NONE';
                 threatEl.style.color = '#ff0000';
             }
         }
         
-        // Update mode based on control mode
-        const modeEl = document.getElementById('t800Mode');
-        if (modeEl) {
-            if (isMoving) {
-                modeEl.textContent = 'ENGAGE';
-            } else {
-                modeEl.textContent = 'PATROL';
-            }
-        }
-        
-        // Simulate power fluctuation
+        // Update power level (98-100%)
         const powerEl = document.getElementById('t800Power');
         if (powerEl) {
-            const power = 95 + Math.floor(Math.random() * 5);
+            const power = 98 + Math.floor(Math.random() * 3);
             powerEl.textContent = `${power}%`;
+        }
+        
+        // Update temperature (36-38°C for realistic body temp)
+        const tempEl = document.getElementById('t800Temp');
+        if (tempEl) {
+            const temp = 36 + Math.floor(Math.random() * 3);
+            tempEl.textContent = `${temp}°C`;
+        }
+        
+        // Update motor system status
+        const motorEl = document.getElementById('t800Motor');
+        if (motorEl) {
+            motorEl.textContent = isMoving ? 'ENGAGED' : 'NOMINAL';
+        }
+        
+        // Update optical system
+        const opticalEl = document.getElementById('t800Optical');
+        if (opticalEl) {
+            opticalEl.textContent = 'ONLINE';
+        }
+        
+        // Update neural net CPU
+        const netEl = document.getElementById('t800Net');
+        if (netEl) {
+            netEl.textContent = 'ACTIVE';
         }
     }
 
