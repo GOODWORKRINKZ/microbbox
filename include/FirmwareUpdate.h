@@ -85,6 +85,10 @@ private:
     unsigned long updateStartTime;
     int currentProgress;
     
+    // Отложенная перезагрузка
+    bool shouldReboot;
+    unsigned long rebootScheduledTime;
+    
     // Preferences для настроек
     Preferences preferences;
     bool autoUpdateEnabled;
