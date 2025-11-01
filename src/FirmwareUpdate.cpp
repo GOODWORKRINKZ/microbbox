@@ -50,24 +50,28 @@ void FirmwareUpdate::registerUpdateHandlers(AsyncWebServer* server) {
     server->on("/api/update/upload", HTTP_POST, 
         [this](AsyncWebServerRequest *request) {
             // Ответ после завершения загрузки
-            AsyncWebServerResponse *response;
             if (Update.hasError()) {
-                response = request->beginResponse(500, "application/json", 
+                AsyncWebServerResponse *response = request->beginResponse(500, "application/json", 
                     "{\"status\":\"error\",\"message\":\"Ошибка обновления\"}");
+                response->addHeader("Connection", "close");
+                response->addHeader("Access-Control-Allow-Origin", "*");
                 currentState = UpdateState::FAILED;
                 updateStatus = "Ошибка записи прошивки";
+                request->send(response);
             } else {
-                response = request->beginResponse(200, "application/json", 
+                AsyncWebServerResponse *response = request->beginResponse(200, "application/json", 
                     "{\"status\":\"success\",\"message\":\"Обновление завершено, перезагрузка...\"}");
+                response->addHeader("Connection", "close");
+                response->addHeader("Access-Control-Allow-Origin", "*");
                 currentState = UpdateState::SUCCESS;
                 updateStatus = "Обновление завершено";
-                // Перезагрузка через 2 секунды
-                delay(2000);
+                request->send(response);
+                
+                // Перезагрузка в отдельной задаче с минимальной задержкой
+                // чтобы не блокировать сервер
+                delay(100);
                 ESP.restart();
             }
-            response->addHeader("Connection", "close");
-            response->addHeader("Access-Control-Allow-Origin", "*");
-            request->send(response);
         },
         [this](AsyncWebServerRequest *request, String filename, size_t index, uint8_t *data, size_t len, bool final) {
             this->handleUpdateUpload(request, filename, index, data, len, final);
@@ -101,13 +105,31 @@ void FirmwareUpdate::registerUpdateHandlers(AsyncWebServer* server) {
             }
             
             if (index + len == total) {
-                // Парсим JSON
-                if (body.indexOf("autoUpdate") >= 0) {
-                    bool enabled = body.indexOf("\"autoUpdate\":true") >= 0;
+                // Парсим JSON более надежно
+                bool enabled = false;
+                bool dontOffer = false;
+                
+                int autoUpdatePos = body.indexOf("\"autoUpdate\"");
+                if (autoUpdatePos >= 0) {
+                    // Ищем значение после двоеточия
+                    int colonPos = body.indexOf(":", autoUpdatePos);
+                    if (colonPos >= 0) {
+                        // Берем небольшой участок строки после : и ищем true
+                        String valueSection = body.substring(colonPos + 1, min(colonPos + 10, (int)body.length()));
+                        valueSection.trim();
+                        enabled = valueSection.startsWith("true");
+                    }
                     setAutoUpdateEnabled(enabled);
                 }
-                if (body.indexOf("dontOffer") >= 0) {
-                    bool dontOffer = body.indexOf("\"dontOffer\":true") >= 0;
+                
+                int dontOfferPos = body.indexOf("\"dontOffer\"");
+                if (dontOfferPos >= 0) {
+                    int colonPos = body.indexOf(":", dontOfferPos);
+                    if (colonPos >= 0) {
+                        String valueSection = body.substring(colonPos + 1, min(colonPos + 10, (int)body.length()));
+                        valueSection.trim();
+                        dontOffer = valueSection.startsWith("true");
+                    }
                     setDontOfferUpdates(dontOffer);
                 }
                 
@@ -252,7 +274,8 @@ bool FirmwareUpdate::checkForUpdates(ReleaseInfo& releaseInfo) {
     }
     
     HTTPClient http;
-    http.begin("https://api.github.com/repos/GOODWORKRINKZ/microbbox/releases/latest");
+    String url = "https://api.github.com/repos/" + String(GITHUB_REPO_URL) + "/releases/latest";
+    http.begin(url);
     http.addHeader("Accept", "application/vnd.github.v3+json");
     http.addHeader("User-Agent", "MicroBox-Firmware-Updater");
     
@@ -320,8 +343,8 @@ bool FirmwareUpdate::parseGitHubRelease(const String& json, ReleaseInfo& release
             int urlStart = urlPos + 24;
             int urlEnd = assetsSection.indexOf("\"", urlStart);
             String url = assetsSection.substring(urlStart, urlEnd);
-            // Ищем .bin файл
-            if (url.endsWith(".bin") && url.indexOf("release") >= 0) {
+            // Ищем .bin файл с release в имени (более строгая проверка)
+            if (url.endsWith(".bin") && url.indexOf("-release.bin") > 0) {
                 releaseInfo.downloadUrl = url;
             }
         }
@@ -351,12 +374,35 @@ bool FirmwareUpdate::isVersionNewer(const String& current, const String& latest)
     if (cur.startsWith("v")) cur = cur.substring(1);
     if (lat.startsWith("v")) lat = lat.substring(1);
     
-    // Разбиваем на компоненты
+    // Разбиваем на компоненты безопасно
     int curMajor = 0, curMinor = 0, curPatch = 0;
     int latMajor = 0, latMinor = 0, latPatch = 0;
     
-    sscanf(cur.c_str(), "%d.%d.%d", &curMajor, &curMinor, &curPatch);
-    sscanf(lat.c_str(), "%d.%d.%d", &latMajor, &latMinor, &latPatch);
+    // Безопасный парсинг версии
+    int dot1Cur = cur.indexOf('.');
+    int dot2Cur = cur.indexOf('.', dot1Cur + 1);
+    int dot1Lat = lat.indexOf('.');
+    int dot2Lat = lat.indexOf('.', dot1Lat + 1);
+    
+    if (dot1Cur > 0) {
+        curMajor = cur.substring(0, dot1Cur).toInt();
+        if (dot2Cur > 0) {
+            curMinor = cur.substring(dot1Cur + 1, dot2Cur).toInt();
+            curPatch = cur.substring(dot2Cur + 1).toInt();
+        } else {
+            curMinor = cur.substring(dot1Cur + 1).toInt();
+        }
+    }
+    
+    if (dot1Lat > 0) {
+        latMajor = lat.substring(0, dot1Lat).toInt();
+        if (dot2Lat > 0) {
+            latMinor = lat.substring(dot1Lat + 1, dot2Lat).toInt();
+            latPatch = lat.substring(dot2Lat + 1).toInt();
+        } else {
+            latMinor = lat.substring(dot1Lat + 1).toInt();
+        }
+    }
     
     if (latMajor > curMajor) return true;
     if (latMajor < curMajor) return false;
