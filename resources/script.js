@@ -1576,8 +1576,10 @@ class MicroBoxController {
         
         let pollCount = 0;
         let consecutiveErrors = 0;
-                
-                const pollInterval = setInterval(async () => {
+        let pollInterval = null;  // Declare outside try block for proper scoping
+        
+        try {
+            pollInterval = setInterval(async () => {
                     pollCount++;
                     
                     try {
@@ -1648,6 +1650,12 @@ class MicroBoxController {
                 }, POLL_INTERVAL_MS);
         } catch (error) {
             console.error('Error during update polling:', error);
+            
+            // Clear interval if it was created
+            if (pollInterval) {
+                clearInterval(pollInterval);
+            }
+            
             this.updateFirmwareStatus('Ошибка: ' + error.message, 0);
             
             setTimeout(() => {

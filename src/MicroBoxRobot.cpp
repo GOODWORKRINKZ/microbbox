@@ -161,20 +161,21 @@ bool MicroBoxRobot::initSafeModeForOTA() {
     // Выполняем обновление - теперь у нас достаточно памяти
     bool success = firmwareUpdate->downloadAndInstallFirmware(url);
     
+    // Очистка флага OTA
+    FirmwareUpdate::clearOTAPending();
+    
     if (success) {
         DEBUG_PRINTLN("✓ Обновление успешно завершено!");
-        FirmwareUpdate::clearOTAPending();
         DEBUG_PRINTLN("Перезагрузка через 2 секунды...");
-        delay(2000);
-        ESP.restart();
     } else {
         DEBUG_PRINTLN("✗ Ошибка обновления прошивки");
-        FirmwareUpdate::clearOTAPending();
-        DEBUG_PRINTLN("Сбрасываем флаг OTA и перезагружаемся в нормальном режиме...");
-        delay(2000);
-        ESP.restart();
+        DEBUG_PRINTLN("Перезагружаемся в нормальном режиме...");
     }
     
+    delay(2000);
+    ESP.restart();
+    
+    // Этот код никогда не будет достигнут из-за ESP.restart()
     return success;
 }
 
