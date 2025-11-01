@@ -537,6 +537,9 @@ void MicroBoxRobot::initWebServer() {
         },
         NULL,
         [this](AsyncWebServerRequest *request, uint8_t *data, size_t len, size_t index, size_t total) {
+            // NOTE: static variable used due to ESPAsyncWebServer library limitation
+            // This could cause issues with concurrent requests, but is acceptable for
+            // configuration endpoints that are rarely accessed simultaneously
             static String configBody = "";
             
             // Добавляем полученный фрагмент
@@ -549,29 +552,55 @@ void MicroBoxRobot::initWebServer() {
                 DEBUG_PRINT("Получена конфигурация WiFi: ");
                 DEBUG_PRINTLN(configBody);
                 
-                // Простой парсинг JSON
+                // Простой парсинг JSON с базовой защитой от инъекций
                 String ssid = "";
                 String password = "";
                 WiFiMode mode = WiFiMode::CLIENT;
                 
+                // Парсинг SSID
                 int ssidPos = configBody.indexOf("\"ssid\":\"");
                 if (ssidPos >= 0) {
                     int start = ssidPos + 8;
-                    int end = configBody.indexOf("\"", start);
-                    if (end > start) {
+                    // Ищем закрывающую кавычку, игнорируя экранированные
+                    int end = start;
+                    while (end < configBody.length()) {
+                        if (configBody.charAt(end) == '"' && (end == start || configBody.charAt(end-1) != '\\')) {
+                            break;
+                        }
+                        end++;
+                    }
+                    if (end > start && end < configBody.length()) {
                         ssid = configBody.substring(start, end);
+                        // Базовая валидация SSID (максимум 32 символа)
+                        if (ssid.length() > 32) {
+                            ssid = ssid.substring(0, 32);
+                        }
                     }
                 }
                 
+                // Парсинг пароля
                 int passwordPos = configBody.indexOf("\"password\":\"");
                 if (passwordPos >= 0) {
                     int start = passwordPos + 12;
-                    int end = configBody.indexOf("\"", start);
-                    if (end > start) {
+                    int end = start;
+                    while (end < configBody.length()) {
+                        if (configBody.charAt(end) == '"' && (end == start || configBody.charAt(end-1) != '\\')) {
+                            break;
+                        }
+                        end++;
+                    }
+                    if (end > start && end < configBody.length()) {
                         password = configBody.substring(start, end);
+                        // Базовая валидация пароля (минимум 8 символов для безопасности)
+                        if (password.length() > 0 && password.length() < 8) {
+                            request->send(400, "application/json", "{\"status\":\"error\",\"message\":\"Пароль должен быть минимум 8 символов\"}");
+                            configBody = "";
+                            return;
+                        }
                     }
                 }
                 
+                // Парсинг режима
                 int modePos = configBody.indexOf("\"mode\":\"");
                 if (modePos >= 0) {
                     int start = modePos + 8;
@@ -600,11 +629,19 @@ void MicroBoxRobot::initWebServer() {
         }
     );
     
-    // Перезагрузка устройства
+    // Перезагрузка устройства - требует подтверждения
     server->on("/api/restart", HTTP_POST, [](AsyncWebServerRequest *request) {
-        request->send(200, "application/json", "{\"status\":\"ok\",\"message\":\"Перезагрузка...\"}");
-        delay(1000);
-        ESP.restart();
+        // Простая проверка безопасности - требуем параметр confirm
+        if (request->hasParam("confirm", true)) {
+            String confirm = request->getParam("confirm", true)->value();
+            if (confirm == "yes") {
+                request->send(200, "application/json", "{\"status\":\"ok\",\"message\":\"Перезагрузка...\"}");
+                delay(1000);
+                ESP.restart();
+                return;
+            }
+        }
+        request->send(400, "application/json", "{\"status\":\"error\",\"message\":\"Требуется подтверждение\"}");
     });
     
     // Статические ресурсы
