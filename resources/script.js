@@ -78,11 +78,11 @@ class MicroBoxController {
     detectDeviceType() {
         const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
         const isTablet = /iPad|Android/i.test(navigator.userAgent) && window.innerWidth > 768;
-        const isVR = navigator.xr !== undefined;
+        const isOculusBrowser = /OculusBrowser/i.test(navigator.userAgent);
         
-        if (isVR && navigator.xr.isSessionSupported) {
-            this.deviceType = 'vr';
-        } else if (isMobile && !isTablet) {
+        // Если это Oculus браузер, не определяем как VR автоматически
+        // Пользователь должен нажать кнопку входа в VR
+        if (isOculusBrowser || isMobile) {
             this.deviceType = 'mobile';
         } else if (isTablet) {
             this.deviceType = 'tablet';
@@ -92,6 +92,7 @@ class MicroBoxController {
         
         document.getElementById('deviceType').textContent = this.getDeviceTypeText();
         console.log('Тип устройства:', this.deviceType);
+        console.log('Oculus Browser:', isOculusBrowser);
     }
 
     getDeviceTypeText() {
@@ -115,7 +116,8 @@ class MicroBoxController {
         mobileControls.classList.add('hidden');
         vrControls.classList.add('hidden');
 
-        // Показать нужный
+        // Показать нужный в зависимости от активной сессии
+        // VR контролы показываются только когда активна VR сессия
         switch (this.deviceType) {
             case 'desktop':
                 pcControls.classList.remove('hidden');
@@ -124,9 +126,6 @@ class MicroBoxController {
             case 'tablet':
                 mobileControls.classList.remove('hidden');
                 this.setupMobileJoysticks();
-                break;
-            case 'vr':
-                vrControls.classList.remove('hidden');
                 break;
         }
     }
@@ -549,6 +548,9 @@ class MicroBoxController {
             // Настройка событий сессии
             this.xrSession.addEventListener('end', () => this.onVRSessionEnded());
             
+            // Получаем reference space
+            this.xrReferenceSpace = await this.xrSession.requestReferenceSpace('local-floor');
+            
             // Настройка контроллеров
             this.setupVRControllers();
             
@@ -621,7 +623,8 @@ class MicroBoxController {
             const hand = inputSource.handedness; // 'left' или 'right'
             
             // Обработка стиков (axes)
-            if (gamepad.axes && gamepad.axes.length >= 4) {
+            // В Oculus Quest: axes[2] и axes[3] - это thumbstick X и Y
+            if (gamepad.axes && gamepad.axes.length >= 2) {
                 if (hand === 'left') {
                     // Левый стик для поворота
                     leftThumbstick.x = gamepad.axes[2] || 0;
@@ -634,6 +637,12 @@ class MicroBoxController {
             }
             
             // Обработка кнопок
+            // В Oculus Quest:
+            // buttons[0] - trigger
+            // buttons[1] - grip
+            // buttons[3] - thumbstick press
+            // buttons[4] - button A/X
+            // buttons[5] - button B/Y
             if (gamepad.buttons && gamepad.buttons.length > 0) {
                 // Trigger (index 0) - сигнал
                 if (gamepad.buttons[0] && gamepad.buttons[0].pressed) {
@@ -646,12 +655,12 @@ class MicroBoxController {
                 }
                 
                 // Кнопка A/X (index 4) 
-                if (gamepad.buttons[4] && gamepad.buttons[4].pressed) {
+                if (gamepad.buttons.length > 4 && gamepad.buttons[4] && gamepad.buttons[4].pressed) {
                     buttonAPressed = true;
                 }
                 
                 // Кнопка B/Y (index 5)
-                if (gamepad.buttons[5] && gamepad.buttons[5].pressed) {
+                if (gamepad.buttons.length > 5 && gamepad.buttons[5] && gamepad.buttons[5].pressed) {
                     buttonBPressed = true;
                 }
             }
@@ -774,19 +783,27 @@ class MicroBoxController {
     updateVRUI(inVR) {
         const vrBtn = document.getElementById('vrBtn');
         const vrControls = document.getElementById('vrControls');
+        const pcControls = document.getElementById('pcControls');
+        const mobileControls = document.getElementById('mobileControls');
         
         if (inVR) {
             if (vrBtn) vrBtn.classList.add('active');
             if (vrControls) vrControls.classList.remove('hidden');
+            // Скрыть другие контролы в VR режиме
+            if (pcControls) pcControls.classList.add('hidden');
+            if (mobileControls) mobileControls.classList.add('hidden');
         } else {
             if (vrBtn) vrBtn.classList.remove('active');
             if (vrControls) vrControls.classList.add('hidden');
+            // Восстановить интерфейс
+            this.setupInterface();
         }
     }
 
     onVRSessionEnded() {
         console.log('VR сессия завершена');
         this.xrSession = null;
+        this.xrReferenceSpace = null;
         this.controllers = [];
         this.updateVRUI(false);
         
