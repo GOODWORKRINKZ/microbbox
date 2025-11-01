@@ -81,8 +81,8 @@ public:
     ControlMode getCurrentControlMode() const { return currentControlMode; }
     
     // Система обновления
-    void enterUpdateMode();
-    bool isInUpdateMode() const;
+    FirmwareUpdate* getFirmwareUpdate() { return firmwareUpdate; }
+    bool isInUpdateMode() const { return firmwareUpdate && firmwareUpdate->isUpdating(); }
 
 private:
     // Внутренние методы
