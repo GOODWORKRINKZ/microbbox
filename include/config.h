@@ -115,7 +115,8 @@ enum class EffectMode {
     NORMAL = 0,      // Обычный режим
     POLICE = 1,      // Полицейский режим
     FIRE = 2,        // Пожарный режим
-    AMBULANCE = 3    // Скорая помощь
+    AMBULANCE = 3,   // Скорая помощь
+    TERMINATOR = 4   // Режим T-800 (красный HUD)
 };
 #endif
 

@@ -116,6 +116,9 @@ void MicroBoxRobot::loop() {
             case EffectMode::AMBULANCE:
                 playAmbulanceEffect();
                 break;
+            case EffectMode::TERMINATOR:
+                playTerminatorEffect();
+                break;
             case EffectMode::NORMAL:
                 if (currentLeftSpeed != 0 || currentRightSpeed != 0) {
                     playMovementAnimation();
@@ -494,6 +497,9 @@ void MicroBoxRobot::initWebServer() {
                     } else if (commandBody.indexOf("ambulance") >= 0) {
                         setEffectMode(EffectMode::AMBULANCE);
                         request->send(200, "application/json", "{\"status\":\"ok\",\"action\":\"Режим: Скорая\"}");
+                    } else if (commandBody.indexOf("terminator") >= 0) {
+                        setEffectMode(EffectMode::TERMINATOR);
+                        request->send(200, "application/json", "{\"status\":\"ok\",\"action\":\"Режим: T-800\"}");
                     } else {
                         setEffectMode(EffectMode::NORMAL);
                         request->send(200, "application/json", "{\"status\":\"ok\",\"action\":\"Режим: Обычный\"}");
@@ -883,6 +889,34 @@ void MicroBoxRobot::playAmbulanceEffect() {
         updateLEDs();
 #endif
         lastToggle = currentTime;
+    }
+}
+
+void MicroBoxRobot::playTerminatorEffect() {
+    static unsigned long lastUpdate = 0;
+    static int pulseState = 0;
+    unsigned long currentTime = millis();
+    
+    if (currentTime - lastUpdate > 50) { // Быстрое обновление для пульсации
+#ifdef FEATURE_NEOPIXEL
+        // Красная пульсация с плавным затуханием
+        int brightness = 128 + (int)(127 * sin(pulseState * 0.1));
+        uint32_t redColor = pixels->Color(brightness, 0, 0);
+        setAllLEDs(redColor);
+        updateLEDs();
+        
+        pulseState++;
+        if (pulseState >= 63) pulseState = 0; // Reset после полного цикла
+#endif
+
+#ifdef FEATURE_BUZZER
+        // Периодический низкий звуковой сигнал (как сканирование)
+        if (pulseState % 20 == 0) {
+            playTone(150, 50); // Низкий тон
+        }
+#endif
+        
+        lastUpdate = currentTime;
     }
 }
 
