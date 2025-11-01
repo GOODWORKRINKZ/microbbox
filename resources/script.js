@@ -348,6 +348,12 @@ class MicroBoxController {
             settingsBtn.addEventListener('click', () => this.showSettings());
         }
 
+        // VR Debug кнопка
+        const vrDebugBtn = document.getElementById('vrDebugBtn');
+        if (vrDebugBtn) {
+            vrDebugBtn.addEventListener('click', () => this.sendVRDebugLog());
+        }
+
         // Модальные окна
         this.setupModalHandlers();
     }
@@ -1187,6 +1193,133 @@ class MicroBoxController {
         
         // Остановить робота
         this.sendMovementCommand(0, 0);
+    }
+
+    // Сбор VR диагностической информации
+    async collectVRDebugInfo() {
+        const debugInfo = {
+            timestamp: new Date().toISOString(),
+            browser: this.getBrowserName(),
+            userAgent: navigator.userAgent,
+            platform: navigator.platform,
+            language: navigator.language,
+            screenWidth: window.screen.width,
+            screenHeight: window.screen.height,
+            devicePixelRatio: window.devicePixelRatio,
+            
+            // WebXR информация
+            xrSupported: !!navigator.xr,
+            vrSessionActive: !!this.xrSession,
+            
+            // Информация о контроллерах
+            controllersCount: this.controllers.length,
+            controllers: []
+        };
+        
+        // Проверка поддержки различных VR сессий
+        if (navigator.xr) {
+            try {
+                debugInfo.immersiveVrSupported = await navigator.xr.isSessionSupported('immersive-vr');
+                debugInfo.immersiveArSupported = await navigator.xr.isSessionSupported('immersive-ar');
+                debugInfo.inlineSupported = await navigator.xr.isSessionSupported('inline');
+            } catch (error) {
+                debugInfo.sessionCheckError = error.message;
+            }
+        }
+        
+        // Детальная информация о контроллерах
+        if (this.xrSession && this.xrSession.inputSources) {
+            for (const inputSource of this.xrSession.inputSources) {
+                const controllerInfo = {
+                    handedness: inputSource.handedness,
+                    targetRayMode: inputSource.targetRayMode,
+                    profiles: inputSource.profiles,
+                    hasGamepad: !!inputSource.gamepad
+                };
+                
+                if (inputSource.gamepad) {
+                    controllerInfo.gamepad = {
+                        id: inputSource.gamepad.id,
+                        axesCount: inputSource.gamepad.axes.length,
+                        buttonsCount: inputSource.gamepad.buttons.length,
+                        axes: Array.from(inputSource.gamepad.axes),
+                        buttons: inputSource.gamepad.buttons.map(btn => ({
+                            pressed: btn.pressed,
+                            touched: btn.touched,
+                            value: btn.value
+                        }))
+                    };
+                }
+                
+                debugInfo.controllers.push(controllerInfo);
+            }
+        }
+        
+        // Информация о VR сессии
+        if (this.xrSession) {
+            debugInfo.vrSession = {
+                environmentBlendMode: this.xrSession.environmentBlendMode,
+                interactionMode: this.xrSession.interactionMode,
+                visibilityState: this.xrSession.visibilityState,
+                renderState: {
+                    depthNear: this.xrSession.renderState.depthNear,
+                    depthFar: this.xrSession.renderState.depthFar
+                }
+            };
+        }
+        
+        // Состояние приложения
+        debugInfo.app = {
+            deviceType: this.deviceType,
+            controlMode: this.controlMode,
+            effectMode: this.effectMode,
+            isConnected: this.isConnected,
+            vrEnabled: this.vrEnabled,
+            speedSensitivity: this.speedSensitivity,
+            turnSensitivity: this.turnSensitivity
+        };
+        
+        return debugInfo;
+    }
+    
+    // Определение имени браузера
+    getBrowserName() {
+        const ua = navigator.userAgent;
+        if (ua.indexOf('OculusBrowser') > -1) return 'Oculus Browser';
+        if (ua.indexOf('Chrome') > -1) return 'Chrome';
+        if (ua.indexOf('Safari') > -1) return 'Safari';
+        if (ua.indexOf('Firefox') > -1) return 'Firefox';
+        if (ua.indexOf('Edge') > -1) return 'Edge';
+        return 'Unknown';
+    }
+    
+    // Отправка VR диагностики на сервер
+    async sendVRDebugLog() {
+        try {
+            const debugInfo = await this.collectVRDebugInfo();
+            
+            console.log('Отправка VR debug информации:', debugInfo);
+            
+            const response = await fetch('/api/vr-log', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(debugInfo)
+            });
+            
+            const result = await response.json();
+            console.log('VR log отправлен:', result);
+            
+            // Показываем уведомление пользователю
+            alert('✓ VR Debug информация отправлена!\nПроверьте Serial Monitor (115200 baud)');
+            
+            return true;
+        } catch (error) {
+            console.error('Ошибка отправки VR log:', error);
+            alert('✗ Ошибка отправки debug информации: ' + error.message);
+            return false;
+        }
     }
 
     handleGamepadConnected(e) {

@@ -429,6 +429,7 @@ body {
     display: flex;
     justify-content: center;
     align-items: center;
+    z-index: 5000; /* Выше всех других элементов управления */
 }
 
 .vr-info {
@@ -449,6 +450,30 @@ body {
     padding: 10px;
     background: rgba(0, 0, 0, 0.5);
     border-radius: 10px;
+}
+
+.vr-debug-btn {
+    margin-top: 20px;
+    padding: 12px 24px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border: none;
+    border-radius: 10px;
+    font-size: 16px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+}
+
+.vr-debug-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(102, 126, 234, 0.6);
+}
+
+.vr-debug-btn:active {
+    transform: translateY(0);
+    box-shadow: 0 2px 10px rgba(102, 126, 234, 0.4);
 }
 
 /* Модальные окна */
