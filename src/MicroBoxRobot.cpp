@@ -45,12 +45,8 @@ bool MicroBoxRobot::init() {
         return false;
     }
     
-    // Инициализация системы обновления
+    // Инициализация системы обновления (пока без сервера)
     firmwareUpdate = new FirmwareUpdate();
-    if (!firmwareUpdate->init()) {
-        DEBUG_PRINTLN("ОШИБКА: Не удалось инициализировать систему обновления");
-        return false;
-    }
     
     // ВАЖНО: Сначала камера, потом моторы! (как в Scout32)
     // Камера использует LEDC каналы 0-1, моторы 2-5
@@ -98,7 +94,7 @@ void MicroBoxRobot::loop() {
     unsigned long currentTime = millis();
     
     // Обработка системы обновления
-    if (firmwareUpdate && firmwareUpdate->isInUpdateMode()) {
+    if (firmwareUpdate && firmwareUpdate->isUpdating()) {
         firmwareUpdate->loop();
         return; // В режиме обновления не выполняем другие операции
     }
@@ -387,6 +383,11 @@ void MicroBoxRobot::initWebServer() {
     
     server = new AsyncWebServer(WIFI_PORT);
     
+    // Регистрация обработчиков обновлений
+    if (firmwareUpdate) {
+        firmwareUpdate->init(server);
+    }
+    
     // Главная страница
     server->on("/", HTTP_GET, [this](AsyncWebServerRequest *request) {
         this->handleRoot(request);
@@ -507,10 +508,6 @@ void MicroBoxRobot::initWebServer() {
 #else
                     request->send(200, "application/json", "{\"status\":\"ok\",\"action\":\"Эффекты недоступны\"}");
 #endif
-                }
-                else if (commandBody.indexOf("enterUpdateMode") >= 0) {
-                    enterUpdateMode();
-                    request->send(200, "application/json", "{\"status\":\"ok\",\"action\":\"Режим обновления\"}");
                 }
                 
                 // Очищаем буфер для следующей команды
@@ -994,33 +991,6 @@ void MicroBoxRobot::processControlInput(int leftX, int leftY, int rightX, int ri
     }
     
     setMotorSpeed(leftSpeed, rightSpeed);
-}
-
-void MicroBoxRobot::enterUpdateMode() {
-    DEBUG_PRINTLN("Вход в режим обновления прошивки");
-    
-    if (firmwareUpdate) {
-        // Остановка всех операций
-        stopMotors();
-#ifdef FEATURE_NEOPIXEL
-        clearLEDs();
-#endif
-#ifdef FEATURE_BUZZER
-        stopBuzzer();
-#endif
-        
-        // Остановка основного сервера
-        if (server) {
-            server->end();
-        }
-        
-        // Запуск режима обновления
-        firmwareUpdate->startUpdateMode();
-    }
-}
-
-bool MicroBoxRobot::isInUpdateMode() const {
-    return firmwareUpdate && firmwareUpdate->isInUpdateMode();
 }
 
 bool MicroBoxRobot::connectToSavedWiFi() {
