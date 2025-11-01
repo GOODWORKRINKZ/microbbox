@@ -23,7 +23,12 @@
 #endif
 
 #ifndef PROJECT_NAME
-#define PROJECT_NAME "МикроББокс"
+#define PROJECT_NAME "MicRoBBox"
+#endif
+
+// GitHub repository для проверки обновлений
+#ifndef GITHUB_REPO_URL
+#define GITHUB_REPO_URL "GOODWORKRINKZ/microbbox"
 #endif
 
 // Настройки пинов ESP32CAM

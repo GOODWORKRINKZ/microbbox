@@ -6,8 +6,19 @@
 #include <AsyncTCP.h>
 #include <ESPAsyncWebServer.h>
 #include <Update.h>
-#include <esp_camera.h>
+#include <HTTPClient.h>
+#include <Preferences.h>
 #include "config.h"
+
+// Структура для информации о релизе
+struct ReleaseInfo {
+    String version;
+    String releaseName;
+    String releaseNotes;
+    String downloadUrl;
+    String publishedAt;
+    bool isNewer;
+};
 
 class FirmwareUpdate {
 public:
@@ -15,55 +26,64 @@ public:
     ~FirmwareUpdate();
 
     // Основные методы
-    bool init();
+    bool init(AsyncWebServer* server);
     void loop();
     void shutdown();
 
-    // Режимы обновления
-    void startUpdateMode(); // Запуск режима обновления
-    void exitUpdateMode();  // Выход из режима обновления
-
+    // Проверка обновлений
+    bool checkForUpdates(ReleaseInfo& releaseInfo);
+    ReleaseInfo getCurrentVersionInfo();
+    
+    // Настройки автообновления
+    void setAutoUpdateEnabled(bool enabled);
+    bool isAutoUpdateEnabled() const;
+    void setDontOfferUpdates(bool dontOffer);
+    bool isDontOfferUpdates() const;
+    
+    // Обновление
+    void registerUpdateHandlers(AsyncWebServer* server);
+    
     // Статус
-    bool isInUpdateMode() const { return updateModeActive; }
     bool isUpdating() const { return updating; }
     String getUpdateStatus() const { return updateStatus; }
+    int getUpdateProgress() const { return currentProgress; }
 
 private:
     enum class UpdateState {
         IDLE,
-        WAITING_FOR_CLIENT,
-        CLIENT_CONNECTED,
         UPLOADING,
-        UPDATING,
         SUCCESS,
         FAILED
     };
 
-    // Внутренние методы
-    void initUpdateWebServer();
-    void handleUpdateRoot(AsyncWebServerRequest *request);
+    // Внутренние методы для обработки загрузки
     void handleUpdateUpload(AsyncWebServerRequest *request, String filename, size_t index, uint8_t *data, size_t len, bool final);
     void handleUpdateStatus(AsyncWebServerRequest *request);
-    void handleUpdateRestart(AsyncWebServerRequest *request);
+    void handleCheckUpdates(AsyncWebServerRequest *request);
+    void handleCurrentVersion(AsyncWebServerRequest *request);
+    
+    // Парсинг GitHub API
+    bool parseGitHubRelease(const String& json, ReleaseInfo& releaseInfo);
+    String extractJsonValue(const String& json, const String& key);
+    bool isVersionNewer(const String& current, const String& latest);
 
-    void showUpdateScreen();
     void updateProgress(int progress);
-    void showUpdateResult(bool success, const String& message);
 
     // Состояние
-    bool updateModeActive;
     bool updating;
     UpdateState currentState;
     String updateStatus;
-    
-    // Веб-сервер для обновления
-    AsyncWebServer* updateServer;
     
     // Статистика обновления
     size_t updateSize;
     size_t updateReceived;
     unsigned long updateStartTime;
     int currentProgress;
+    
+    // Preferences для настроек
+    Preferences preferences;
+    bool autoUpdateEnabled;
+    bool dontOfferUpdates;
 };
 
 #endif // FIRMWARE_UPDATE_H
