@@ -16,7 +16,7 @@ MicroBoxRobot::MicroBoxRobot() :
 #endif
     firmwareUpdate(nullptr),
     wifiSettings(nullptr),
-    currentControlMode(ControlMode::TANK),
+    currentControlMode(ControlMode::DIFFERENTIAL),
 #if defined(FEATURE_NEOPIXEL) || defined(FEATURE_BUZZER)
     currentEffectMode(EffectMode::NORMAL),
 #endif
@@ -520,15 +520,13 @@ void MicroBoxRobot::initWebServer() {
                             if (modeEnd >= 0) {
                                 String mode = commandBody.substring(modeStart + 1, modeEnd);
                                 
-                                if (mode.equalsIgnoreCase("tank")) {
-                                    setControlMode(ControlMode::TANK);
-                                    request->send(200, "application/json", "{\"status\":\"ok\",\"action\":\"Режим управления: Танковый\"}");
-                                } else if (mode.equalsIgnoreCase("differential")) {
+                                // Всегда устанавливаем дифференциальный режим (единственный доступный)
+                                if (mode.equalsIgnoreCase("differential")) {
                                     setControlMode(ControlMode::DIFFERENTIAL);
                                     request->send(200, "application/json", "{\"status\":\"ok\",\"action\":\"Режим управления: Дифференциальный\"}");
                                 } else {
-                                    request->send(200, "application/json", "{\"status\":\"ok\",\"action\":\"Режим управления установлен\"}");
-                                }
+                                    // Игнорируем другие режимы (для обратной совместимости)
+                                    request->send(200, "application/json", "{\"status\":\"ok\",\"action\":\"Режим управления: Дифференциальный\"}");
                                 return;
                             }
                         }
@@ -1020,22 +1018,13 @@ void MicroBoxRobot::setControlMode(ControlMode mode) {
 }
 
 void MicroBoxRobot::processControlInput(int leftX, int leftY, int rightX, int rightY) {
-    // Обработка ввода в зависимости от режима управления
-    int leftSpeed = 0;
-    int rightSpeed = 0;
+    // Дифференциальный режим управления (единственный доступный)
+    // rightY = скорость (вперед/назад), leftX = поворот (лево/право)
+    int speed = rightY;
+    int turn = leftX;
     
-    if (currentControlMode == ControlMode::TANK) {
-        // Танковый режим
-        leftSpeed = leftY;
-        rightSpeed = rightY;
-    } else if (currentControlMode == ControlMode::DIFFERENTIAL) {
-        // Дифференциальный режим
-        int speed = rightY;
-        int turn = leftX;
-        
-        leftSpeed = speed - turn;
-        rightSpeed = speed + turn;
-    }
+    int leftSpeed = speed - turn;
+    int rightSpeed = speed + turn;
     
     setMotorSpeed(leftSpeed, rightSpeed);
 }
