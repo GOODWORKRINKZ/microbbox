@@ -4,6 +4,7 @@
 #include "driver/gpio.h"
 #include "embedded_resources.h"
 #include "CameraServer.h"
+#include <cstring>
 
 #ifdef FEATURE_HTTPS
 #include "cert.h"
@@ -1342,8 +1343,8 @@ void MicroBoxRobot::initHTTPSServer() {
     
     // Создаем сертификат из встроенных данных
     sslCert = new SSLCert(
-        (unsigned char*)SSL_CERT, sizeof(SSL_CERT),
-        (unsigned char*)SSL_KEY, sizeof(SSL_KEY)
+        (const uint8_t*)SSL_CERT, strlen(SSL_CERT),
+        (const uint8_t*)SSL_KEY, strlen(SSL_KEY)
     );
     
     // Создаем HTTPS сервер на порту 443

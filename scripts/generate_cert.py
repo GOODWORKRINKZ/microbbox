@@ -4,11 +4,13 @@
 Создает сертификат и приватный ключ, затем конвертирует их в C header файл
 """
 
-Import(["env"])
 import os
 import subprocess
 import sys
 from pathlib import Path
+
+# PlatformIO script environment
+Import("env")
 
 def generate_certificate():
     """Генерирует самоподписанный сертификат для ESP32"""
