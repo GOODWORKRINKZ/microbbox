@@ -793,6 +793,9 @@ void MicroBoxRobot::initWebServer() {
     );
     
     // VR Debug логирование - POST JSON с диагностической информацией
+    // ПРИМЕЧАНИЕ: Статическая переменная vrLogBody может вызвать проблемы при одновременных запросах.
+    // Для production использования рекомендуется добавить мьютекс или request-specific storage.
+    // Однако для debug endpoint это приемлемо, так как запросы редкие и последовательные.
     server->on("/api/vr-log", HTTP_POST,
         [](AsyncWebServerRequest *request) {
             // Ответ будет отправлен в onBody
@@ -810,8 +813,11 @@ void MicroBoxRobot::initWebServer() {
             if (index + len == total) {
                 Serial.println("\n========== VR DEBUG LOG ==========");
                 
-                // Выводим в Serial Monitor для отладки
-                // Парсим основные поля для красивого вывода
+                // Простой парсинг для вывода основных полей
+                // ПРИМЕЧАНИЕ: Это упрощенный парсинг для отладочных целей.
+                // Он не обрабатывает escaped quotes или сложные вложенные структуры.
+                // Для точного парсинга используйте библиотеку ArduinoJson.
+                
                 if (vrLogBody.indexOf("\"browser\"") >= 0) {
                     int browserPos = vrLogBody.indexOf("\"browser\":\"") + 11;
                     int browserEnd = vrLogBody.indexOf("\"", browserPos);

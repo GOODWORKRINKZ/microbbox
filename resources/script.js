@@ -1311,13 +1311,34 @@ class MicroBoxController {
             const result = await response.json();
             console.log('VR log отправлен:', result);
             
-            // Показываем уведомление пользователю
-            alert('✓ VR Debug информация отправлена!\nПроверьте Serial Monitor (115200 baud)');
+            // Показываем уведомление в VR интерфейсе без alert()
+            const vrStatus = document.getElementById('vrStatus');
+            if (vrStatus) {
+                const originalText = vrStatus.textContent;
+                vrStatus.textContent = '✓ Debug информация отправлена! Проверьте Serial Monitor (115200 baud)';
+                vrStatus.style.color = '#00ff88';
+                setTimeout(() => {
+                    vrStatus.textContent = originalText;
+                    vrStatus.style.color = '';
+                }, 5000);
+            }
             
             return true;
         } catch (error) {
             console.error('Ошибка отправки VR log:', error);
-            alert('✗ Ошибка отправки debug информации: ' + error.message);
+            
+            // Показываем ошибку в VR интерфейсе без alert()
+            const vrStatus = document.getElementById('vrStatus');
+            if (vrStatus) {
+                const originalText = vrStatus.textContent;
+                vrStatus.textContent = '✗ Ошибка отправки: ' + error.message;
+                vrStatus.style.color = '#ff4444';
+                setTimeout(() => {
+                    vrStatus.textContent = originalText;
+                    vrStatus.style.color = '';
+                }, 5000);
+            }
+            
             return false;
         }
     }
