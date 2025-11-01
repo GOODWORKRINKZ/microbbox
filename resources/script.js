@@ -5,7 +5,7 @@ class MicroBoxController {
         this.GITHUB_REPO = 'GOODWORKRINKZ/microbbox';  // GitHub репозиторий для проверки обновлений
         
         this.deviceType = 'unknown';
-        this.controlMode = 'tank';
+        this.controlMode = 'differential';
         this.effectMode = 'normal';
         this.isConnected = false;
         this.vrEnabled = false;
@@ -209,16 +209,8 @@ class MicroBoxController {
         window.addEventListener('gamepadconnected', (e) => this.handleGamepadConnected(e));
         window.addEventListener('gamepaddisconnected', (e) => this.handleGamepadDisconnected(e));
 
-        // Селекторы режимов
-        const controlModeSelect = document.getElementById('controlMode');
+        // Селектор эффектов
         const effectModeSelect = document.getElementById('effectMode');
-        
-        if (controlModeSelect) {
-            controlModeSelect.addEventListener('change', (e) => {
-                this.controlMode = e.target.value;
-                this.sendCommand('setControlMode', { mode: this.controlMode });
-            });
-        }
         
         if (effectModeSelect) {
             effectModeSelect.addEventListener('change', (e) => {
@@ -301,18 +293,22 @@ class MicroBoxController {
             const clientX = e.clientX || (e.touches && e.touches[0].clientX);
             const clientY = e.clientY || (e.touches && e.touches[0].clientY);
             
-            const deltaX = clientX - startX;
-            const deltaY = clientY - startY;
-            const distance = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
+            let deltaX = clientX - startX;
+            let deltaY = clientY - startY;
+            
+            // Ограничение движения джойстиков для дифференциального режима
+            if (side === 'left') {
+                // Левый джойстик: только горизонтальное движение (поворот)
+                deltaY = 0;
+                deltaX = Math.max(-maxDistance, Math.min(maxDistance, deltaX));
+            } else {
+                // Правый джойстик: только вертикальное движение (скорость)
+                deltaX = 0;
+                deltaY = Math.max(-maxDistance, Math.min(maxDistance, deltaY));
+            }
             
             let x = deltaX;
             let y = deltaY;
-            
-            if (distance > maxDistance) {
-                const angle = Math.atan2(deltaY, deltaX);
-                x = Math.cos(angle) * maxDistance;
-                y = Math.sin(angle) * maxDistance;
-            }
 
             knob.style.transform = 'translate(' + x + 'px, ' + y + 'px)';
 
@@ -321,9 +317,9 @@ class MicroBoxController {
             const normalizedY = -y / maxDistance; // Инвертируем Y
             
             if (side === 'left') {
-                this.leftJoystick = { x: normalizedX, y: normalizedY, active: true };
+                this.leftJoystick = { x: normalizedX, y: 0, active: true };
             } else {
-                this.rightJoystick = { x: normalizedX, y: normalizedY, active: true };
+                this.rightJoystick = { x: 0, y: normalizedY, active: true };
             }
             
             this.updateMovement();
@@ -462,18 +458,12 @@ class MicroBoxController {
         let leftSpeed = 0;
         let rightSpeed = 0;
         
-        if (this.controlMode === 'tank') {
-            // Танковый режим: левый стик = левая сторона, правый стик = правая сторона
-            leftSpeed = this.leftJoystick.y * this.speedSensitivity;
-            rightSpeed = this.rightJoystick.y * this.speedSensitivity;
-        } else if (this.controlMode === 'differential') {
-            // Дифференциальный: правый стик = скорость, левый стик = поворот
-            const speed = this.rightJoystick.y * this.speedSensitivity;
-            const turn = this.leftJoystick.x * this.turnSensitivity;
-            
-            leftSpeed = speed - turn;
-            rightSpeed = speed + turn;
-        }
+        // Дифференциальный режим: правый стик = скорость (только вертикаль), левый стик = поворот (только горизонталь)
+        const speed = this.rightJoystick.y * this.speedSensitivity;
+        const turn = this.leftJoystick.x * this.turnSensitivity;
+        
+        leftSpeed = speed - turn;
+        rightSpeed = speed + turn;
         
         // Ограничение значений
         leftSpeed = Math.max(-100, Math.min(100, leftSpeed));
@@ -880,18 +870,12 @@ class MicroBoxController {
         let leftSpeed = 0;
         let rightSpeed = 0;
         
-        if (this.controlMode === 'tank') {
-            // Танковый режим: левый стик = левая сторона, правый стик = правая сторона
-            leftSpeed = -leftStick.y * this.speedSensitivity;
-            rightSpeed = -rightStick.y * this.speedSensitivity;
-        } else if (this.controlMode === 'differential') {
-            // Дифференциальный: правый стик Y = скорость, правый стик X = поворот
-            const speed = -rightStick.y * this.speedSensitivity;
-            const turn = rightStick.x * this.turnSensitivity;
-            
-            leftSpeed = speed - turn;
-            rightSpeed = speed + turn;
-        }
+        // Дифференциальный режим: правый стик Y = скорость, левый стик X = поворот
+        const speed = -rightStick.y * this.speedSensitivity;
+        const turn = -leftStick.x * this.turnSensitivity;
+        
+        leftSpeed = speed - turn;
+        rightSpeed = speed + turn;
         
         // Ограничение значений
         leftSpeed = Math.max(-100, Math.min(100, leftSpeed));
@@ -930,14 +914,6 @@ class MicroBoxController {
         } else if (!buttonA) {
             this.vrButtonAPressed = false;
         }
-        
-        // Кнопка B - смена режима управления
-        if (buttonB && !this.vrButtonBPressed) {
-            this.toggleControlMode();
-            this.vrButtonBPressed = true;
-        } else if (!buttonB) {
-            this.vrButtonBPressed = false;
-        }
     }
 
     cycleEffectMode() {
@@ -949,12 +925,6 @@ class MicroBoxController {
         this.sendCommand('setEffectMode', { mode: this.effectMode });
         this.updateT800Overlay();
         console.log('Режим эффекта:', this.effectMode);
-    }
-
-    toggleControlMode() {
-        this.controlMode = this.controlMode === 'tank' ? 'differential' : 'tank';
-        this.sendCommand('setControlMode', { mode: this.controlMode });
-        console.log('Режим управления:', this.controlMode);
     }
 
     updateVRStatus() {
@@ -1140,8 +1110,7 @@ class MicroBoxController {
             document.getElementById('speedSensitivity').value = this.speedSensitivity;
             document.getElementById('turnSensitivity').value = this.turnSensitivity;
             
-            // Установить текущие режимы
-            document.querySelector('input[name="controlMode"][value="' + this.controlMode + '"]').checked = true;
+            // Установить текущий режим эффектов
             document.querySelector('input[name="effectMode"][value="' + this.effectMode + '"]').checked = true;
             
             // Загрузить статус WiFi
@@ -1157,13 +1126,7 @@ class MicroBoxController {
         this.speedSensitivity = parseInt(document.getElementById('speedSensitivity').value);
         this.turnSensitivity = parseInt(document.getElementById('turnSensitivity').value);
         
-        const controlMode = document.querySelector('input[name="controlMode"]:checked');
         const effectMode = document.querySelector('input[name="effectMode"]:checked');
-        
-        if (controlMode) {
-            this.controlMode = controlMode.value;
-            this.sendCommand('setControlMode', { mode: this.controlMode });
-        }
         
         if (effectMode) {
             this.effectMode = effectMode.value;
@@ -1445,7 +1408,7 @@ class MicroBoxController {
                 const settings = JSON.parse(saved);
                 this.speedSensitivity = settings.speedSensitivity || 80;
                 this.turnSensitivity = settings.turnSensitivity || 70;
-                this.controlMode = settings.controlMode || 'tank';
+                this.controlMode = 'differential';
                 this.effectMode = settings.effectMode || 'normal';
                 
                 console.log('Настройки загружены');
