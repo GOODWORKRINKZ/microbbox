@@ -1558,18 +1558,50 @@ body {
     border-radius: 10px;
     margin: 20px 0;
     max-width: 500px;
+    max-height: 300px; /* Максимальная высота для секции с информацией */
     text-align: left;
+    overflow-y: auto; /* Включаем вертикальную прокрутку */
+    overflow-x: hidden; /* Скрываем горизонтальную прокрутку */
+}
+
+/* Стилизация скроллбара для firmware-release-info */
+.firmware-release-info::-webkit-scrollbar {
+    width: 8px;
+}
+
+.firmware-release-info::-webkit-scrollbar-track {
+    background: rgba(0, 255, 136, 0.1);
+    border-radius: 4px;
+}
+
+.firmware-release-info::-webkit-scrollbar-thumb {
+    background: rgba(0, 255, 136, 0.5);
+    border-radius: 4px;
+}
+
+.firmware-release-info::-webkit-scrollbar-thumb:hover {
+    background: rgba(0, 255, 136, 0.7);
 }
 
 .firmware-release-info h3 {
     color: #00ff88;
     margin-bottom: 15px;
     text-align: center;
+    position: sticky; /* Заголовок остается видимым при прокрутке */
+    top: 0;
+    background: rgba(0, 0, 0, 0.9);
+    padding: 10px 0;
+    margin: -20px -20px 15px -20px; /* Компенсируем padding родителя */
+    padding-left: 20px;
+    padding-right: 20px;
+    z-index: 1;
 }
 
 .firmware-release-info p {
     margin: 10px 0;
     font-size: 1.1em;
+    line-height: 1.5; /* Улучшаем читаемость */
+    word-wrap: break-word; /* Переносим длинные слова */
 }
 
 .firmware-release-info strong {
@@ -1753,17 +1785,22 @@ body {
     
     .firmware-release-info {
         max-width: 90vw;
+        max-height: 250px; /* Чуть меньше высота для мобильных */
         padding: 15px;
         margin: 15px 10px;
         font-size: 0.95em;
+        overflow-y: auto; /* Обеспечиваем прокрутку на мобильных */
     }
     
     .firmware-release-info h3 {
         font-size: 1.2em;
+        margin: -15px -15px 10px -15px; /* Адаптируем отступы для sticky */
+        padding: 10px 15px;
     }
     
     .firmware-release-info p {
         font-size: 1em;
+        line-height: 1.4;
     }
     
     .firmware-warnings {

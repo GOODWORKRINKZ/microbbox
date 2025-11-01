@@ -811,13 +811,17 @@ void MicroBoxRobot::initWebServer() {
     #ifdef EMBEDDED_RESOURCES_H
     server->on("/styles.css", HTTP_GET, [](AsyncWebServerRequest *request) {
         AsyncWebServerResponse *response = request->beginResponse_P(200, "text/css; charset=utf-8", stylesCss, stylesCss_len);
-        response->addHeader("Cache-Control", "max-age=86400");
+        response->addHeader("Cache-Control", "no-cache, no-store, must-revalidate"); // ВАЖНО: Принудительная перезагрузка CSS
+        response->addHeader("Pragma", "no-cache");
+        response->addHeader("Expires", "0");
         request->send(response);
     });
     
     server->on("/script.js", HTTP_GET, [](AsyncWebServerRequest *request) {
         AsyncWebServerResponse *response = request->beginResponse_P(200, "application/javascript; charset=utf-8", scriptJs, scriptJs_len);
-        response->addHeader("Cache-Control", "max-age=86400");
+        response->addHeader("Cache-Control", "no-cache, no-store, must-revalidate"); // ВАЖНО: Принудительная перезагрузка JS
+        response->addHeader("Pragma", "no-cache");
+        response->addHeader("Expires", "0");
         request->send(response);
     });
     

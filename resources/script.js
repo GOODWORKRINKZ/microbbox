@@ -1,4 +1,28 @@
 // МикроББокс - Система управления
+
+// Простой логгер с уровнями
+const Logger = {
+    LEVELS: { ERROR: 0, WARN: 1, INFO: 2, DEBUG: 3 },
+    currentLevel: 2, // INFO по умолчанию (ERROR=0, WARN=1, INFO=2, DEBUG=3)
+    
+    error: function(...args) {
+        if (this.currentLevel >= this.LEVELS.ERROR) console.error('[ERROR]', ...args);
+    },
+    warn: function(...args) {
+        if (this.currentLevel >= this.LEVELS.WARN) console.warn('[WARN]', ...args);
+    },
+    info: function(...args) {
+        if (this.currentLevel >= this.LEVELS.INFO) console.log('[INFO]', ...args);
+    },
+    debug: function(...args) {
+        if (this.currentLevel >= this.LEVELS.DEBUG) console.log('[DEBUG]', ...args);
+    },
+    
+    setLevel: function(level) {
+        this.currentLevel = level;
+    }
+};
+
 class MicroBoxController {
     constructor() {
         // Конфигурация
@@ -106,26 +130,20 @@ class MicroBoxController {
             
             // Если версия изменилась (но не первый запуск)
             if (savedVersion && savedVersion !== currentVersion) {
-                console.log('Обновление обнаружено:', savedVersion, '->', currentVersion);
-                
-                // Показываем уведомление об успешном обновлении
-                console.log('[UPDATE] Calling showUpdateSuccessNotification...');
+                Logger.info('Обновление обнаружено:', savedVersion, '->', currentVersion);
                 this.showUpdateSuccessNotification(savedVersion, currentVersion);
-                
-                // Сохраняем новую версию
                 localStorage.setItem('microbbox_version', currentVersion);
             } else if (!savedVersion) {
-                // Первый запуск - просто сохраняем версию без уведомления
-                console.log('Первый запуск, сохраняем версию:', currentVersion);
+                Logger.info('Первый запуск, сохраняем версию:', currentVersion);
                 localStorage.setItem('microbbox_version', currentVersion);
             }
         } catch (error) {
-            console.log('Не удалось проверить версию после обновления:', error);
+            Logger.error('Не удалось проверить версию после обновления:', error);
         }
     }
     
     showUpdateSuccessNotification(oldVersion, newVersion) {
-        console.log('[UPDATE] showUpdateSuccessNotification called:', oldVersion, '->', newVersion);
+        Logger.info('Показ уведомления об обновлении:', oldVersion, '->', newVersion);
         // Создаем красивое уведомление о успешном обновлении
         const notification = document.createElement('div');
         notification.className = 'update-success-notification';
@@ -140,9 +158,7 @@ class MicroBoxController {
             </div>
         `;
         
-        console.log('[UPDATE] Appending notification to body...');
         document.body.appendChild(notification);
-        console.log('[UPDATE] Notification appended successfully');
         
         // Автоматически скрыть через 10 секунд
         setTimeout(() => {
@@ -1463,7 +1479,7 @@ class MicroBoxController {
                 <h3>Новая прошивка</h3>
                 <p><strong>Версия:</strong> ${releaseInfo.version}</p>
                 <p><strong>Релиз:</strong> ${releaseInfo.releaseName || 'Без названия'}</p>
-                ${releaseInfo.releaseNotes ? `<p><strong>Изменения:</strong></p><p style="font-size: 0.9em; opacity: 0.8;">${releaseInfo.releaseNotes.substring(0, 200)}${releaseInfo.releaseNotes.length > 200 ? '...' : ''}</p>` : ''}
+                ${releaseInfo.releaseNotes ? `<p><strong>Изменения:</strong></p><p style="font-size: 0.9em; opacity: 0.8; white-space: pre-wrap;">${releaseInfo.releaseNotes}</p>` : ''}
             </div>
             
             <div class="firmware-warnings">
@@ -1493,29 +1509,13 @@ class MicroBoxController {
     
     // Функция для обновления статуса на экране обновления
     updateFirmwareStatus(status, progress) {
-        console.log('[OTA DEBUG] updateFirmwareStatus called:', status, progress + '%');
         const statusEl = document.getElementById('firmwareStatus');
         const progressFill = document.getElementById('firmwareProgressFill');
         const progressText = document.getElementById('firmwareProgressText');
         
-        console.log('[OTA DEBUG] Elements found:', {
-            statusEl: !!statusEl,
-            progressFill: !!progressFill,
-            progressText: !!progressText
-        });
-        
-        if (statusEl) {
-            statusEl.textContent = status;
-            console.log('[OTA DEBUG] Status updated to:', status);
-        }
-        if (progressFill) {
-            progressFill.style.width = progress + '%';
-            console.log('[OTA DEBUG] Progress bar width set to:', progress + '%');
-        }
-        if (progressText) {
-            progressText.textContent = progress + '%';
-            console.log('[OTA DEBUG] Progress text set to:', progress + '%');
-        }
+        if (statusEl) statusEl.textContent = status;
+        if (progressFill) progressFill.style.width = progress + '%';
+        if (progressText) progressText.textContent = progress + '%';
     }
     
     // Функция для скрытия оверлея с финальным глитч-эффектом и перезагрузкой страницы
@@ -1575,22 +1575,17 @@ class MicroBoxController {
     }
 
     async downloadAndInstallUpdate() {
-        console.log('[OTA] downloadAndInstallUpdate started');
-        
         // Проверяем что есть информация о релизе
         if (!this.updateDownloadUrl || !this.latestReleaseInfo) {
-            console.log('[OTA] No download URL or release info');
             alert('URL обновления не найден. Сначала проверьте наличие обновлений.');
             return;
         }
         
-        console.log('[OTA] Showing confirmation dialog');
         if (!confirm('Начать загрузку и установку обновления? Это займет несколько минут.')) {
-            console.log('[OTA] User cancelled');
             return;
         }
         
-        console.log('[OTA] User confirmed, starting update');
+        Logger.info('Начало OTA обновления:', this.latestReleaseInfo.version);
         
         // Константы для состояний обновления (соответствуют UpdateState в FirmwareUpdate.h)
         const UpdateState = {
@@ -1611,15 +1606,18 @@ class MicroBoxController {
         const maxPolls = TOTAL_TIMEOUT_MS / POLL_INTERVAL_MS;
         
         try {
-            console.log('[OTA] Calling showFirmwareUpdateScreen with releaseInfo:', this.latestReleaseInfo);
+            // ВАЖНО: Закрываем модальное окно настроек, если оно открыто
+            const settingsModal = document.getElementById('settingsModal');
+            if (settingsModal && !settingsModal.classList.contains('hidden')) {
+                settingsModal.classList.add('hidden');
+            }
+            
             // Показываем экран обновления с глитч-эффектом
             const overlay = this.showFirmwareUpdateScreen(this.latestReleaseInfo);
-            console.log('[OTA] Overlay created:', overlay);
             
             // Небольшая задержка для эффекта
             await new Promise(resolve => setTimeout(resolve, 1000));
             
-            console.log('[OTA] Sending update request to backend');
             // Отправляем запрос на бэкенд для скачивания и установки
             this.updateFirmwareStatus('Отправка запроса на сервер...', 0);
             
@@ -1713,14 +1711,11 @@ class MicroBoxController {
         try {
             pollInterval = setInterval(async () => {
                     pollCount++;
-                    console.log('[OTA DEBUG] Poll attempt #' + pollCount);
                     
                     try {
                         const statusResponse = await fetch('/api/update/status');
-                        console.log('[OTA DEBUG] Status response OK:', statusResponse.ok);
                         if (statusResponse.ok) {
                             const status = await statusResponse.json();
-                            console.log('[OTA DEBUG] Status data:', JSON.stringify(status));
                             
                             // Сбрасываем счетчик ошибок при успешном ответе
                             consecutiveErrors = 0;
@@ -1733,7 +1728,6 @@ class MicroBoxController {
                                 statusText = 'Установка прошивки: ' + statusText;
                             }
                             
-                            console.log('[OTA DEBUG] About to call updateFirmwareStatus with:', statusText, status.progress);
                             this.updateFirmwareStatus(statusText, status.progress);
                             
                             // Проверяем состояние
@@ -1754,8 +1748,7 @@ class MicroBoxController {
                         }
                     } catch (error) {
                         consecutiveErrors++;
-                        // Логируем только для отладки
-                        console.log('Poll attempt ' + pollCount + ', error count: ' + consecutiveErrors, error.message);
+                        Logger.debug('Poll attempt', pollCount, 'error count:', consecutiveErrors, error.message);
                         
                         // Если слишком много последовательных ошибок в начале процесса - это проблема
                         const elapsedTimeMs = pollCount * POLL_INTERVAL_MS;
@@ -2092,6 +2085,10 @@ class MicroBoxController {
 // Запуск при загрузке страницы
 document.addEventListener('DOMContentLoaded', () => {
     window.microBoxController = new MicroBoxController();
+    
+    // Установить уровень логирования (можно менять в консоли: Logger.setLevel(Logger.LEVELS.DEBUG))
+    // Logger.LEVELS: ERROR=0, WARN=1, INFO=2, DEBUG=3
+    // Logger.setLevel(Logger.LEVELS.DEBUG); // Раскомментировать для отладки
 });
 
 // Предотвращение случайного закрытия
@@ -2100,4 +2097,4 @@ window.addEventListener('beforeunload', (e) => {
     e.returnValue = '';
 });
 
-console.log('МикроББокс система управления загружена');
+Logger.info('МикроББокс система управления загружена');
