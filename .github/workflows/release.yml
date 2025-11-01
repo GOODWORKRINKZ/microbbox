@@ -157,7 +157,7 @@ jobs:
         EPIC_NAME_EN="${{ steps.epic_name.outputs.epic_name_en }}"
         
         # Получаем предыдущий тег для генерации changelog
-        PREV_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "")
+        PREV_TAG=$(git describe --tags --abbrev=0 --match='v*' 2>/dev/null || echo "")
         
         # Генерируем changelog
         CHANGELOG=""
@@ -165,14 +165,14 @@ jobs:
           echo "📝 Генерация changelog от $PREV_TAG до HEAD..."
           
           # Получаем количество коммитов
-          COMMIT_COUNT=$(git rev-list ${PREV_TAG}..HEAD --no-merges --count)
+          COMMIT_COUNT=$(git rev-list "${PREV_TAG}..HEAD" --no-merges --count)
           
           if [ "$COMMIT_COUNT" -gt 0 ]; then
             # Получаем коммиты с улучшенным форматированием
-            COMMITS=$(git log --pretty=format:"- %s" ${PREV_TAG}..HEAD --no-merges)
+            COMMITS=$(git log --pretty=format:"- %s" "${PREV_TAG}..HEAD" --no-merges)
             
             # Получаем список изменённых файлов для статистики
-            FILES_CHANGED=$(git diff --name-only ${PREV_TAG}..HEAD | wc -l)
+            FILES_CHANGED=$(git diff --name-only "${PREV_TAG}..HEAD" | wc -l)
             
             CHANGELOG=$(cat << CHANGELOG_EOF
         
@@ -343,10 +343,9 @@ jobs:
         sed -i "s/\$EPIC_NAME_RU/${EPIC_NAME_RU}/g" RELEASE_NOTES.md
         sed -i "s/\$EPIC_NAME_EN/${EPIC_NAME_EN}/g" RELEASE_NOTES.md
         
-        # Подставляем changelog (сохраняем во временный файл для безопасной вставки)
-        echo "$CHANGELOG" > /tmp/changelog.txt
-        # Используем perl для замены, т.к. он лучше справляется с многострочным текстом
-        perl -i -pe 'BEGIN{undef $/;} s/\$CHANGELOG_PLACEHOLDER/`cat \/tmp\/changelog.txt`/se' RELEASE_NOTES.md
+        # Подставляем changelog (используем безопасный метод через переменную окружения)
+        export CHANGELOG_CONTENT="$CHANGELOG"
+        perl -i -pe 's/\$CHANGELOG_PLACEHOLDER/$ENV{CHANGELOG_CONTENT}/e' RELEASE_NOTES.md
         
     - name: Create GitHub Release
       uses: softprops/action-gh-release@v1
