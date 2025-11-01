@@ -833,11 +833,6 @@ body {
     }
 }
 
-/* Corner markers on reticle */
-.t800-reticle::after {
-    content: '';
-}
-
 /* Data displays */
 .t800-data {
     position: absolute;
