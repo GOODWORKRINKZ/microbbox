@@ -38,6 +38,9 @@ class MicroBoxController {
         this.t800Interval = null;
         this.t800StartTime = null;
         
+        // Help animation
+        this.helpAnimationId = null;
+        
         // Throttling для команд движения
         this.lastMovementTime = 0;
         this.lastLeftSpeed = 0;
@@ -247,6 +250,12 @@ class MicroBoxController {
                     }
                 }, 100);
             });
+        }
+
+        // Help button
+        const helpBtn = document.getElementById('helpBtn') || document.getElementById('mobileHelp');
+        if (helpBtn) {
+            helpBtn.addEventListener('click', () => this.showHelp());
         }
 
         // Настройки
@@ -1105,6 +1114,71 @@ class MicroBoxController {
         const dontOfferCheckbox = document.getElementById('dontOfferUpdates');
         if (dontOfferCheckbox) {
             dontOfferCheckbox.addEventListener('change', (e) => this.saveUpdateSettings());
+        }
+        
+        // Help modal
+        const helpModal = document.getElementById('helpModal');
+        const helpCloseBtn = helpModal?.querySelector('.help-close');
+        
+        if (helpCloseBtn) {
+            helpCloseBtn.addEventListener('click', () => {
+                helpModal.classList.add('hidden');
+                this.stopHelpAnimation();
+            });
+        }
+        
+        if (helpModal) {
+            helpModal.addEventListener('click', (e) => {
+                if (e.target === helpModal) {
+                    helpModal.classList.add('hidden');
+                    this.stopHelpAnimation();
+                }
+            });
+        }
+    }
+
+    showHelp() {
+        const modal = document.getElementById('helpModal');
+        if (modal) {
+            modal.classList.remove('hidden');
+            this.startHelpAnimation();
+        }
+    }
+    
+    startHelpAnimation() {
+        // Start animation for demo joysticks
+        const leftKnob = document.getElementById('leftKnobDemo');
+        const rightKnob = document.getElementById('rightKnobDemo');
+        const leftXDisplay = document.getElementById('leftXDemo');
+        const rightYDisplay = document.getElementById('rightYDemo');
+        
+        if (!leftKnob || !rightKnob) return;
+        
+        let time = 0;
+        const maxHorizontalMove = 110; // Maximum horizontal movement in pixels
+        const maxVerticalMove = 110;   // Maximum vertical movement in pixels
+        
+        this.helpAnimationId = setInterval(() => {
+            time += 0.015;
+            
+            // Left slider - horizontal only (in slot)
+            const leftX = Math.sin(time) * maxHorizontalMove;
+            leftKnob.style.transform = `translate(calc(-50% + ${leftX}px), -50%)`;
+            const leftPercent = Math.round((leftX / maxHorizontalMove) * 100);
+            if (leftXDisplay) leftXDisplay.textContent = leftPercent;
+            
+            // Right slider - vertical only (in slot)
+            const rightY = Math.cos(time * 1.3) * maxVerticalMove;
+            rightKnob.style.transform = `translate(-50%, calc(-50% + ${rightY}px))`;
+            const rightPercent = Math.round((-rightY / maxVerticalMove) * 100);
+            if (rightYDisplay) rightYDisplay.textContent = rightPercent;
+        }, 50);
+    }
+    
+    stopHelpAnimation() {
+        if (this.helpAnimationId) {
+            clearInterval(this.helpAnimationId);
+            this.helpAnimationId = null;
         }
     }
 
