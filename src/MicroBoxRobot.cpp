@@ -175,7 +175,8 @@ bool MicroBoxRobot::initSafeModeForOTA() {
     delay(2000);
     ESP.restart();
     
-    // Этот код никогда не будет достигнут из-за ESP.restart()
+    // Никогда не достигается из-за ESP.restart() выше,
+    // но возвращаем success для соблюдения сигнатуры функции
     return success;
 }
 

@@ -653,7 +653,10 @@ bool FirmwareUpdate::downloadAndInstallFirmware(const String& url) {
 // Static методы для управления флагом OTA обновления
 bool FirmwareUpdate::isOTAPending() {
     Preferences prefs;
-    prefs.begin("ota", true);  // Read-only
+    if (!prefs.begin("ota", true)) {  // Read-only
+        DEBUG_PRINTLN("ОШИБКА: Не удалось открыть preferences для чтения OTA флага");
+        return false;  // По умолчанию считаем что OTA не ожидается
+    }
     bool pending = prefs.getBool("pending", false);
     prefs.end();
     return pending;
@@ -661,7 +664,10 @@ bool FirmwareUpdate::isOTAPending() {
 
 void FirmwareUpdate::setOTAPending(bool pending) {
     Preferences prefs;
-    prefs.begin("ota", false);  // Read-write
+    if (!prefs.begin("ota", false)) {  // Read-write
+        DEBUG_PRINTLN("ОШИБКА: Не удалось открыть preferences для записи OTA флага");
+        return;
+    }
     prefs.putBool("pending", pending);
     prefs.end();
     DEBUG_PRINTF("OTA pending flag set to: %s\n", pending ? "true" : "false");

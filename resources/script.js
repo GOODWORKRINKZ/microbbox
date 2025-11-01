@@ -1576,7 +1576,7 @@ class MicroBoxController {
         
         let pollCount = 0;
         let consecutiveErrors = 0;
-        let pollInterval = null;  // Declare outside try block for proper scoping
+        let pollInterval = null;  // Declare outside try for cleanup in catch block
         
         try {
             pollInterval = setInterval(async () => {
