@@ -1380,7 +1380,126 @@ class MicroBoxController {
             return;
         }
         
-        alert('Функция автоматической загрузки еще в разработке. Пожалуйста, скачайте файл вручную с GitHub и загрузите через форму ниже.');
+        // Константы для состояний обновления (соответствуют UpdateState в FirmwareUpdate.h)
+        const UpdateState = {
+            IDLE: 0,
+            DOWNLOADING: 1,
+            UPLOADING: 2,
+            SUCCESS: 3,
+            FAILED: 4
+        };
+        
+        // Константы для опроса статуса
+        const POLL_INTERVAL_MS = 1000; // Опрос каждую секунду
+        const TOTAL_TIMEOUT_MS = 120000; // Общий таймаут 2 минуты
+        const MAX_CONSECUTIVE_ERRORS = 5; // Максимум последовательных ошибок
+        const EARLY_ERROR_PERIOD_MS = 30000; // "Ранний" период - первые 30 секунд
+        
+        const maxPolls = TOTAL_TIMEOUT_MS / POLL_INTERVAL_MS;
+        
+        const progressDiv = document.getElementById('uploadProgress');
+        const progressFill = document.getElementById('progressFill');
+        const progressText = document.getElementById('progressText');
+        const downloadBtn = document.getElementById('downloadUpdateBtn');
+        
+        try {
+            // Показываем прогресс
+            progressDiv.classList.remove('hidden');
+            downloadBtn.disabled = true;
+            downloadBtn.textContent = 'Загрузка...';
+            progressFill.style.width = '0%';
+            progressText.textContent = '0%';
+            
+            // Отправляем запрос на бэкенд для скачивания и установки
+            const formData = new FormData();
+            formData.append('url', this.updateDownloadUrl);
+            
+            const response = await fetch('/api/update/download', {
+                method: 'POST',
+                body: formData
+            });
+            
+            if (!response.ok) {
+                const data = await response.json();
+                throw new Error(data.message || 'Ошибка запуска обновления');
+            }
+            
+            const data = await response.json();
+            
+            if (data.status === 'ok') {
+                downloadBtn.textContent = 'Установка...';
+                
+                // Начинаем опрос статуса обновления
+                let pollCount = 0;
+                let consecutiveErrors = 0;
+                
+                const pollInterval = setInterval(async () => {
+                    pollCount++;
+                    
+                    try {
+                        const statusResponse = await fetch('/api/update/status');
+                        if (statusResponse.ok) {
+                            const status = await statusResponse.json();
+                            
+                            // Сбрасываем счетчик ошибок при успешном ответе
+                            consecutiveErrors = 0;
+                            
+                            // Обновляем прогресс
+                            progressFill.style.width = status.progress + '%';
+                            progressText.textContent = status.progress + '%';
+                            
+                            // Проверяем состояние
+                            if (status.state === UpdateState.SUCCESS) {
+                                clearInterval(pollInterval);
+                                progressFill.style.width = '100%';
+                                progressText.textContent = '100%';
+                                alert('Обновление успешно установлено! Устройство перезагружается...');
+                                
+                                // Ждем перезагрузки
+                                setTimeout(() => {
+                                    window.location.reload();
+                                }, 5000);
+                            } else if (status.state === UpdateState.FAILED) {
+                                clearInterval(pollInterval);
+                                throw new Error('Ошибка обновления: ' + status.status);
+                            }
+                        } else {
+                            consecutiveErrors++;
+                        }
+                    } catch (error) {
+                        consecutiveErrors++;
+                        // Логируем только для отладки
+                        console.log('Poll attempt ' + pollCount + ', error count: ' + consecutiveErrors, error.message);
+                        
+                        // Если слишком много последовательных ошибок в начале процесса - это проблема
+                        const elapsedTimeMs = pollCount * POLL_INTERVAL_MS;
+                        if (consecutiveErrors >= MAX_CONSECUTIVE_ERRORS && elapsedTimeMs < EARLY_ERROR_PERIOD_MS) {
+                            clearInterval(pollInterval);
+                            throw new Error('Не удалось получить статус обновления. Возможно, устройство недоступно.');
+                        }
+                    }
+                    
+                    // Таймаут
+                    if (pollCount >= maxPolls) {
+                        clearInterval(pollInterval);
+                        alert('Превышено время ожидания. Проверьте статус устройства вручную.');
+                        downloadBtn.disabled = false;
+                        downloadBtn.textContent = 'Скачать и установить автоматически';
+                    }
+                }, POLL_INTERVAL_MS);
+            } else {
+                throw new Error(data.message || 'Неизвестная ошибка');
+            }
+            
+        } catch (error) {
+            console.error('Error during automatic update:', error);
+            alert('Ошибка автоматического обновления: ' + error.message + '\n\nПожалуйста, скачайте файл вручную с GitHub и загрузите через форму ниже.');
+            
+            // Восстанавливаем кнопку
+            downloadBtn.disabled = false;
+            downloadBtn.textContent = 'Скачать и установить автоматически';
+            progressDiv.classList.add('hidden');
+        }
     }
     
     onFirmwareSelected(event) {
