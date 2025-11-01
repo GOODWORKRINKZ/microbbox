@@ -144,7 +144,13 @@
                 <div class="vr-status">
                     <span id="vrStatus">Поиск контроллеров...</span>
                 </div>
-                <button id="vrDebugBtn" class="vr-debug-btn">🔍 Отправить Debug Info</button>
+                <button id="vrDebugBtn" class="vr-debug-btn">🔍 Debug Info</button>
+                <!-- Панель с debug информацией -->
+                <div id="vrDebugPanel" class="vr-debug-panel hidden">
+                    <h3>VR Debug Information</h3>
+                    <pre id="vrDebugOutput"></pre>
+                    <button id="vrDebugClose" class="vr-debug-close">✕ Закрыть</button>
+                </div>
             </div>
         </div>
 

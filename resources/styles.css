@@ -476,6 +476,66 @@ body {
     box-shadow: 0 2px 10px rgba(102, 126, 234, 0.4);
 }
 
+.vr-debug-panel {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: rgba(0, 0, 0, 0.95);
+    border: 2px solid #667eea;
+    border-radius: 15px;
+    padding: 20px;
+    max-width: 90%;
+    max-height: 80vh;
+    overflow-y: auto;
+    z-index: 10;
+    box-shadow: 0 0 30px rgba(102, 126, 234, 0.5);
+}
+
+.vr-debug-panel h3 {
+    color: #667eea;
+    margin: 0 0 15px 0;
+    font-size: 20px;
+    text-align: center;
+}
+
+.vr-debug-panel pre {
+    background: rgba(0, 0, 0, 0.7);
+    color: #00ff88;
+    padding: 15px;
+    border-radius: 8px;
+    font-size: 12px;
+    line-height: 1.4;
+    overflow-x: auto;
+    white-space: pre-wrap;
+    word-wrap: break-word;
+    max-height: 60vh;
+    overflow-y: auto;
+    font-family: 'Courier New', monospace;
+}
+
+.vr-debug-close {
+    margin-top: 15px;
+    padding: 10px 20px;
+    background: #ff4444;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: bold;
+    cursor: pointer;
+    width: 100%;
+    transition: all 0.3s ease;
+}
+
+.vr-debug-close:hover {
+    background: #ff6666;
+}
+
+.vr-debug-close:active {
+    background: #cc0000;
+}
+
 /* Модальные окна */
 .modal {
     position: fixed;

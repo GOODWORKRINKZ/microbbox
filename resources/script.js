@@ -353,6 +353,12 @@ class MicroBoxController {
         if (vrDebugBtn) {
             vrDebugBtn.addEventListener('click', () => this.sendVRDebugLog());
         }
+        
+        // VR Debug закрыть
+        const vrDebugClose = document.getElementById('vrDebugClose');
+        if (vrDebugClose) {
+            vrDebugClose.addEventListener('click', () => this.hideVRDebugPanel());
+        }
 
         // Модальные окна
         this.setupModalHandlers();
@@ -1293,13 +1299,17 @@ class MicroBoxController {
         return 'Unknown';
     }
     
-    // Отправка VR диагностики на сервер
+    // Отправка VR диагностики на сервер И показ на странице
     async sendVRDebugLog() {
         try {
             const debugInfo = await this.collectVRDebugInfo();
             
-            console.log('Отправка VR debug информации:', debugInfo);
+            console.log('Собрана VR debug информация:', debugInfo);
             
+            // Показываем информацию на странице в VR
+            this.showVRDebugPanel(debugInfo);
+            
+            // Отправляем на сервер для Serial Monitor
             const response = await fetch('/api/vr-log', {
                 method: 'POST',
                 headers: {
@@ -1309,37 +1319,102 @@ class MicroBoxController {
             });
             
             const result = await response.json();
-            console.log('VR log отправлен:', result);
-            
-            // Показываем уведомление в VR интерфейсе без alert()
-            const vrStatus = document.getElementById('vrStatus');
-            if (vrStatus) {
-                const originalText = vrStatus.textContent;
-                vrStatus.textContent = '✓ Debug информация отправлена! Проверьте Serial Monitor (115200 baud)';
-                vrStatus.style.color = '#00ff88';
-                setTimeout(() => {
-                    vrStatus.textContent = originalText;
-                    vrStatus.style.color = '';
-                }, 5000);
-            }
+            console.log('VR log отправлен на сервер:', result);
             
             return true;
         } catch (error) {
             console.error('Ошибка отправки VR log:', error);
             
-            // Показываем ошибку в VR интерфейсе без alert()
-            const vrStatus = document.getElementById('vrStatus');
-            if (vrStatus) {
-                const originalText = vrStatus.textContent;
-                vrStatus.textContent = '✗ Ошибка отправки: ' + error.message;
-                vrStatus.style.color = '#ff4444';
-                setTimeout(() => {
-                    vrStatus.textContent = originalText;
-                    vrStatus.style.color = '';
-                }, 5000);
-            }
+            // Всё равно показываем информацию на странице
+            const debugInfo = await this.collectVRDebugInfo();
+            this.showVRDebugPanel(debugInfo, error.message);
             
             return false;
+        }
+    }
+    
+    // Показать debug панель в VR интерфейсе
+    showVRDebugPanel(debugInfo, errorMessage = null) {
+        const panel = document.getElementById('vrDebugPanel');
+        const output = document.getElementById('vrDebugOutput');
+        
+        if (!panel || !output) return;
+        
+        // Форматируем информацию для удобного чтения
+        let formattedInfo = '';
+        
+        // Основная информация
+        formattedInfo += '=== BROWSER INFO ===\n';
+        formattedInfo += `Browser: ${debugInfo.browser}\n`;
+        formattedInfo += `User Agent: ${debugInfo.userAgent}\n`;
+        formattedInfo += `Platform: ${debugInfo.platform}\n`;
+        formattedInfo += `Screen: ${debugInfo.screenWidth}x${debugInfo.screenHeight}\n`;
+        formattedInfo += `DPI: ${debugInfo.devicePixelRatio}\n\n`;
+        
+        // WebXR поддержка
+        formattedInfo += '=== WEBXR SUPPORT ===\n';
+        formattedInfo += `XR Supported: ${debugInfo.xrSupported ? 'YES ✓' : 'NO ✗'}\n`;
+        if (debugInfo.xrSupported) {
+            formattedInfo += `Immersive VR: ${debugInfo.immersiveVrSupported ? 'YES ✓' : 'NO ✗'}\n`;
+            formattedInfo += `Immersive AR: ${debugInfo.immersiveArSupported ? 'YES ✓' : 'NO ✗'}\n`;
+            formattedInfo += `Inline: ${debugInfo.inlineSupported ? 'YES ✓' : 'NO ✗'}\n`;
+        }
+        formattedInfo += '\n';
+        
+        // VR сессия
+        formattedInfo += '=== VR SESSION ===\n';
+        formattedInfo += `Session Active: ${debugInfo.vrSessionActive ? 'YES ✓' : 'NO ✗'}\n`;
+        if (debugInfo.vrSession) {
+            formattedInfo += `Blend Mode: ${debugInfo.vrSession.environmentBlendMode}\n`;
+            formattedInfo += `Interaction: ${debugInfo.vrSession.interactionMode}\n`;
+            formattedInfo += `Visibility: ${debugInfo.vrSession.visibilityState}\n`;
+        }
+        formattedInfo += '\n';
+        
+        // Контроллеры
+        formattedInfo += '=== CONTROLLERS ===\n';
+        formattedInfo += `Count: ${debugInfo.controllersCount}\n`;
+        if (debugInfo.controllers && debugInfo.controllers.length > 0) {
+            debugInfo.controllers.forEach((ctrl, idx) => {
+                formattedInfo += `\nController ${idx + 1}:\n`;
+                formattedInfo += `  Hand: ${ctrl.handedness}\n`;
+                formattedInfo += `  Mode: ${ctrl.targetRayMode}\n`;
+                formattedInfo += `  Profiles: ${ctrl.profiles.join(', ')}\n`;
+                if (ctrl.gamepad) {
+                    formattedInfo += `  Gamepad: ${ctrl.gamepad.id}\n`;
+                    formattedInfo += `  Axes: [${ctrl.gamepad.axes.map(a => a.toFixed(2)).join(', ')}]\n`;
+                    formattedInfo += `  Buttons: ${ctrl.gamepad.buttonsCount} (${ctrl.gamepad.buttons.filter(b => b.pressed).length} pressed)\n`;
+                }
+            });
+        }
+        formattedInfo += '\n';
+        
+        // Состояние приложения
+        formattedInfo += '=== APP STATE ===\n';
+        formattedInfo += `Device Type: ${debugInfo.app.deviceType}\n`;
+        formattedInfo += `Control Mode: ${debugInfo.app.controlMode}\n`;
+        formattedInfo += `Effect Mode: ${debugInfo.app.effectMode}\n`;
+        formattedInfo += `Connected: ${debugInfo.app.isConnected ? 'YES ✓' : 'NO ✗'}\n`;
+        formattedInfo += `VR Enabled: ${debugInfo.app.vrEnabled ? 'YES ✓' : 'NO ✗'}\n`;
+        
+        // Ошибка если есть
+        if (errorMessage) {
+            formattedInfo += '\n=== ERROR ===\n';
+            formattedInfo += `Server Error: ${errorMessage}\n`;
+            formattedInfo += '(Info shown locally only)\n';
+        } else {
+            formattedInfo += '\n✓ Sent to Serial Monitor (115200 baud)\n';
+        }
+        
+        output.textContent = formattedInfo;
+        panel.classList.remove('hidden');
+    }
+    
+    // Скрыть debug панель
+    hideVRDebugPanel() {
+        const panel = document.getElementById('vrDebugPanel');
+        if (panel) {
+            panel.classList.add('hidden');
         }
     }
 
