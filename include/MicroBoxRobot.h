@@ -12,6 +12,13 @@
 #include "FirmwareUpdate.h"
 #include "WiFiSettings.h"
 
+#ifdef FEATURE_HTTPS
+#include <HTTPSServer.hpp>
+#include <SSLCert.hpp>
+#include <HTTPRequest.hpp>
+#include <HTTPResponse.hpp>
+#endif
+
 class MicroBoxRobot {
 public:
     MicroBoxRobot();
@@ -92,6 +99,9 @@ private:
     void initLEDs();
     void initBuzzer();
     void initWebServer();
+#ifdef FEATURE_HTTPS
+    void initHTTPSServer();
+#endif
     void initMDNS();
     
     void handleRoot(AsyncWebServerRequest *request);
@@ -106,6 +116,10 @@ private:
     
     // Объекты
     AsyncWebServer* server;
+#ifdef FEATURE_HTTPS
+    httpsserver::HTTPSServer* httpsServer;
+    httpsserver::SSLCert* sslCert;
+#endif
 #ifdef FEATURE_NEOPIXEL
     Adafruit_NeoPixel* pixels;
 #endif

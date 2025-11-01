@@ -8,12 +8,14 @@
 // Закомментируйте ненужные ОПЦИОНАЛЬНЫЕ компоненты для экономии памяти и пинов
 #define FEATURE_NEOPIXEL        // Адресные светодиоды WS2812B (пин 4)
 //#define FEATURE_BUZZER          // Звуковой бузер
+#define FEATURE_HTTPS           // HTTPS сервер для WebXR/VR (требуется для Oculus Quest)
 
 // Обязательные компоненты (всегда включены):
 // - MOTORS: Моторы с MX1508
 // - CAMERA: Камера ESP32CAM
 // - WIFI: WiFi и веб-сервер
 // - OTA_UPDATE: OTA обновления прошивки
+// HTTPS: Опциональный HTTPS сервер для поддержки WebXR в VR шлемах
 
 // ═══════════════════════════════════════════════════════════════
 
@@ -79,6 +81,12 @@
 #define WIFI_CHANNEL 1
 #define WIFI_HIDDEN false
 #define WIFI_MAX_CONNECTIONS 4
+
+#ifdef FEATURE_HTTPS
+// HTTPS настройки (для WebXR/VR поддержки)
+#define HTTPS_PORT 443
+// Сертификат будет сгенерирован автоматически при первом запуске
+#endif
 
 // IP адреса для AP режима
 #define AP_IP_ADDR 192, 168, 4, 1

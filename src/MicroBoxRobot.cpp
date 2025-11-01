@@ -5,12 +5,20 @@
 #include "embedded_resources.h"
 #include "CameraServer.h"
 
+#ifdef FEATURE_HTTPS
+#include "cert.h"
+#endif
+
 MicroBoxRobot::MicroBoxRobot() : 
     initialized(false),
     cameraInitialized(false),
     wifiConnected(false),
     wifiAPMode(true),
     server(nullptr),
+#ifdef FEATURE_HTTPS
+    httpsServer(nullptr),
+    sslCert(nullptr),
+#endif
 #ifdef FEATURE_NEOPIXEL
     pixels(nullptr),
 #endif
@@ -81,6 +89,11 @@ bool MicroBoxRobot::init() {
     
     // Инициализация веб-сервера
     initWebServer();
+    
+#ifdef FEATURE_HTTPS
+    // Инициализация HTTPS сервера (для WebXR/VR поддержки)
+    initHTTPSServer();
+#endif
     
     // Запуск камеры сервера на порту 81
     startCameraStreamServer();
@@ -237,6 +250,19 @@ void MicroBoxRobot::shutdown() {
         delete server;
         server = nullptr;
     }
+    
+#ifdef FEATURE_HTTPS
+    if (httpsServer) {
+        httpsServer->stop();
+        delete httpsServer;
+        httpsServer = nullptr;
+    }
+    
+    if (sslCert) {
+        delete sslCert;
+        sslCert = nullptr;
+    }
+#endif
     
 #ifdef FEATURE_NEOPIXEL
     if (pixels) {
@@ -1307,3 +1333,170 @@ void MicroBoxRobot::initMDNS() {
         DEBUG_PRINTLN("Ошибка запуска mDNS");
     }
 }
+#ifdef FEATURE_HTTPS
+void MicroBoxRobot::initHTTPSServer() {
+    using namespace httpsserver;
+    
+    DEBUG_PRINTLN("Инициализация HTTPS сервера...");
+    DEBUG_PRINTLN("Это может занять до 30 секунд для генерации сертификата...");
+    
+    // Создаем сертификат из встроенных данных
+    sslCert = new SSLCert(
+        (unsigned char*)SSL_CERT, sizeof(SSL_CERT),
+        (unsigned char*)SSL_KEY, sizeof(SSL_KEY)
+    );
+    
+    // Создаем HTTPS сервер на порту 443
+    httpsServer = new HTTPSServer(sslCert, HTTPS_PORT);
+    
+    // Регистрируем обработчики
+    
+    // Главная страница
+    ResourceNode * nodeRoot = new ResourceNode("/", "GET", [this](HTTPRequest *req, HTTPResponse *res) {
+        #ifdef USE_EMBEDDED_RESOURCES
+        res->setHeader("Content-Type", "text/html; charset=utf-8");
+        res->setHeader("Content-Encoding", "gzip");
+        res->setHeader("Cache-Control", "max-age=86400");
+        res->write(html_content, html_content_len);
+        #else
+        res->setStatusCode(200);
+        res->setStatusText("OK");
+        res->setHeader("Content-Type", "text/html");
+        res->println("<!DOCTYPE html><html><head>");
+        res->println("<title>MicroBox Robot</title>");
+        res->println("</head><body>");
+        res->println("<h1>MicroBox HTTPS Server</h1>");
+        res->println("<p>HTTPS working! WebXR should work now.</p>");
+        res->println("</body></html>");
+        #endif
+    });
+    httpsServer->registerNode(nodeRoot);
+    
+    // API команды POST
+    ResourceNode * nodeCommand = new ResourceNode("/command", "POST", [this](HTTPRequest *req, HTTPResponse *res) {
+        // Читаем тело запроса
+        byte buffer[512];
+        size_t bytesRead = 0;
+        String commandBody = "";
+        
+        while (!req->requestComplete() && bytesRead < 512) {
+            size_t read = req->readBytes(buffer, std::min((size_t)512 - bytesRead, (size_t)256));
+            if (read > 0) {
+                for (size_t i = 0; i < read; i++) {
+                    commandBody += (char)buffer[i];
+                }
+                bytesRead += read;
+            }
+        }
+        
+        DEBUG_PRINT("HTTPS команда: ");
+        DEBUG_PRINTLN(commandBody);
+        
+        // Обработка команд (упрощенная версия)
+        res->setHeader("Content-Type", "application/json");
+        
+        if (commandBody.indexOf("move") >= 0) {
+            int leftSpeed = 0, rightSpeed = 0;
+            
+            int leftPos = commandBody.indexOf("\"left\":");
+            int rightPos = commandBody.indexOf("\"right\":");
+            
+            if (leftPos >= 0) {
+                leftSpeed = commandBody.substring(leftPos + 7).toInt();
+            }
+            if (rightPos >= 0) {
+                rightSpeed = commandBody.substring(rightPos + 8).toInt();
+            }
+            
+            setMotorSpeed(leftSpeed, rightSpeed);
+            res->println("{\"status\":\"ok\",\"action\":\"move\"}");
+        }
+        else if (commandBody.indexOf("flashlight") >= 0) {
+#ifdef FEATURE_NEOPIXEL
+            static bool flashState = false;
+            flashState = !flashState;
+            pixels->setPixelColor(0, flashState ? pixels->Color(255, 255, 255) : 0);
+            pixels->show();
+#endif
+            res->println("{\"status\":\"ok\",\"action\":\"flashlight\"}");
+        }
+        else if (commandBody.indexOf("horn") >= 0) {
+#ifdef FEATURE_BUZZER
+            if (commandBody.indexOf("true") >= 0) {
+                playTone(800, 0);
+            } else {
+                stopBuzzer();
+            }
+#endif
+            res->println("{\"status\":\"ok\",\"action\":\"horn\"}");
+        }
+        else if (commandBody.indexOf("ping") >= 0) {
+            res->println("{\"status\":\"ok\",\"action\":\"pong\"}");
+        }
+        else {
+            res->println("{\"status\":\"ok\",\"action\":\"received\"}");
+        }
+    });
+    httpsServer->registerNode(nodeCommand);
+    
+    // WiFi status API
+    ResourceNode * nodeWifiStatus = new ResourceNode("/api/wifi/status", "GET", [this](HTTPRequest *req, HTTPResponse *res) {
+        res->setHeader("Content-Type", "application/json");
+        
+        String json = "{";
+        json += "\"connected\":" + String(wifiConnected ? "true" : "false") + ",";
+        json += "\"mode\":\"" + String(wifiAPMode ? "AP" : "CLIENT") + "\",";
+        json += "\"ip\":\"" + getIP().toString() + "\",";
+        json += "\"deviceName\":\"" + getDeviceName() + "\"";
+        
+        if (wifiSettings) {
+            json += ",\"savedSSID\":\"" + wifiSettings->getSSID() + "\"";
+            json += ",\"savedMode\":\"" + String(wifiSettings->getMode() == WiFiMode::CLIENT ? "CLIENT" : "AP") + "\"";
+        }
+        
+        json += "}";
+        res->println(json);
+    });
+    httpsServer->registerNode(nodeWifiStatus);
+    
+    // Статические ресурсы (если используются встроенные)
+    #ifdef USE_EMBEDDED_RESOURCES
+    ResourceNode * nodeCSS = new ResourceNode("/styles.css", "GET", [](HTTPRequest *req, HTTPResponse *res) {
+        res->setHeader("Content-Type", "text/css");
+        res->setHeader("Content-Encoding", "gzip");
+        res->setHeader("Cache-Control", "max-age=86400");
+        res->write(css_content, css_content_len);
+    });
+    httpsServer->registerNode(nodeCSS);
+    
+    ResourceNode * nodeJS = new ResourceNode("/script.js", "GET", [](HTTPRequest *req, HTTPResponse *res) {
+        res->setHeader("Content-Type", "application/javascript");
+        res->setHeader("Content-Encoding", "gzip");
+        res->setHeader("Cache-Control", "max-age=86400");
+        res->write(js_content, js_content_len);
+    });
+    httpsServer->registerNode(nodeJS);
+    #endif
+    
+    // Запускаем HTTPS сервер
+    httpsServer->start();
+    
+    if (httpsServer->isRunning()) {
+        DEBUG_PRINTLN("HTTPS сервер успешно запущен на порту 443");
+        DEBUG_PRINTLN("WebXR/VR теперь должны работать!");
+        
+        // Добавляем HTTPS в mDNS
+        MDNS.addService("https", "tcp", 443);
+        
+        // Выводим инструкции
+        DEBUG_PRINTLN("═══════════════════════════════════════");
+        DEBUG_PRINTLN("Для использования WebXR в VR шлеме:");
+        DEBUG_PRINT("  Откройте: https://");
+        DEBUG_PRINTLN(getIP().toString());
+        DEBUG_PRINTLN("  (Примите предупреждение о сертификате)");
+        DEBUG_PRINTLN("═══════════════════════════════════════");
+    } else {
+        DEBUG_PRINTLN("ОШИБКА: Не удалось запустить HTTPS сервер!");
+    }
+}
+#endif
