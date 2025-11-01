@@ -53,6 +53,12 @@ public:
     static bool isOTAPending();
     static void setOTAPending(bool pending);
     static void clearOTAPending();
+    
+    // Retry counter для предотвращения бесконечных циклов перезагрузки
+    static int getOTARetryCount();
+    static void incrementOTARetryCount();
+    static void clearOTARetryCount();
+    static const int MAX_OTA_RETRY_ATTEMPTS = 3;
 
 private:
     enum class UpdateState {
