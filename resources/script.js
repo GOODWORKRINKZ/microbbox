@@ -45,7 +45,7 @@ const Logger = {
     
     // Внутренний метод логирования
     _log: function(level, ...args) {
-        const timestamp = new Date().toISOString().substr(11, 12); // HH:MM:SS.mmm
+        const timestamp = new Date().toISOString().substring(11, 23); // HH:MM:SS.mmm
         const message = args.map(arg => 
             typeof arg === 'object' ? JSON.stringify(arg) : String(arg)
         ).join(' ');
