@@ -477,6 +477,7 @@ void FirmwareUpdate::handleDownloadAndInstall(AsyncWebServerRequest *request) {
 bool FirmwareUpdate::downloadAndInstallFirmware(const String& url) {
     if (WiFi.status() != WL_CONNECTED) {
         DEBUG_PRINTLN("WiFi не подключен");
+        currentState = UpdateState::FAILED;
         updateStatus = "WiFi не подключен";
         return false;
     }
@@ -501,6 +502,7 @@ bool FirmwareUpdate::downloadAndInstallFirmware(const String& url) {
     
     if (httpCode != HTTP_CODE_OK) {
         DEBUG_PRINTF("Ошибка HTTP: %d\n", httpCode);
+        currentState = UpdateState::FAILED;
         updateStatus = "Ошибка скачивания: HTTP " + String(httpCode);
         http.end();
         updating = false;
@@ -513,6 +515,7 @@ bool FirmwareUpdate::downloadAndInstallFirmware(const String& url) {
     // Начинаем OTA обновление
     if (!Update.begin(updateSize)) {
         Update.printError(Serial);
+        currentState = UpdateState::FAILED;
         updateStatus = "Ошибка начала обновления";
         http.end();
         updating = false;
@@ -528,7 +531,8 @@ bool FirmwareUpdate::downloadAndInstallFirmware(const String& url) {
     uint8_t buff[512] = { 0 };
     
     // Скачиваем файл полностью
-    while (http.connected() && (updateReceived < updateSize || updateSize == 0)) {
+    // Используем updateSize если известен, иначе читаем до конца потока
+    while (http.connected()) {
         size_t available = stream->available();
         
         if (available) {
@@ -539,10 +543,10 @@ bool FirmwareUpdate::downloadAndInstallFirmware(const String& url) {
                 // Записываем в Update
                 if (Update.write(buff, readLen) != (size_t)readLen) {
                     Update.printError(Serial);
+                    currentState = UpdateState::FAILED;
                     updateStatus = "Ошибка записи прошивки";
                     http.end();
                     updating = false;
-                    currentState = UpdateState::FAILED;
                     return false;
                 }
                 
@@ -555,6 +559,11 @@ bool FirmwareUpdate::downloadAndInstallFirmware(const String& url) {
                         currentProgress = progress;
                         updateProgress(progress);
                     }
+                }
+                
+                // Если известен размер и достигли его - выходим
+                if (updateSize > 0 && updateReceived >= updateSize) {
+                    break;
                 }
             }
         }
