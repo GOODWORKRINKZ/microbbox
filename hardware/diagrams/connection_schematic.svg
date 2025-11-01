@@ -1,0 +1,191 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="1200" height="800" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <style>
+      .title { font: bold 24px sans-serif; }
+      .subtitle { font: 16px sans-serif; }
+      .label { font: 12px sans-serif; }
+      .small { font: 10px sans-serif; }
+      .wire { stroke: #333; stroke-width: 2; fill: none; }
+      .wire-power { stroke: #d32f2f; stroke-width: 3; fill: none; }
+      .wire-gnd { stroke: #000; stroke-width: 3; fill: none; }
+      .wire-signal { stroke: #1976d2; stroke-width: 2; fill: none; }
+      .component { fill: #e3f2fd; stroke: #1976d2; stroke-width: 2; }
+      .esp32 { fill: #fff3e0; stroke: #f57c00; stroke-width: 3; }
+      .resistor { fill: #fff9c4; stroke: #f57f17; stroke-width: 2; }
+      .motor { fill: #e8f5e9; stroke: #388e3c; stroke-width: 2; }
+      .led { fill: #fce4ec; stroke: #c2185b; stroke-width: 2; }
+    </style>
+  </defs>
+  
+  <!-- Заголовок -->
+  <text x="600" y="40" text-anchor="middle" class="title">МикРоББокс - Схема подключения</text>
+  <text x="600" y="65" text-anchor="middle" class="subtitle">ESP32-CAM с MX1508, NeoPixel LED и Бузером</text>
+  
+  <!-- ESP32-CAM (центр) -->
+  <rect x="450" y="300" width="300" height="200" class="esp32" rx="5"/>
+  <text x="600" y="340" text-anchor="middle" class="label" font-weight="bold">ESP32-CAM</text>
+  <text x="600" y="360" text-anchor="middle" class="small">AI Thinker</text>
+  
+  <!-- Пины ESP32 слева -->
+  <text x="460" y="395" class="small">5V</text>
+  <circle cx="445" cy="390" r="4" fill="#d32f2f"/>
+  
+  <text x="460" y="420" class="small">GND</text>
+  <circle cx="445" cy="415" r="4" fill="#000"/>
+  
+  <text x="460" y="445" class="small">GPIO2</text>
+  <circle cx="445" cy="440" r="4" fill="#1976d2"/>
+  
+  <text x="460" y="470" class="small">GPIO16</text>
+  <circle cx="445" cy="465" r="4" fill="#1976d2"/>
+  
+  <!-- Пины ESP32 справа -->
+  <text x="730" y="395" class="small" text-anchor="end">GPIO12</text>
+  <circle cx="755" cy="390" r="4" fill="#1976d2"/>
+  
+  <text x="730" y="420" class="small" text-anchor="end">GPIO13</text>
+  <circle cx="755" cy="415" r="4" fill="#1976d2"/>
+  
+  <text x="730" y="445" class="small" text-anchor="end">GPIO14</text>
+  <circle cx="755" cy="440" r="4" fill="#1976d2"/>
+  
+  <text x="730" y="470" class="small" text-anchor="end">GPIO15</text>
+  <circle cx="755" cy="465" r="4" fill="#1976d2"/>
+  
+  <!-- Питание (сверху) -->
+  <rect x="500" y="100" width="200" height="80" class="component" rx="5"/>
+  <text x="600" y="130" text-anchor="middle" class="label">Источник питания</text>
+  <text x="600" y="150" text-anchor="middle" class="small">LiPo 1S 3.7V → Buck 5V</text>
+  <text x="600" y="165" text-anchor="middle" class="small">+ защита + развязка</text>
+  
+  <!-- Линии питания -->
+  <line x1="600" y1="180" x2="600" y2="250" class="wire-power" marker-end="url(#arrowred)"/>
+  <text x="610" y="220" class="small">5V</text>
+  <line x1="600" y1="250" x2="445" y2="390" class="wire-power"/>
+  
+  <!-- GND -->
+  <line x1="500" y1="180" x2="500" y2="250" class="wire-gnd"/>
+  <line x1="500" y1="250" x2="445" y2="415" class="wire-gnd"/>
+  <text x="490" y="220" class="small" text-anchor="end">GND</text>
+  
+  <!-- MX1508 Motor Driver (справа) -->
+  <rect x="850" y="300" width="180" height="180" class="component" rx="5"/>
+  <text x="940" y="330" text-anchor="middle" class="label" font-weight="bold">MX1508</text>
+  <text x="940" y="345" text-anchor="middle" class="small">Motor Driver</text>
+  
+  <!-- Входы MX1508 -->
+  <text x="855" y="375" class="small">IN1</text>
+  <circle cx="845" cy="370" r="4" fill="#1976d2"/>
+  <text x="855" y="400" class="small">IN2</text>
+  <circle cx="845" cy="395" r="4" fill="#1976d2"/>
+  <text x="855" y="425" class="small">IN3</text>
+  <circle cx="845" cy="420" r="4" fill="#1976d2"/>
+  <text x="855" y="450" class="small">IN4</text>
+  <circle cx="845" cy="445" r="4" fill="#1976d2"/>
+  
+  <!-- Выходы MX1508 к моторам -->
+  <text x="1020" y="375" class="small" text-anchor="end">OUT1</text>
+  <circle cx="1035" cy="370" r="4" fill="#388e3c"/>
+  <text x="1020" y="400" class="small" text-anchor="end">OUT2</text>
+  <circle cx="1035" cy="395" r="4" fill="#388e3c"/>
+  <text x="1020" y="425" class="small" text-anchor="end">OUT3</text>
+  <circle cx="1035" cy="420" r="4" fill="#388e3c"/>
+  <text x="1020" y="450" class="small" text-anchor="end">OUT4</text>
+  <circle cx="1035" cy="445" r="4" fill="#388e3c"/>
+  
+  <!-- Pull-down резисторы -->
+  <!-- GPIO12 к IN1 -->
+  <line x1="755" y1="390" x2="800" y2="390" class="wire-signal"/>
+  <circle cx="800" cy="390" r="3" fill="#333"/>
+  <line x1="800" y1="390" x2="845" y2="370" class="wire-signal"/>
+  <rect x="795" y="395" width="10" height="30" class="resistor"/>
+  <text x="810" y="415" class="small">10kΩ</text>
+  <line x1="800" y1="425" x2="800" y2="440" class="wire-gnd"/>
+  <line x1="795" y1="440" x2="805" y2="440" class="wire-gnd"/>
+  
+  <!-- GPIO13 к IN2 -->
+  <line x1="755" y1="415" x2="790" y2="415" class="wire-signal"/>
+  <circle cx="790" cy="415" r="3" fill="#333"/>
+  <line x1="790" y1="415" x2="845" y2="395" class="wire-signal"/>
+  <rect x="785" y="420" width="10" height="30" class="resistor"/>
+  <text x="800" y="440" class="small">10kΩ</text>
+  <line x1="790" y1="450" x2="790" y2="465" class="wire-gnd"/>
+  <line x1="785" y1="465" x2="795" y2="465" class="wire-gnd"/>
+  
+  <!-- GPIO14 к IN4 -->
+  <line x1="755" y1="440" x2="810" y2="440" class="wire-signal"/>
+  <circle cx="810" cy="440" r="3" fill="#333"/>
+  <line x1="810" y1="440" x2="845" y2="445" class="wire-signal"/>
+  <rect x="805" y="445" width="10" height="30" class="resistor"/>
+  <text x="820" y="465" class="small">10kΩ</text>
+  <line x1="810" y1="475" x2="810" y2="490" class="wire-gnd"/>
+  <line x1="805" y1="490" x2="815" y2="490" class="wire-gnd"/>
+  
+  <!-- GPIO15 к IN3 -->
+  <line x1="755" y1="465" x2="820" y2="465" class="wire-signal"/>
+  <circle cx="820" cy="465" r="3" fill="#333"/>
+  <line x1="820" y1="465" x2="845" y2="420" class="wire-signal"/>
+  <rect x="815" y="470" width="10" height="30" class="resistor"/>
+  <text x="830" y="490" class="small">10kΩ</text>
+  <line x1="820" y1="500" x2="820" y2="515" class="wire-gnd"/>
+  <line x1="815" y1="515" x2="825" y2="515" class="wire-gnd"/>
+  
+  <!-- Моторы -->
+  <rect x="1070" y="350" width="100" height="50" class="motor" rx="5"/>
+  <text x="1120" y="375" text-anchor="middle" class="small" font-weight="bold">Левый мотор</text>
+  <text x="1120" y="390" text-anchor="middle" class="small">DC 3-7V</text>
+  <line x1="1035" y1="370" x2="1070" y2="365" class="wire-signal"/>
+  <line x1="1035" y1="395" x2="1070" y2="385" class="wire-signal"/>
+  
+  <rect x="1070" y="420" width="100" height="50" class="motor" rx="5"/>
+  <text x="1120" y="445" text-anchor="middle" class="small" font-weight="bold">Правый мотор</text>
+  <text x="1120" y="460" text-anchor="middle" class="small">DC 3-7V</text>
+  <line x1="1035" y1="420" x2="1070" y2="435" class="wire-signal"/>
+  <line x1="1035" y1="445" x2="1070" y2="455" class="wire-signal"/>
+  
+  <!-- NeoPixel LED цепочка (слева внизу) -->
+  <rect x="250" y="420" width="80" height="40" class="led" rx="5"/>
+  <text x="290" y="440" text-anchor="middle" class="small" font-weight="bold">LED #1</text>
+  <text x="290" y="452" text-anchor="middle" class="small">NeoPixel</text>
+  <circle cx="245" cy="440" r="4" fill="#1976d2"/>
+  <line x1="445" y1="440" x2="245" y2="440" class="wire-signal"/>
+  <text x="350" y="430" class="small">GPIO2 Data</text>
+  
+  <rect x="180" y="420" width="60" height="40" class="led" rx="5"/>
+  <text x="210" y="440" text-anchor="middle" class="small" font-weight="bold">LED #2</text>
+  <line x1="250" y1="440" x2="240" y2="440" class="wire-signal"/>
+  
+  <rect x="110" y="420" width="60" height="40" class="led" rx="5"/>
+  <text x="140" y="440" text-anchor="middle" class="small" font-weight="bold">LED #3</text>
+  <line x1="180" y1="440" x2="170" y2="440" class="wire-signal"/>
+  
+  <!-- Бузер (слева снизу) -->
+  <rect x="300" y="520" width="80" height="50" class="component" rx="5"/>
+  <text x="340" y="545" text-anchor="middle" class="small" font-weight="bold">Buzzer</text>
+  <text x="340" y="560" text-anchor="middle" class="small">Активный 3.3V</text>
+  <circle cx="340" cy="515" r="4" fill="#1976d2"/>
+  <line x1="445" y1="465" x2="440" y2="465" class="wire-signal"/>
+  <line x1="440" y1="465" x2="440" y2="545" class="wire-signal"/>
+  <line x1="440" y1="545" x2="380" y2="545" class="wire-signal"/>
+  <text x="420" y="535" class="small">GPIO16</text>
+  
+  <!-- Легенда -->
+  <rect x="50" y="630" width="1100" height="140" fill="#f5f5f5" stroke="#666" stroke-width="1" rx="5"/>
+  <text x="70" y="655" class="label" font-weight="bold">⚠️ ВАЖНО:</text>
+  
+  <line x1="70" y1="675" x2="100" y2="675" stroke="#f57f17" stroke-width="3"/>
+  <text x="110" y="680" class="small">Pull-down резисторы 10kΩ ОБЯЗАТЕЛЬНЫ для GPIO12-15!</text>
+  <text x="110" y="695" class="small">Без них моторы будут крутиться при Reset/включении питания</text>
+  
+  <line x1="70" y1="710" x2="100" y2="710" stroke="#d32f2f" stroke-width="3"/>
+  <text x="110" y="715" class="small">Конденсаторы развязки: 100µF для ESP32-CAM, 220µF для питания моторов MX1508</text>
+  
+  <line x1="70" y1="730" x2="100" y2="730" stroke="#1976d2" stroke-width="3"/>
+  <text x="110" y="735" class="small">NeoPixel подключаются цепочкой: GPIO2 → LED1 → LED2 → LED3</text>
+  
+  <line x1="70" y1="750" x2="100" y2="750" stroke="#000" stroke-width="3"/>
+  <text x="110" y="755" class="small">Общая земля (GND) должна быть соединена для всех компонентов!</text>
+  
+  <text x="1100" y="765" class="small" text-anchor="end" font-style="italic">МикРоББокс v1.0 | 2025-11-01</text>
+</svg>
