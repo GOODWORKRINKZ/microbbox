@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<module fritzingVersion="0.9.5d.2020-02-07.CD-548-0-3d61c58" icon="Custom1.png">
+    <title>robboxs</title>
+    <instances>
+        <instance moduleIdRef="DC Mini Metal Gear Motor_2015fb8e9adee36c637bb22e371b121f_1" modelIndex="85411912" path="C:/Users/Himik/Documents/Fritzing/parts/user/DC Mini Metal Gear Motor_2015fb8e9adee36c637bb22e371b121f_1.fzp">
+            <views/>
+        </instance>
+    </instances>
+</module>
