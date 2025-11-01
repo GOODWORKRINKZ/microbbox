@@ -61,7 +61,49 @@ class MicroBoxController {
             document.getElementById('mainInterface').classList.remove('hidden');
         }, 2000);
         
+        // Check for updates on startup (after a delay)
+        setTimeout(() => {
+            this.checkForUpdatesOnStartup();
+        }, 5000);
+        
         console.log('Инициализация завершена');
+    }
+    
+    async checkForUpdatesOnStartup() {
+        try {
+            // Check if auto-update is enabled and don't offer is not set
+            const settingsResponse = await fetch('/api/update/settings');
+            if (!settingsResponse.ok) return;
+            
+            const settings = await settingsResponse.json();
+            if (!settings.autoUpdate || settings.dontOffer) {
+                return;
+            }
+            
+            // Check for updates
+            const response = await fetch('/api/update/check');
+            if (response.ok) {
+                const data = await response.json();
+                
+                if (data.hasUpdate) {
+                    const message = `Доступна новая версия прошивки!\n\nТекущая версия: ${data.version}\nРелиз: ${data.releaseName}\n\nОткрыть настройки для обновления?`;
+                    if (confirm(message)) {
+                        this.showSettings();
+                        // Scroll to update section
+                        setTimeout(() => {
+                            const updateSection = document.querySelector('.update-info');
+                            if (updateSection) {
+                                updateSection.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                            }
+                            // Also check for updates to show the new version info
+                            this.checkForUpdates();
+                        }, 500);
+                    }
+                }
+            }
+        } catch (error) {
+            console.log('Could not check for updates on startup:', error);
+        }
     }
 
     setupCameraStream() {
@@ -189,7 +231,16 @@ class MicroBoxController {
         }
         
         if (updateBtn) {
-            updateBtn.addEventListener('click', () => this.enterUpdateMode());
+            updateBtn.addEventListener('click', () => {
+                this.showSettings();
+                // Scroll to update section
+                setTimeout(() => {
+                    const updateSection = document.querySelector('.update-info');
+                    if (updateSection) {
+                        updateSection.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    }
+                }, 100);
+            });
         }
 
         // Настройки
@@ -896,6 +947,44 @@ class MicroBoxController {
         if (restartBtn) {
             restartBtn.addEventListener('click', () => this.restartDevice());
         }
+        
+        // Update handlers
+        const checkUpdatesBtn = document.getElementById('checkUpdatesBtn');
+        if (checkUpdatesBtn) {
+            checkUpdatesBtn.addEventListener('click', () => this.checkForUpdates());
+        }
+        
+        const selectFirmwareBtn = document.getElementById('selectFirmwareBtn');
+        if (selectFirmwareBtn) {
+            selectFirmwareBtn.addEventListener('click', () => {
+                document.getElementById('firmwareFile').click();
+            });
+        }
+        
+        const firmwareFile = document.getElementById('firmwareFile');
+        if (firmwareFile) {
+            firmwareFile.addEventListener('change', (e) => this.onFirmwareSelected(e));
+        }
+        
+        const uploadFirmwareBtn = document.getElementById('uploadFirmwareBtn');
+        if (uploadFirmwareBtn) {
+            uploadFirmwareBtn.addEventListener('click', () => this.uploadFirmware());
+        }
+        
+        const downloadUpdateBtn = document.getElementById('downloadUpdateBtn');
+        if (downloadUpdateBtn) {
+            downloadUpdateBtn.addEventListener('click', () => this.downloadAndInstallUpdate());
+        }
+        
+        const autoUpdateCheckbox = document.getElementById('autoUpdate');
+        if (autoUpdateCheckbox) {
+            autoUpdateCheckbox.addEventListener('change', (e) => this.saveUpdateSettings());
+        }
+        
+        const dontOfferCheckbox = document.getElementById('dontOfferUpdates');
+        if (dontOfferCheckbox) {
+            dontOfferCheckbox.addEventListener('change', (e) => this.saveUpdateSettings());
+        }
     }
 
     showSettings() {
@@ -913,6 +1002,9 @@ class MicroBoxController {
             
             // Загрузить статус WiFi
             this.loadWiFiStatus();
+            
+            // Загрузить информацию о версии и настройках обновлений
+            this.loadUpdateInfo();
         }
     }
 
@@ -948,13 +1040,179 @@ class MicroBoxController {
         console.log('Настройки сохранены');
     }
 
-    enterUpdateMode() {
-        // Подтверждение входа в режим обновления
-        if (confirm('Вы уверены, что хотите войти в режим обновления прошивки? Это остановит все функции робота.')) {
-            this.sendCommand('enterUpdateMode').then(() => {
-                // Показать сообщение об успешном входе в режим обновления
-                alert('Режим обновления активирован! Робот перезапустится в режиме обновления. Подключитесь к WiFi "МикроББокс-Обновление" и откройте 192.168.4.1');
+    // Update functions
+    async loadUpdateInfo() {
+        try {
+            // Load current version
+            const versionResponse = await fetch('/api/update/current');
+            if (versionResponse.ok) {
+                const versionData = await versionResponse.json();
+                document.getElementById('currentVersion').textContent = versionData.version;
+                const releaseNameEl = document.getElementById('releaseName');
+                if (releaseNameEl && versionData.releaseName) {
+                    releaseNameEl.textContent = `Релиз: ${versionData.releaseName}`;
+                }
+            }
+            
+            // Load update settings
+            const settingsResponse = await fetch('/api/update/settings');
+            if (settingsResponse.ok) {
+                const settings = await settingsResponse.json();
+                document.getElementById('autoUpdate').checked = settings.autoUpdate || false;
+                document.getElementById('dontOfferUpdates').checked = settings.dontOffer || false;
+            }
+        } catch (error) {
+            console.error('Error loading update info:', error);
+        }
+    }
+    
+    async checkForUpdates() {
+        const btn = document.getElementById('checkUpdatesBtn');
+        btn.disabled = true;
+        btn.textContent = 'Проверка...';
+        
+        try {
+            const response = await fetch('/api/update/check');
+            if (response.ok) {
+                const data = await response.json();
+                
+                if (data.hasUpdate) {
+                    // Show update available section
+                    const updateSection = document.getElementById('updateAvailable');
+                    updateSection.classList.remove('hidden');
+                    document.getElementById('newVersion').textContent = data.version;
+                    document.getElementById('newReleaseName').textContent = `Релиз: ${data.releaseName}`;
+                    document.getElementById('releaseNotes').textContent = data.releaseNotes || 'Нет описания';
+                    
+                    // Store download URL for later
+                    this.updateDownloadUrl = data.downloadUrl;
+                } else {
+                    alert('У вас установлена последняя версия прошивки!');
+                }
+            } else {
+                alert('Не удалось проверить обновления. Проверьте подключение к интернету.');
+            }
+        } catch (error) {
+            console.error('Error checking updates:', error);
+            alert('Ошибка при проверке обновлений');
+        } finally {
+            btn.disabled = false;
+            btn.textContent = 'Проверить обновления';
+        }
+    }
+    
+    async downloadAndInstallUpdate() {
+        if (!this.updateDownloadUrl) {
+            alert('URL обновления не найден');
+            return;
+        }
+        
+        if (!confirm('Начать загрузку и установку обновления? Это займет несколько минут.')) {
+            return;
+        }
+        
+        alert('Функция автоматической загрузки еще в разработке. Пожалуйста, скачайте файл вручную с GitHub и загрузите через форму ниже.');
+    }
+    
+    onFirmwareSelected(event) {
+        const file = event.target.files[0];
+        if (file) {
+            document.getElementById('selectedFileName').textContent = file.name;
+            document.getElementById('uploadFirmwareBtn').disabled = false;
+        }
+    }
+    
+    async uploadFirmware() {
+        const fileInput = document.getElementById('firmwareFile');
+        const file = fileInput.files[0];
+        
+        if (!file) {
+            alert('Выберите файл прошивки');
+            return;
+        }
+        
+        if (!file.name.endsWith('.bin')) {
+            alert('Файл должен иметь расширение .bin');
+            return;
+        }
+        
+        if (!confirm('Вы уверены, что хотите обновить прошивку? Робот будет перезагружен.')) {
+            return;
+        }
+        
+        const progressDiv = document.getElementById('uploadProgress');
+        const progressFill = document.getElementById('progressFill');
+        const progressText = document.getElementById('progressText');
+        const uploadBtn = document.getElementById('uploadFirmwareBtn');
+        
+        progressDiv.classList.remove('hidden');
+        uploadBtn.disabled = true;
+        uploadBtn.textContent = 'Загрузка...';
+        
+        try {
+            const formData = new FormData();
+            formData.append('update', file);
+            
+            const xhr = new XMLHttpRequest();
+            
+            xhr.upload.addEventListener('progress', (e) => {
+                if (e.lengthComputable) {
+                    const percentComplete = (e.loaded / e.total) * 100;
+                    progressFill.style.width = percentComplete + '%';
+                    progressText.textContent = Math.round(percentComplete) + '%';
+                }
             });
+            
+            xhr.addEventListener('load', () => {
+                if (xhr.status === 200) {
+                    alert('Обновление завершено! Устройство будет перезагружено.');
+                    progressFill.style.width = '100%';
+                    progressText.textContent = '100%';
+                    
+                    // Wait for reboot
+                    setTimeout(() => {
+                        window.location.reload();
+                    }, 5000);
+                } else {
+                    alert('Ошибка загрузки прошивки: ' + xhr.statusText);
+                    uploadBtn.disabled = false;
+                    uploadBtn.textContent = 'Загрузить прошивку';
+                }
+            });
+            
+            xhr.addEventListener('error', () => {
+                alert('Ошибка при загрузке файла');
+                uploadBtn.disabled = false;
+                uploadBtn.textContent = 'Загрузить прошивку';
+            });
+            
+            xhr.open('POST', '/api/update/upload');
+            xhr.send(formData);
+            
+        } catch (error) {
+            console.error('Error uploading firmware:', error);
+            alert('Ошибка при загрузке прошивки');
+            uploadBtn.disabled = false;
+            uploadBtn.textContent = 'Загрузить прошивку';
+        }
+    }
+    
+    async saveUpdateSettings() {
+        const autoUpdate = document.getElementById('autoUpdate').checked;
+        const dontOffer = document.getElementById('dontOfferUpdates').checked;
+        
+        try {
+            const response = await fetch('/api/update/settings', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ autoUpdate, dontOffer })
+            });
+            
+            if (response.ok) {
+                console.log('Update settings saved');
+            }
+        } catch (error) {
+            console.error('Error saving update settings:', error);
         }
     }
 
