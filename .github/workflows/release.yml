@@ -54,6 +54,14 @@ jobs:
         python -m pip install --upgrade pip
         pip install platformio htmlmin jsmin csscompressor
         
+    - name: Get Previous Tag
+      id: prev_tag
+      run: |
+        # Получаем предыдущий тег ДО создания нового
+        PREV_TAG=$(git describe --tags --abbrev=0 --match='v*' 2>/dev/null || echo "")
+        echo "prev_tag=${PREV_TAG}" >> $GITHUB_OUTPUT
+        echo "Previous tag: ${PREV_TAG}"
+        
     - name: Generate Epic Release Name
       id: epic_name
       run: |
@@ -168,8 +176,8 @@ jobs:
         EPIC_NAME_RU="${{ steps.epic_name.outputs.epic_name_ru }}"
         EPIC_NAME_EN="${{ steps.epic_name.outputs.epic_name_en }}"
         
-        # Получаем предыдущий тег для генерации changelog
-        PREV_TAG=$(git describe --tags --abbrev=0 --match='v*' 2>/dev/null || echo "")
+        # Используем предыдущий тег, полученный до создания нового
+        PREV_TAG="${{ steps.prev_tag.outputs.prev_tag }}"
         
         # Генерируем changelog
         CHANGELOG=""
@@ -359,6 +367,9 @@ jobs:
         export CHANGELOG_CONTENT="$CHANGELOG"
         perl -i -pe 's/\$CHANGELOG_PLACEHOLDER/$ENV{CHANGELOG_CONTENT}/e' RELEASE_NOTES.md
         
+        # Сохраняем changelog в файл для использования в summary
+        echo "$CHANGELOG" > CHANGELOG_CONTENT.txt
+        
     - name: Create GitHub Release
       uses: softprops/action-gh-release@v1
       with:
@@ -381,6 +392,13 @@ jobs:
         echo "" >> $GITHUB_STEP_SUMMARY
         echo "**${{ steps.epic_name.outputs.epic_name_ru }}** (${{ steps.epic_name.outputs.epic_name_en }})" >> $GITHUB_STEP_SUMMARY
         echo "" >> $GITHUB_STEP_SUMMARY
+        
+        # Добавляем changelog в summary
+        if [ -f CHANGELOG_CONTENT.txt ]; then
+          cat CHANGELOG_CONTENT.txt >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+        fi
+        
         echo "### 📦 Файлы:" >> $GITHUB_STEP_SUMMARY
         echo "" >> $GITHUB_STEP_SUMMARY
         ls -lh microbox-*.bin | awk '{print "- **" $9 "** - " $5}' >> $GITHUB_STEP_SUMMARY
