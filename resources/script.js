@@ -1507,11 +1507,75 @@ class MicroBoxController {
             const data = await response.json();
             
             if (data.status === 'ok') {
+                // Проверяем новый флаг rebooting
+                if (data.rebooting) {
+                    this.updateFirmwareStatus('Устройство перезагружается в безопасный режим...', 10);
+                    
+                    // Ждем перезагрузки и подключения
+                    await new Promise(resolve => setTimeout(resolve, 5000));
+                    
+                    this.updateFirmwareStatus('Ожидание подключения устройства...', 15);
+                    
+                    // Пробуем подключиться к устройству
+                    let reconnectAttempts = 0;
+                    const maxReconnectAttempts = 30; // 30 попыток * 2 секунды = 60 секунд
+                    
+                    const checkConnection = setInterval(async () => {
+                        reconnectAttempts++;
+                        
+                        try {
+                            const statusResponse = await fetch('/api/update/status');
+                            if (statusResponse.ok) {
+                                clearInterval(checkConnection);
+                                this.updateFirmwareStatus('Устройство подключено! Обновление в процессе...', 20);
+                                
+                                // Теперь начинаем обычный опрос статуса
+                                this.pollUpdateStatus(overlay, UpdateState);
+                            }
+                        } catch (error) {
+                            console.log('Reconnect attempt ' + reconnectAttempts);
+                            this.updateFirmwareStatus('Ожидание подключения... (' + reconnectAttempts + '/' + maxReconnectAttempts + ')', 15 + (reconnectAttempts / maxReconnectAttempts * 5));
+                            
+                            if (reconnectAttempts >= maxReconnectAttempts) {
+                                clearInterval(checkConnection);
+                                throw new Error('Не удалось подключиться к устройству после перезагрузки');
+                            }
+                        }
+                    }, 2000);
+                    
+                    return; // Выходим, pollUpdateStatus будет вызван после подключения
+                }
+                
                 this.updateFirmwareStatus('Загрузка прошивки с GitHub...', 5);
                 
-                // Начинаем опрос статуса обновления
-                let pollCount = 0;
-                let consecutiveErrors = 0;
+                // Начинаем опрос статуса обновления (старый метод)
+                this.pollUpdateStatus(overlay, UpdateState);
+            } else {
+                throw new Error(data.message || 'Неизвестная ошибка');
+            }
+            
+        } catch (error) {
+            console.error('Ошибка обновления:', error);
+            this.updateFirmwareStatus('Ошибка: ' + error.message, 0);
+            
+            setTimeout(() => {
+                this.hideFirmwareUpdateScreen();
+                alert('Ошибка обновления: ' + error.message);
+            }, 3000);
+        }
+    }
+    
+    pollUpdateStatus(overlay, UpdateState) {
+        const POLL_INTERVAL_MS = 1000;
+        const TOTAL_TIMEOUT_MS = 120000;
+        const MAX_CONSECUTIVE_ERRORS = 5;
+        const MAX_CONSECUTIVE_ERRORS_LATE = 10;
+        const EARLY_ERROR_PERIOD_MS = 30000;
+        
+        const maxPolls = TOTAL_TIMEOUT_MS / POLL_INTERVAL_MS;
+        
+        let pollCount = 0;
+        let consecutiveErrors = 0;
                 
                 const pollInterval = setInterval(async () => {
                     pollCount++;
@@ -1582,20 +1646,14 @@ class MicroBoxController {
                         }
                     }
                 }, POLL_INTERVAL_MS);
-            } else {
-                throw new Error(data.message || 'Неизвестная ошибка');
-            }
-            
         } catch (error) {
-            console.error('Error during automatic update:', error);
+            console.error('Error during update polling:', error);
+            this.updateFirmwareStatus('Ошибка: ' + error.message, 0);
             
-            // Убираем оверлей при ошибке
-            const overlay = document.getElementById('firmwareUpdateOverlay');
-            if (overlay && overlay.parentNode) {
-                overlay.parentNode.removeChild(overlay);
-            }
-            
-            alert('Ошибка автоматического обновления: ' + error.message + '\n\nПожалуйста, скачайте файл вручную с GitHub и загрузите через форму ниже.');
+            setTimeout(() => {
+                this.hideFirmwareUpdateScreen();
+                alert('Ошибка обновления: ' + error.message);
+            }, 3000);
         }
     }
     
