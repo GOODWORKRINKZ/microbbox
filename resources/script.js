@@ -1146,7 +1146,7 @@ class MicroBoxController {
     }
     
     startHelpAnimation() {
-        // Start animation for demo joysticks
+        // Start animation for demo joysticks using requestAnimationFrame for better performance
         const leftKnob = document.getElementById('leftKnobDemo');
         const rightKnob = document.getElementById('rightKnobDemo');
         const leftXDisplay = document.getElementById('leftXDemo');
@@ -1158,7 +1158,7 @@ class MicroBoxController {
         const maxHorizontalMove = 110; // Maximum horizontal movement in pixels
         const maxVerticalMove = 110;   // Maximum vertical movement in pixels
         
-        this.helpAnimationId = setInterval(() => {
+        const animate = () => {
             time += 0.015;
             
             // Left slider - horizontal only (in slot)
@@ -1172,12 +1172,16 @@ class MicroBoxController {
             rightKnob.style.transform = `translate(-50%, calc(-50% + ${rightY}px))`;
             const rightPercent = Math.round((-rightY / maxVerticalMove) * 100);
             if (rightYDisplay) rightYDisplay.textContent = rightPercent;
-        }, 50);
+            
+            this.helpAnimationId = requestAnimationFrame(animate);
+        };
+        
+        animate();
     }
     
     stopHelpAnimation() {
         if (this.helpAnimationId) {
-            clearInterval(this.helpAnimationId);
+            cancelAnimationFrame(this.helpAnimationId);
             this.helpAnimationId = null;
         }
     }
