@@ -72,14 +72,17 @@ void WiFiSettings::setMode(WiFiMode value) {
 }
 
 bool WiFiSettings::save() {
-    // Сохраняем все настройки
-    preferences.putBool("initialized", true);
-    preferences.putString("ssid", ssid);
-    preferences.putString("password", password);
-    preferences.putString("deviceName", deviceName);
-    preferences.putUChar("mode", static_cast<uint8_t>(mode));
+    // Сохраняем все настройки и проверяем результат
+    size_t written = 0;
     
-    return true;
+    written += preferences.putBool("initialized", true);
+    written += preferences.putString("ssid", ssid);
+    written += preferences.putString("password", password);
+    written += preferences.putString("deviceName", deviceName);
+    written += preferences.putUChar("mode", static_cast<uint8_t>(mode));
+    
+    // Проверяем, что хотя бы некоторые данные были записаны
+    return written > 0;
 }
 
 void WiFiSettings::reset() {

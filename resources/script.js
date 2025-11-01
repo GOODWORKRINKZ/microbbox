@@ -764,6 +764,16 @@ class MicroBoxController {
             return;
         }
         
+        if (ssid.length > 32) {
+            alert('SSID не может быть длиннее 32 символов');
+            return;
+        }
+        
+        if (password && password.length < 8) {
+            alert('Пароль должен быть минимум 8 символов');
+            return;
+        }
+        
         try {
             const response = await fetch('/api/wifi/config', {
                 method: 'POST',
@@ -796,8 +806,13 @@ class MicroBoxController {
         }
         
         try {
+            // Отправляем подтверждение для безопасности
+            const formData = new FormData();
+            formData.append('confirm', 'yes');
+            
             await fetch('/api/restart', {
-                method: 'POST'
+                method: 'POST',
+                body: formData
             });
             
             alert('Устройство перезагружается... Подождите около 30 секунд.');
