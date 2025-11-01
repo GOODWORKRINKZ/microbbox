@@ -511,15 +511,31 @@ void MicroBoxRobot::initWebServer() {
                 }
                 else if (commandBody.indexOf("setControlMode") >= 0) {
                     // Обработка команды setControlMode
-                    if (commandBody.indexOf("tank") >= 0 || commandBody.indexOf("TANK") >= 0) {
-                        setControlMode(ControlMode::TANK);
-                        request->send(200, "application/json", "{\"status\":\"ok\",\"action\":\"Режим управления: Танковый\"}");
-                    } else if (commandBody.indexOf("differential") >= 0 || commandBody.indexOf("DIFFERENTIAL") >= 0) {
-                        setControlMode(ControlMode::DIFFERENTIAL);
-                        request->send(200, "application/json", "{\"status\":\"ok\",\"action\":\"Режим управления: Дифференциальный\"}");
-                    } else {
-                        request->send(200, "application/json", "{\"status\":\"ok\",\"action\":\"Режим управления установлен\"}");
+                    // Ищем значение mode в JSON: "mode":"tank" или "mode":"differential"
+                    int modePos = commandBody.indexOf("\"mode\":");
+                    if (modePos >= 0) {
+                        int modeStart = commandBody.indexOf("\"", modePos + 7);
+                        if (modeStart >= 0) {
+                            int modeEnd = commandBody.indexOf("\"", modeStart + 1);
+                            if (modeEnd >= 0) {
+                                String mode = commandBody.substring(modeStart + 1, modeEnd);
+                                mode.toLowerCase();
+                                
+                                if (mode == "tank") {
+                                    setControlMode(ControlMode::TANK);
+                                    request->send(200, "application/json", "{\"status\":\"ok\",\"action\":\"Режим управления: Танковый\"}");
+                                } else if (mode == "differential") {
+                                    setControlMode(ControlMode::DIFFERENTIAL);
+                                    request->send(200, "application/json", "{\"status\":\"ok\",\"action\":\"Режим управления: Дифференциальный\"}");
+                                } else {
+                                    request->send(200, "application/json", "{\"status\":\"ok\",\"action\":\"Режим управления установлен\"}");
+                                }
+                                return;
+                            }
+                        }
                     }
+                    // Если не удалось распарсить, отправляем OK
+                    request->send(200, "application/json", "{\"status\":\"ok\",\"action\":\"Режим управления установлен\"}");
                 }
                 else if (commandBody.indexOf("ping") >= 0) {
                     // Обработка команды ping - просто отправляем OK

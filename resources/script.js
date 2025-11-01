@@ -1245,11 +1245,11 @@ class MicroBoxController {
             
             // Находим .bin файл для загрузки
             let downloadUrl = '';
-            if (releaseData.assets && releaseData.assets.length > 0) {
+            if (releaseData.assets && Array.isArray(releaseData.assets) && releaseData.assets.length > 0) {
                 const binAsset = releaseData.assets.find(asset => 
-                    asset.name.endsWith('-release.bin')
+                    asset && asset.name && asset.name.endsWith('-release.bin') && asset.browser_download_url
                 );
-                if (binAsset) {
+                if (binAsset && binAsset.browser_download_url) {
                     downloadUrl = binAsset.browser_download_url;
                 }
             }
@@ -1287,12 +1287,18 @@ class MicroBoxController {
     
     // Функция сравнения версий
     isVersionNewer(currentVersion, latestVersion) {
-        // Убираем префикс 'v' если есть
+        // Убираем префикс 'v' если есть и берем только числовую часть до дефиса
         const cleanCurrent = currentVersion.replace(/^v/, '').split('-')[0];
         const cleanLatest = latestVersion.replace(/^v/, '').split('-')[0];
         
-        const currentParts = cleanCurrent.split('.').map(Number);
-        const latestParts = cleanLatest.split('.').map(Number);
+        const currentParts = cleanCurrent.split('.').map(part => {
+            const num = parseInt(part, 10);
+            return isNaN(num) ? 0 : num;
+        });
+        const latestParts = cleanLatest.split('.').map(part => {
+            const num = parseInt(part, 10);
+            return isNaN(num) ? 0 : num;
+        });
         
         for (let i = 0; i < Math.max(currentParts.length, latestParts.length); i++) {
             const current = currentParts[i] || 0;
