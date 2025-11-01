@@ -94,7 +94,7 @@ void MicroBoxRobot::loop() {
     unsigned long currentTime = millis();
     
     // Обработка системы обновления
-    if (firmwareUpdate && firmwareUpdate->isInUpdateMode()) {
+    if (firmwareUpdate && firmwareUpdate->isUpdating()) {
         firmwareUpdate->loop();
         return; // В режиме обновления не выполняем другие операции
     }
