@@ -144,12 +144,27 @@
                 <div class="vr-status">
                     <span id="vrStatus">Поиск контроллеров...</span>
                 </div>
-                <button id="vrDebugBtn" class="vr-debug-btn">🔍 Debug Info</button>
+                <div class="vr-buttons">
+                    <button id="vrDebugBtn" class="vr-debug-btn">🔍 Debug Info</button>
+                    <button id="vrLiveLogBtn" class="vr-debug-btn">📊 Live Log</button>
+                </div>
                 <!-- Панель с debug информацией -->
                 <div id="vrDebugPanel" class="vr-debug-panel hidden">
                     <h3>VR Debug Information</h3>
                     <pre id="vrDebugOutput"></pre>
                     <button id="vrDebugClose" class="vr-debug-close">✕ Закрыть</button>
+                </div>
+                <!-- Панель с live логами -->
+                <div id="vrLiveLogPanel" class="vr-debug-panel hidden">
+                    <h3>Live Log (updates in real-time)</h3>
+                    <div class="vr-log-controls">
+                        <button id="vrLogClear" class="vr-log-btn">🗑️ Clear</button>
+                        <label class="vr-log-checkbox">
+                            <input type="checkbox" id="vrLogToSerial"> → Serial Monitor
+                        </label>
+                    </div>
+                    <pre id="vrLiveLogOutput"></pre>
+                    <button id="vrLiveLogClose" class="vr-debug-close">✕ Закрыть</button>
                 </div>
             </div>
         </div>

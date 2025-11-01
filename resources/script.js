@@ -1,25 +1,146 @@
 // МикроББокс - Система управления
 
-// Простой логгер с уровнями
+// Расширенный логгер с поддержкой консоли, API и страницы
 const Logger = {
     LEVELS: { ERROR: 0, WARN: 1, INFO: 2, DEBUG: 3 },
     currentLevel: 2, // INFO по умолчанию (ERROR=0, WARN=1, INFO=2, DEBUG=3)
     
+    // Настройки вывода
+    outputs: {
+        console: true,      // Логировать в консоль браузера
+        api: false,         // Логировать в API (Serial Monitor)
+        page: false,        // Логировать на страницу (для VR)
+        pageElementId: null // ID элемента для вывода на страницу
+    },
+    
+    // Буфер логов для страницы
+    pageBuffer: [],
+    maxPageBuffer: 100,
+    
     error: function(...args) {
-        if (this.currentLevel >= this.LEVELS.ERROR) console.error('[ERROR]', ...args);
+        if (this.currentLevel >= this.LEVELS.ERROR) {
+            this._log('ERROR', ...args);
+        }
     },
     warn: function(...args) {
-        if (this.currentLevel >= this.LEVELS.WARN) console.warn('[WARN]', ...args);
+        if (this.currentLevel >= this.LEVELS.WARN) {
+            this._log('WARN', ...args);
+        }
     },
     info: function(...args) {
-        if (this.currentLevel >= this.LEVELS.INFO) console.log('[INFO]', ...args);
+        if (this.currentLevel >= this.LEVELS.INFO) {
+            this._log('INFO', ...args);
+        }
     },
     debug: function(...args) {
-        if (this.currentLevel >= this.LEVELS.DEBUG) console.log('[DEBUG]', ...args);
+        if (this.currentLevel >= this.LEVELS.DEBUG) {
+            this._log('DEBUG', ...args);
+        }
+    },
+    
+    // Специальный метод для VR логов
+    vr: function(...args) {
+        this._log('VR', ...args);
+    },
+    
+    // Внутренний метод логирования
+    _log: function(level, ...args) {
+        const timestamp = new Date().toISOString().substr(11, 12); // HH:MM:SS.mmm
+        const message = args.map(arg => 
+            typeof arg === 'object' ? JSON.stringify(arg) : String(arg)
+        ).join(' ');
+        
+        const formattedMessage = `[${timestamp}] [${level}] ${message}`;
+        
+        // Вывод в консоль
+        if (this.outputs.console) {
+            switch(level) {
+                case 'ERROR': console.error(formattedMessage); break;
+                case 'WARN': console.warn(formattedMessage); break;
+                default: console.log(formattedMessage); break;
+            }
+        }
+        
+        // Вывод на страницу
+        if (this.outputs.page && this.outputs.pageElementId) {
+            this._logToPage(formattedMessage);
+        }
+        
+        // Вывод в API (Serial Monitor) - только для важных сообщений
+        if (this.outputs.api && (level === 'ERROR' || level === 'WARN' || level === 'VR')) {
+            this._logToAPI(level, message);
+        }
+    },
+    
+    // Логирование на страницу
+    _logToPage: function(message) {
+        this.pageBuffer.push(message);
+        if (this.pageBuffer.length > this.maxPageBuffer) {
+            this.pageBuffer.shift();
+        }
+        
+        const element = document.getElementById(this.outputs.pageElementId);
+        if (element) {
+            element.textContent = this.pageBuffer.join('\n');
+            // Автоскролл вниз
+            element.scrollTop = element.scrollHeight;
+        }
+    },
+    
+    // Логирование в API (Serial Monitor)
+    _logToAPI: async function(level, message) {
+        try {
+            const response = await fetch('/api/vr-log', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    level: level,
+                    message: message,
+                    timestamp: new Date().toISOString()
+                })
+            });
+            
+            if (!response.ok) {
+                throw new Error(`API returned ${response.status}: ${response.statusText}`);
+            }
+        } catch (error) {
+            // Если упало логирование в API - просто логируем в консоль и идём дальше
+            // Не создаём бесконечную рекурсию, просто console.error напрямую
+            console.error('[Logger] Failed to send to API:', error.message, '- continuing...');
+            // Продолжаем работу, не бросаем исключение
+        }
     },
     
     setLevel: function(level) {
         this.currentLevel = level;
+    },
+    
+    // Включить/выключить вывод в разные места
+    enableConsole: function(enable = true) {
+        this.outputs.console = enable;
+    },
+    
+    enableAPI: function(enable = true) {
+        this.outputs.api = enable;
+    },
+    
+    enablePage: function(elementId, enable = true) {
+        this.outputs.page = enable;
+        this.outputs.pageElementId = elementId;
+    },
+    
+    // Очистить буфер страницы
+    clearPageBuffer: function() {
+        this.pageBuffer = [];
+        const element = document.getElementById(this.outputs.pageElementId);
+        if (element) {
+            element.textContent = '';
+        }
+    },
+    
+    // Получить все логи как текст
+    getPageLogs: function() {
+        return this.pageBuffer.join('\n');
     }
 };
 
@@ -358,6 +479,33 @@ class MicroBoxController {
         const vrDebugClose = document.getElementById('vrDebugClose');
         if (vrDebugClose) {
             vrDebugClose.addEventListener('click', () => this.hideVRDebugPanel());
+        }
+        
+        // VR Live Log кнопка
+        const vrLiveLogBtn = document.getElementById('vrLiveLogBtn');
+        if (vrLiveLogBtn) {
+            vrLiveLogBtn.addEventListener('click', () => this.toggleVRLiveLog());
+        }
+        
+        // VR Live Log закрыть
+        const vrLiveLogClose = document.getElementById('vrLiveLogClose');
+        if (vrLiveLogClose) {
+            vrLiveLogClose.addEventListener('click', () => this.hideVRLiveLog());
+        }
+        
+        // VR Log очистить
+        const vrLogClear = document.getElementById('vrLogClear');
+        if (vrLogClear) {
+            vrLogClear.addEventListener('click', () => Logger.clearPageBuffer());
+        }
+        
+        // VR Log to Serial checkbox
+        const vrLogToSerial = document.getElementById('vrLogToSerial');
+        if (vrLogToSerial) {
+            vrLogToSerial.addEventListener('change', (e) => {
+                Logger.enableAPI(e.target.checked);
+                Logger.vr('Live logging to Serial Monitor:', e.target.checked ? 'ENABLED' : 'DISABLED');
+            });
         }
 
         // Модальные окна
@@ -931,7 +1079,7 @@ class MicroBoxController {
         }
 
         try {
-            console.log('Запуск VR сессии...');
+            Logger.vr('🥽 Запуск VR сессии...');
             
             // Запрашиваем VR сессию с необходимыми функциями
             this.xrSession = await navigator.xr.requestSession('immersive-vr', {
@@ -939,7 +1087,7 @@ class MicroBoxController {
                 optionalFeatures: ['bounded-floor', 'hand-tracking']
             });
 
-            console.log('VR сессия создана:', this.xrSession);
+            Logger.vr('✓ VR сессия создана успешно');
 
             // Настройка событий сессии
             this.xrSession.addEventListener('end', () => this.onVRSessionEnded());
@@ -956,30 +1104,30 @@ class MicroBoxController {
             // Обновляем интерфейс
             this.updateVRUI(true);
             
-            console.log('VR режим активирован');
+            Logger.vr('✓ VR режим полностью активирован');
         } catch (error) {
-            console.error('Ошибка входа в VR:', error);
+            Logger.error('Ошибка входа в VR:', error.message);
             alert('Не удалось войти в VR режим: ' + error.message);
         }
     }
 
     setupVRControllers() {
-        console.log('Настройка VR контроллеров...');
+        Logger.vr('🎮 Настройка VR контроллеров...');
         
         // Слушаем подключение контроллеров
         this.xrSession.addEventListener('inputsourceschange', (event) => {
-            console.log('Изменение источников ввода:', event);
+            Logger.debug('Изменение источников ввода VR');
             
             if (event.added) {
                 event.added.forEach(inputSource => {
-                    console.log('Контроллер подключен:', inputSource.handedness, inputSource.targetRayMode);
+                    Logger.vr(`✓ Контроллер подключен: ${inputSource.handedness} (${inputSource.targetRayMode})`);
                     this.controllers.push(inputSource);
                 });
             }
             
             if (event.removed) {
                 event.removed.forEach(inputSource => {
-                    console.log('Контроллер отключен:', inputSource.handedness);
+                    Logger.vr(`✗ Контроллер отключен: ${inputSource.handedness}`);
                     const index = this.controllers.indexOf(inputSource);
                     if (index > -1) {
                         this.controllers.splice(index, 1);
@@ -1415,6 +1563,40 @@ class MicroBoxController {
         const panel = document.getElementById('vrDebugPanel');
         if (panel) {
             panel.classList.add('hidden');
+        }
+    }
+    
+    // Переключить Live Log панель
+    toggleVRLiveLog() {
+        const panel = document.getElementById('vrLiveLogPanel');
+        if (!panel) return;
+        
+        if (panel.classList.contains('hidden')) {
+            // Показываем панель
+            panel.classList.remove('hidden');
+            
+            // Включаем логирование на страницу
+            Logger.enablePage('vrLiveLogOutput', true);
+            Logger.vr('Live logging started');
+            
+            // Примеры логов для демонстрации
+            Logger.info('VR Live Log активирован');
+            Logger.debug('Этот лог будет виден в реальном времени');
+        } else {
+            // Скрываем панель
+            this.hideVRLiveLog();
+        }
+    }
+    
+    // Скрыть Live Log панель
+    hideVRLiveLog() {
+        const panel = document.getElementById('vrLiveLogPanel');
+        if (panel) {
+            panel.classList.add('hidden');
+            
+            // Отключаем логирование на страницу (но оставляем в консоли)
+            Logger.enablePage('vrLiveLogOutput', false);
+            Logger.info('VR Live Log деактивирован');
         }
     }
 
