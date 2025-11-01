@@ -51,6 +51,7 @@ public:
 private:
     enum class UpdateState {
         IDLE,
+        DOWNLOADING,
         UPLOADING,
         SUCCESS,
         FAILED
@@ -61,6 +62,10 @@ private:
     void handleUpdateStatus(AsyncWebServerRequest *request);
     void handleCheckUpdates(AsyncWebServerRequest *request);
     void handleCurrentVersion(AsyncWebServerRequest *request);
+    void handleDownloadAndInstall(AsyncWebServerRequest *request);
+    
+    // Метод для скачивания прошивки с URL
+    bool downloadAndInstallFirmware(const String& url);
     
     // Парсинг GitHub API
     bool parseGitHubRelease(const String& json, ReleaseInfo& releaseInfo);

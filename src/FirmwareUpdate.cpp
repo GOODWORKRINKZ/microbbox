@@ -153,6 +153,16 @@ void FirmwareUpdate::registerUpdateHandlers(AsyncWebServer* server) {
         request->send(resp);
     });
     
+    // API для автоматического скачивания и установки прошивки
+    server->on("/api/update/download", HTTP_POST,
+        [this](AsyncWebServerRequest *request) {
+            // Ответ будет отправлен в onBody
+        },
+        NULL,
+        [this](AsyncWebServerRequest *request, uint8_t *data, size_t len, size_t index, size_t total) {
+            this->handleDownloadAndInstall(request);
+        });
+    
     DEBUG_PRINTLN("Обработчики обновлений зарегистрированы");
 }
 
@@ -420,4 +430,149 @@ bool FirmwareUpdate::isVersionNewer(const String& current, const String& latest)
 void FirmwareUpdate::updateProgress(int progress) {
     // Обновление прогресса
     DEBUG_PRINTF("Прогресс: %d%%\n", progress);
+}
+
+void FirmwareUpdate::handleDownloadAndInstall(AsyncWebServerRequest *request) {
+    // Получаем URL из параметров запроса
+    if (!request->hasParam("url", true)) {
+        AsyncWebServerResponse *response = request->beginResponse(400, "application/json", 
+            "{\"status\":\"error\",\"message\":\"URL не указан\"}");
+        response->addHeader("Access-Control-Allow-Origin", "*");
+        request->send(response);
+        return;
+    }
+    
+    String url = request->getParam("url", true)->value();
+    
+    // Проверяем, что уже не идет обновление
+    if (updating) {
+        AsyncWebServerResponse *response = request->beginResponse(409, "application/json", 
+            "{\"status\":\"error\",\"message\":\"Обновление уже в процессе\"}");
+        response->addHeader("Access-Control-Allow-Origin", "*");
+        request->send(response);
+        return;
+    }
+    
+    // Сначала отправляем ответ, что начали скачивание
+    AsyncWebServerResponse *response = request->beginResponse(200, "application/json", 
+        "{\"status\":\"ok\",\"message\":\"Начато скачивание прошивки\"}");
+    response->addHeader("Access-Control-Allow-Origin", "*");
+    request->send(response);
+    
+    // Запускаем скачивание в отдельном "потоке" (на самом деле в loop это будет происходить)
+    // Для простоты делаем синхронно, но с небольшой задержкой
+    delay(100); // Даем время отправиться ответу
+    
+    // Скачиваем и устанавливаем
+    bool success = downloadAndInstallFirmware(url);
+    
+    if (success) {
+        DEBUG_PRINTLN("Прошивка успешно установлена, перезагрузка...");
+        delay(500);
+        ESP.restart();
+    } else {
+        DEBUG_PRINTLN("Ошибка установки прошивки");
+        currentState = UpdateState::FAILED;
+        updateStatus = "Ошибка установки прошивки";
+    }
+}
+
+bool FirmwareUpdate::downloadAndInstallFirmware(const String& url) {
+    if (WiFi.status() != WL_CONNECTED) {
+        DEBUG_PRINTLN("WiFi не подключен");
+        updateStatus = "WiFi не подключен";
+        return false;
+    }
+    
+    DEBUG_PRINTF("Скачивание прошивки с: %s\n", url.c_str());
+    
+    updating = true;
+    currentState = UpdateState::DOWNLOADING;
+    updateStatus = "Скачивание прошивки с GitHub";
+    updateStartTime = millis();
+    updateReceived = 0;
+    currentProgress = 0;
+    
+    HTTPClient http;
+    http.begin(url);
+    http.addHeader("User-Agent", "MicroBox-Firmware-Updater");
+    
+    // Следуем редиректам GitHub
+    http.setFollowRedirects(HTTPC_FORCE_FOLLOW_REDIRECTS);
+    
+    int httpCode = http.GET();
+    
+    if (httpCode != HTTP_CODE_OK) {
+        DEBUG_PRINTF("Ошибка HTTP: %d\n", httpCode);
+        updateStatus = "Ошибка скачивания: HTTP " + String(httpCode);
+        http.end();
+        updating = false;
+        return false;
+    }
+    
+    updateSize = http.getSize();
+    DEBUG_PRINTF("Размер прошивки: %d байт\n", updateSize);
+    
+    // Начинаем OTA обновление
+    if (!Update.begin(updateSize)) {
+        Update.printError(Serial);
+        updateStatus = "Ошибка начала обновления";
+        http.end();
+        updating = false;
+        return false;
+    }
+    
+    currentState = UpdateState::UPLOADING;
+    updateStatus = "Запись прошивки";
+    
+    // Получаем stream и записываем данные
+    WiFiClient* stream = http.getStreamPtr();
+    
+    uint8_t buff[512] = { 0 };
+    int len = 0;
+    
+    while (http.connected() && (len = stream->available())) {
+        // Читаем данные порциями
+        size_t size = stream->readBytes(buff, ((len > sizeof(buff)) ? sizeof(buff) : len));
+        
+        // Записываем в Update
+        if (Update.write(buff, size) != size) {
+            Update.printError(Serial);
+            updateStatus = "Ошибка записи прошивки";
+            http.end();
+            updating = false;
+            return false;
+        }
+        
+        updateReceived += size;
+        
+        // Обновляем прогресс
+        if (updateSize > 0) {
+            int progress = (updateReceived * 100) / updateSize;
+            if (progress != currentProgress) {
+                currentProgress = progress;
+                updateProgress(progress);
+            }
+        }
+        
+        // Даем время другим задачам
+        yield();
+    }
+    
+    http.end();
+    
+    // Завершаем обновление
+    if (Update.end(true)) {
+        DEBUG_PRINTF("Обновление успешно. Размер: %u байт за %lu мс\n", 
+                    updateReceived, millis() - updateStartTime);
+        currentState = UpdateState::SUCCESS;
+        updateStatus = "Обновление завершено";
+        updating = false;
+        return true;
+    } else {
+        Update.printError(Serial);
+        updateStatus = "Ошибка завершения обновления";
+        updating = false;
+        return false;
+    }
 }

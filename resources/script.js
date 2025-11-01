@@ -1380,7 +1380,96 @@ class MicroBoxController {
             return;
         }
         
-        alert('Функция автоматической загрузки еще в разработке. Пожалуйста, скачайте файл вручную с GitHub и загрузите через форму ниже.');
+        const progressDiv = document.getElementById('uploadProgress');
+        const progressFill = document.getElementById('progressFill');
+        const progressText = document.getElementById('progressText');
+        const downloadBtn = document.getElementById('downloadUpdateBtn');
+        
+        try {
+            // Показываем прогресс
+            progressDiv.classList.remove('hidden');
+            downloadBtn.disabled = true;
+            downloadBtn.textContent = 'Загрузка...';
+            progressFill.style.width = '0%';
+            progressText.textContent = '0%';
+            
+            // Отправляем запрос на бэкенд для скачивания и установки
+            const formData = new FormData();
+            formData.append('url', this.updateDownloadUrl);
+            
+            const response = await fetch('/api/update/download', {
+                method: 'POST',
+                body: formData
+            });
+            
+            if (!response.ok) {
+                const data = await response.json();
+                throw new Error(data.message || 'Ошибка запуска обновления');
+            }
+            
+            const data = await response.json();
+            
+            if (data.status === 'ok') {
+                downloadBtn.textContent = 'Установка...';
+                
+                // Начинаем опрос статуса обновления
+                let pollCount = 0;
+                const maxPolls = 120; // 2 минуты максимум
+                
+                const pollInterval = setInterval(async () => {
+                    pollCount++;
+                    
+                    try {
+                        const statusResponse = await fetch('/api/update/status');
+                        if (statusResponse.ok) {
+                            const status = await statusResponse.json();
+                            
+                            // Обновляем прогресс
+                            progressFill.style.width = status.progress + '%';
+                            progressText.textContent = status.progress + '%';
+                            
+                            // Проверяем состояние
+                            if (status.state === 3) { // SUCCESS
+                                clearInterval(pollInterval);
+                                progressFill.style.width = '100%';
+                                progressText.textContent = '100%';
+                                alert('Обновление успешно установлено! Устройство перезагружается...');
+                                
+                                // Ждем перезагрузки
+                                setTimeout(() => {
+                                    window.location.reload();
+                                }, 5000);
+                            } else if (status.state === 4) { // FAILED
+                                clearInterval(pollInterval);
+                                throw new Error('Ошибка обновления: ' + status.status);
+                            }
+                        }
+                    } catch (error) {
+                        // Игнорируем ошибки опроса - возможно устройство перезагружается
+                        console.log('Poll error (expected during reboot):', error);
+                    }
+                    
+                    // Таймаут
+                    if (pollCount >= maxPolls) {
+                        clearInterval(pollInterval);
+                        alert('Превышено время ожидания. Проверьте статус устройства вручную.');
+                        downloadBtn.disabled = false;
+                        downloadBtn.textContent = 'Скачать и установить автоматически';
+                    }
+                }, 1000);
+            } else {
+                throw new Error(data.message || 'Неизвестная ошибка');
+            }
+            
+        } catch (error) {
+            console.error('Error during automatic update:', error);
+            alert('Ошибка автоматического обновления: ' + error.message + '\n\nПожалуйста, скачайте файл вручную с GitHub и загрузите через форму ниже.');
+            
+            // Восстанавливаем кнопку
+            downloadBtn.disabled = false;
+            downloadBtn.textContent = 'Скачать и установить автоматически';
+            progressDiv.classList.add('hidden');
+        }
     }
     
     onFirmwareSelected(event) {
