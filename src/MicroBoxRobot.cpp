@@ -527,6 +527,7 @@ void MicroBoxRobot::initWebServer() {
                                 } else {
                                     // Игнорируем другие режимы (для обратной совместимости)
                                     request->send(200, "application/json", "{\"status\":\"ok\",\"action\":\"Режим управления: Дифференциальный\"}");
+                                }
                                 return;
                             }
                         }
