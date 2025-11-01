@@ -59,6 +59,7 @@ public:
     void playPoliceEffect();
     void playFireEffect();
     void playAmbulanceEffect();
+    void playTerminatorEffect();
     void playMovementAnimation();
 #endif
 

@@ -35,6 +35,10 @@ class MicroBoxController {
         this.lastVRLeftSpeed = 0;
         this.lastVRRightSpeed = 0;
         
+        // T-800 overlay state
+        this.t800Interval = null;
+        this.t800StartTime = null;
+        
         this.init();
     }
 
@@ -558,6 +562,7 @@ class MicroBoxController {
             select.value = this.effectMode;
         }
         
+        // Handle T-800 overlay
         this.updateT800Overlay();
     }
     
@@ -566,9 +571,11 @@ class MicroBoxController {
         if (!overlay) return;
         
         if (this.effectMode === 'terminator') {
+            // Show T-800 overlay
             overlay.classList.remove('hidden');
             this.startT800Updates();
         } else {
+            // Hide T-800 overlay
             overlay.classList.add('hidden');
             this.stopT800Updates();
         }
@@ -585,7 +592,7 @@ class MicroBoxController {
         
         this.t800Interval = setInterval(() => {
             this.updateT800HUD();
-        }, 100); // Update every 100ms
+        }, 250); // Update every 250ms (optimized for performance)
     }
     
     stopT800Updates() {
@@ -596,72 +603,78 @@ class MicroBoxController {
     }
     
     updateT800HUD() {
-        // Calculate elapsed time
+        // Update time display
         const elapsed = Date.now() - this.t800StartTime;
-        const seconds = Math.floor(elapsed / 1000) % 60;
-        const minutes = Math.floor(elapsed / 60000) % 60;
         const hours = Math.floor(elapsed / 3600000);
+        const minutes = Math.floor((elapsed % 3600000) / 60000);
+        const seconds = Math.floor((elapsed % 60000) / 1000);
         
-        // Update time
+        const timeStr = `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+        
         const timeEl = document.getElementById('t800Time');
         if (timeEl) {
-            timeEl.textContent = `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+            timeEl.textContent = timeStr;
         }
         
-        // Update memory (random hex values)
+        // Update memory address (simulate changing hex values)
         const memEl = document.getElementById('t800Mem');
         if (memEl) {
-            const mem = Math.floor(Math.random() * 0xFFFF).toString(16).toUpperCase().padStart(4, '0');
-            memEl.textContent = `0x${mem}`;
+            const memAddr = 0x2000 + Math.floor(Math.random() * 0x1000);
+            memEl.textContent = '0x' + memAddr.toString(16).toUpperCase();
         }
         
-        // Update scan status (cycling)
+        // Check if moving
+        const isMoving = this.leftJoystick.active || this.rightJoystick.active || 
+                        (this.keyStates && Object.values(this.keyStates).some(state => state));
+        
+        // Update scan status
         const scanEl = document.getElementById('t800Scan');
         if (scanEl) {
-            const scanStates = ['ACTIVE', 'SCANNING', 'ANALYZING'];
-            const scanIndex = Math.floor((elapsed / 2000)) % scanStates.length;
-            scanEl.textContent = scanStates[scanIndex];
+            scanEl.textContent = isMoving ? 'TRACKING' : 'ACTIVE';
         }
         
-        // Update threat level (random changes)
+        // Update threat assessment
         const threatEl = document.getElementById('t800Threat');
         if (threatEl) {
-            const threats = ['NONE', 'LOW', 'MEDIUM'];
-            const threatIndex = Math.floor(Math.random() * threats.length);
-            threatEl.textContent = threats[threatIndex];
+            if (isMoving) {
+                threatEl.textContent = 'DETECTED';
+                threatEl.style.color = '#ffaa00';
+            } else {
+                threatEl.textContent = 'NONE';
+                threatEl.style.color = '#ff0000';
+            }
         }
         
-        // Update power (slowly decreasing)
+        // Update power level (98-100%)
         const powerEl = document.getElementById('t800Power');
         if (powerEl) {
-            const power = 100 - Math.floor(elapsed / 60000); // -1% per minute
-            powerEl.textContent = `${Math.max(85, power)}%`;
+            const power = 98 + Math.floor(Math.random() * 3);
+            powerEl.textContent = `${power}%`;
         }
         
-        // Update temperature (fluctuating)
+        // Update temperature (36-38°C for realistic body temp)
         const tempEl = document.getElementById('t800Temp');
         if (tempEl) {
-            const temp = 37 + Math.floor(Math.random() * 3);
+            const temp = 36 + Math.floor(Math.random() * 3);
             tempEl.textContent = `${temp}°C`;
         }
         
-        // Update motor status
+        // Update motor system status
         const motorEl = document.getElementById('t800Motor');
         if (motorEl) {
-            const moving = this.leftJoystick.active || this.rightJoystick.active || Object.values(this.keyStates).some(v => v);
-            motorEl.textContent = moving ? 'ACTIVE' : 'NOMINAL';
+            motorEl.textContent = isMoving ? 'ENGAGED' : 'NOMINAL';
         }
         
-        // Update optical status
+        // Update optical system
         const opticalEl = document.getElementById('t800Optical');
         if (opticalEl) {
             opticalEl.textContent = 'ONLINE';
         }
         
-        // Update network status
+        // Update neural net CPU
         const netEl = document.getElementById('t800Net');
         if (netEl) {
-            netEl.textContent = this.isConnected ? 'ACTIVE' : 'OFFLINE';
+            netEl.textContent = 'ACTIVE';
         }
     }
 
