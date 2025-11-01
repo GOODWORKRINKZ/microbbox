@@ -1,5 +1,4 @@
 #include "FirmwareUpdate.h"
-#include <ArduinoJson.h>
 
 FirmwareUpdate::FirmwareUpdate() :
     updating(false),
