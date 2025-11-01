@@ -319,7 +319,7 @@ class MicroBoxController {
             let x = deltaX;
             let y = deltaY;
 
-            knob.style.transform = 'translate(' + x + 'px, ' + y + 'px)';
+            knob.style.transform = 'translate(calc(-50% + ' + x + 'px), calc(-50% + ' + y + 'px))';
 
             // Нормализация значений (-1 до 1)
             const normalizedX = x / maxDistance;
@@ -339,7 +339,7 @@ class MicroBoxController {
             
             isDragging = false;
             element.classList.remove('active');
-            knob.style.transform = 'translate(0px, 0px)';
+            knob.style.transform = 'translate(-50%, -50%)';
             
             if (side === 'left') {
                 this.leftJoystick = { x: 0, y: 0, active: false };
