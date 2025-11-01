@@ -1,6 +1,9 @@
 // МикроББокс - Система управления
 class MicroBoxController {
     constructor() {
+        // Конфигурация
+        this.GITHUB_REPO = 'GOODWORKRINKZ/microbbox';  // GitHub репозиторий для проверки обновлений
+        
         this.deviceType = 'unknown';
         this.controlMode = 'tank';
         this.effectMode = 'normal';
@@ -1222,8 +1225,12 @@ class MicroBoxController {
             const currentVersionData = await currentVersionResponse.json();
             const currentVersion = currentVersionData.version;
             
+            if (!currentVersion) {
+                throw new Error('Не удалось получить текущую версию устройства');
+            }
+            
             // Проверяем обновления на GitHub API напрямую с клиента
-            const githubApiUrl = 'https://api.github.com/repos/GOODWORKRINKZ/microbbox/releases/latest';
+            const githubApiUrl = `https://api.github.com/repos/${this.GITHUB_REPO}/releases/latest`;
             const githubResponse = await fetch(githubApiUrl, {
                 headers: {
                     'Accept': 'application/vnd.github.v3+json',
@@ -1237,9 +1244,14 @@ class MicroBoxController {
             
             const releaseData = await githubResponse.json();
             
+            // Валидация обязательных полей GitHub API response
+            if (!releaseData || !releaseData.tag_name) {
+                throw new Error('Некорректный ответ от GitHub API');
+            }
+            
             // Извлекаем информацию о релизе
             const latestVersion = releaseData.tag_name;
-            const releaseName = releaseData.name;
+            const releaseName = releaseData.name || latestVersion;
             const releaseNotes = releaseData.body || 'Нет описания';
             const publishedAt = releaseData.published_at;
             
