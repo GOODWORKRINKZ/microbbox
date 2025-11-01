@@ -112,6 +112,9 @@ void MicroBoxRobot::loop() {
             case EffectMode::AMBULANCE:
                 playAmbulanceEffect();
                 break;
+            case EffectMode::TERMINATOR:
+                playTerminatorEffect();
+                break;
             case EffectMode::NORMAL:
                 if (currentLeftSpeed != 0 || currentRightSpeed != 0) {
                     playMovementAnimation();
@@ -495,6 +498,9 @@ void MicroBoxRobot::initWebServer() {
                     } else if (commandBody.indexOf("ambulance") >= 0) {
                         setEffectMode(EffectMode::AMBULANCE);
                         request->send(200, "application/json", "{\"status\":\"ok\",\"action\":\"Режим: Скорая\"}");
+                    } else if (commandBody.indexOf("terminator") >= 0) {
+                        setEffectMode(EffectMode::TERMINATOR);
+                        request->send(200, "application/json", "{\"status\":\"ok\",\"action\":\"Режим: T-800\"}");
                     } else {
                         setEffectMode(EffectMode::NORMAL);
                         request->send(200, "application/json", "{\"status\":\"ok\",\"action\":\"Режим: Обычный\"}");
@@ -880,6 +886,40 @@ void MicroBoxRobot::playAmbulanceEffect() {
         updateLEDs();
 #endif
         lastToggle = currentTime;
+    }
+}
+
+void MicroBoxRobot::playTerminatorEffect() {
+    static unsigned long lastUpdate = 0;
+    unsigned long currentTime = millis();
+    
+    if (currentTime - lastUpdate > 50) { // Обновляем каждые 50мс для плавного пульсирования
+#ifdef FEATURE_NEOPIXEL
+        // Используем треугольную волну для пульсирования красного светодиода
+        // Период: 2000 мс (2 секунды на полный цикл)
+        unsigned long phase = (currentTime % 2000);
+        uint8_t brightness;
+        
+        if (phase < 1000) {
+            // Увеличение яркости (64 -> 250)
+            brightness = 64 + ((phase * 186) / 1000); // 64 + 0..186
+        } else {
+            // Уменьшение яркости (250 -> 64)
+            brightness = 250 - (((phase - 1000) * 186) / 1000); // 250 - 0..186
+        }
+        
+        setAllLEDs(pixels->Color(brightness, 0, 0)); // Красный с переменной яркостью
+        updateLEDs();
+#endif
+
+#ifdef FEATURE_BUZZER
+        // Низкочастотный сканирующий тон
+        if (currentTime % 1000 < 100) { // Короткие импульсы каждую секунду
+            playTone(200, 0); // Низкий сканирующий тон
+        }
+#endif
+        
+        lastUpdate = currentTime;
     }
 }
 
