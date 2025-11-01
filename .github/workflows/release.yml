@@ -162,7 +162,7 @@ jobs:
       run: |
         VERSION=${{ steps.version.outputs.version }}
         
-        # Проверяем наличие собранных файлов
+        # Check for built firmware files
         echo "Checking for firmware files..."
         ls -la .pio/build/release/ || echo "Release build directory not found!"
         ls -la .pio/build/debug/ || echo "Debug build directory not found!"
@@ -177,7 +177,7 @@ jobs:
           exit 1
         fi
         
-        # Копируем и переименовываем файлы
+        # Copy and rename firmware files
         cp .pio/build/release/firmware.bin microbox-${VERSION}-release.bin
         cp .pio/build/debug/firmware.bin microbox-${VERSION}-debug.bin
         
