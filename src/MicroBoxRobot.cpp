@@ -899,14 +899,20 @@ void MicroBoxRobot::playTerminatorEffect() {
     
     if (currentTime - lastUpdate > 50) { // Быстрое обновление для пульсации
 #ifdef FEATURE_NEOPIXEL
-        // Красная пульсация с плавным затуханием
-        int brightness = 128 + (int)(127 * sin(pulseState * 0.1));
+        // Красная пульсация с простой треугольной волной (экономия CPU)
+        // Диапазон: 64-255, цикл: 0-31 вверх, 32-63 вниз
+        int brightness;
+        if (pulseState < 32) {
+            brightness = 64 + (pulseState * 6); // 64 -> 255
+        } else {
+            brightness = 64 + ((63 - pulseState) * 6); // 255 -> 64
+        }
         uint32_t redColor = pixels->Color(brightness, 0, 0);
         setAllLEDs(redColor);
         updateLEDs();
         
         pulseState++;
-        if (pulseState >= 63) pulseState = 0; // Reset после полного цикла
+        if (pulseState >= 64) pulseState = 0; // Reset после полного цикла
 #endif
 
 #ifdef FEATURE_BUZZER

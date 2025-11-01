@@ -537,7 +537,7 @@ class MicroBoxController {
         
         this.t800Interval = setInterval(() => {
             this.updateT800HUD();
-        }, 100); // Update every 100ms
+        }, 250); // Update every 250ms (optimized for performance)
     }
     
     stopT800Updates() {
