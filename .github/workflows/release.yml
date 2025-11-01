@@ -3,10 +3,14 @@ name: МикРоББокс Release
 on:
   workflow_dispatch:
     inputs:
-      version:
-        description: 'Release version (e.g. v1.0.0)'
+      release_type:
+        description: 'Тип релиза'
         required: true
-        type: string
+        type: choice
+        options:
+          - patch
+          - minor
+          - major
 
 permissions:
   contents: write
@@ -21,6 +25,14 @@ jobs:
       uses: actions/checkout@v4
       with:
         fetch-depth: 0
+        
+    - name: Calculate Next Version
+      id: version
+      run: |
+        chmod +x scripts/calculate_next_version.sh
+        NEXT_VERSION=$(./scripts/calculate_next_version.sh ${{ inputs.release_type }})
+        echo "version=${NEXT_VERSION}" >> $GITHUB_OUTPUT
+        echo "Calculated next version: ${NEXT_VERSION}"
         
     - name: Setup Python
       uses: actions/setup-python@v5
@@ -93,7 +105,7 @@ jobs:
         )
         
         # Используем версию как seed для детерминированной генерации
-        VERSION="${{ inputs.version }}"
+        VERSION="${{ steps.version.outputs.version }}"
         SEED=$(echo -n "$VERSION" | md5sum | cut -c1-8)
         SEED_DEC=$((16#$SEED))
         
@@ -121,8 +133,8 @@ jobs:
       run: |
         git config user.name "GitHub Actions"
         git config user.email "actions@github.com"
-        git tag -a ${{ inputs.version }} -m "Release ${{ inputs.version }}"
-        git push origin ${{ inputs.version }}
+        git tag -a ${{ steps.version.outputs.version }} -m "Release ${{ steps.version.outputs.version }}"
+        git push origin ${{ steps.version.outputs.version }}
         
     - name: Build Release Firmware
       run: |
@@ -136,7 +148,7 @@ jobs:
         
     - name: Prepare Release Files
       run: |
-        VERSION=${{ inputs.version }}
+        VERSION=${{ steps.version.outputs.version }}
         
         # Копируем и переименовываем файлы
         cp .pio/build/release/firmware.bin microbox-${VERSION}-release.bin
@@ -152,7 +164,7 @@ jobs:
         
     - name: Generate Release Notes
       run: |
-        VERSION=${{ inputs.version }}
+        VERSION=${{ steps.version.outputs.version }}
         EPIC_NAME_RU="${{ steps.epic_name.outputs.epic_name_ru }}"
         EPIC_NAME_EN="${{ steps.epic_name.outputs.epic_name_en }}"
         
@@ -350,8 +362,8 @@ jobs:
     - name: Create GitHub Release
       uses: softprops/action-gh-release@v1
       with:
-        tag_name: ${{ inputs.version }}
-        name: МикРоББокс ${{ inputs.version }} — ${{ steps.epic_name.outputs.epic_name_ru }}
+        tag_name: ${{ steps.version.outputs.version }}
+        name: МикРоББокс ${{ steps.version.outputs.version }} — ${{ steps.epic_name.outputs.epic_name_ru }}
         body_path: RELEASE_NOTES.md
         files: |
           microbox-*.bin
@@ -363,7 +375,7 @@ jobs:
         
     - name: Build Summary
       run: |
-        echo "## ✅ Релиз ${{ inputs.version }} успешно создан!" >> $GITHUB_STEP_SUMMARY
+        echo "## ✅ Релиз ${{ steps.version.outputs.version }} успешно создан!" >> $GITHUB_STEP_SUMMARY
         echo "" >> $GITHUB_STEP_SUMMARY
         echo "### 🎭 Эпическое название:" >> $GITHUB_STEP_SUMMARY
         echo "" >> $GITHUB_STEP_SUMMARY
@@ -375,5 +387,5 @@ jobs:
         echo "" >> $GITHUB_STEP_SUMMARY
         echo "### 🔗 Ссылки:" >> $GITHUB_STEP_SUMMARY
         echo "" >> $GITHUB_STEP_SUMMARY
-        echo "- [Релиз на GitHub](https://github.com/${{ github.repository }}/releases/tag/${{ inputs.version }})" >> $GITHUB_STEP_SUMMARY
+        echo "- [Релиз на GitHub](https://github.com/${{ github.repository }}/releases/tag/${{ steps.version.outputs.version }})" >> $GITHUB_STEP_SUMMARY
         echo "- [Все релизы](https://github.com/${{ github.repository }}/releases)" >> $GITHUB_STEP_SUMMARY
