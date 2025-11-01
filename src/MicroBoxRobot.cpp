@@ -261,7 +261,11 @@ void MicroBoxRobot::shutdown() {
 void MicroBoxRobot::startWiFiAP() {
     DEBUG_PRINTLN("Запуск WiFi точки доступа...");
     
+    // КРИТИЧНО: Полностью отключаем WiFi и переключаемся в AP режим
+    WiFi.disconnect(true);
+    delay(100);
     WiFi.mode(WIFI_AP);
+    delay(100);
     
     // Получаем имя устройства из настроек
     String deviceName = wifiSettings->getDeviceName();
@@ -292,6 +296,10 @@ void MicroBoxRobot::startWiFiAP() {
 bool MicroBoxRobot::connectWiFiDHCP(const char* ssid, const char* password) {
     DEBUG_PRINTLN("Подключение к WiFi сети...");
     
+    // ВАЖНО: Полностью отключаем WiFi перед сменой режима
+    WiFi.disconnect(true);
+    delay(100);
+    
     WiFi.mode(WIFI_STA);
     
     // Получаем имя устройства из настроек
@@ -321,6 +329,9 @@ bool MicroBoxRobot::connectWiFiDHCP(const char* ssid, const char* password) {
     } else {
         DEBUG_PRINTLN();
         DEBUG_PRINTLN("Не удалось подключиться к WiFi");
+        // КРИТИЧНО: Отключаемся от неудачной попытки перед переходом в AP
+        WiFi.disconnect(true);
+        delay(100);
         return false;
     }
 }
