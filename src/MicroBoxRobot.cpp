@@ -145,17 +145,23 @@ bool MicroBoxRobot::initSafeModeForOTA() {
     // Теперь выполняем OTA обновление
     DEBUG_PRINTLN("Читаем URL обновления из EEPROM...");
     Preferences prefs;
-    prefs.begin("ota", true);
+    if (!prefs.begin("ota", true)) {
+        DEBUG_PRINTLN("ОШИБКА: Не удалось открыть preferences для чтения OTA данных");
+        FirmwareUpdate::clearOTAPending();
+        return false;
+    }
+    
     String url = prefs.getString("url", "");
     prefs.end();
     
     if (url.length() == 0) {
         DEBUG_PRINTLN("ОШИБКА: URL обновления не найден в EEPROM");
+        DEBUG_PRINTLN("Возможно, URL не был правильно сохранен перед перезагрузкой");
         FirmwareUpdate::clearOTAPending();
         return false;
     }
     
-    DEBUG_PRINTF("URL обновления: %s\n", url.c_str());
+    DEBUG_PRINTF("URL обновления найден (длина: %d): %s\n", url.length(), url.c_str());
     DEBUG_PRINTLN("Начинаем загрузку и установку прошивки...");
     
     // Выполняем обновление - теперь у нас достаточно памяти

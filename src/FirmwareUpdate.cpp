@@ -460,12 +460,35 @@ void FirmwareUpdate::handleDownloadAndInstall(AsyncWebServerRequest *request) {
     DEBUG_PRINTLN("Сохраняем URL обновления и планируем перезагрузку в безопасном режиме...");
     
     // Сохраняем URL обновления
-    preferences.begin("ota", false);
-    preferences.putString("url", url);
-    preferences.end();
+    // ВАЖНО: Используем локальную переменную, а не member variable preferences,
+    // который уже открыт с namespace "firmware"
+    Preferences otaPrefs;
+    if (!otaPrefs.begin("ota", false)) {
+        DEBUG_PRINTLN("ОШИБКА: Не удалось открыть preferences для сохранения URL");
+        AsyncWebServerResponse *response = request->beginResponse(500, "application/json", 
+            "{\"status\":\"error\",\"message\":\"Ошибка сохранения URL обновления\"}");
+        response->addHeader("Access-Control-Allow-Origin", "*");
+        request->send(response);
+        return;
+    }
     
-    // Устанавливаем флаг OTA
-    setOTAPending(true);
+    size_t urlLen = otaPrefs.putString("url", url);
+    if (urlLen == 0) {
+        DEBUG_PRINTLN("ОШИБКА: Не удалось сохранить URL в EEPROM");
+        otaPrefs.end();
+        AsyncWebServerResponse *response = request->beginResponse(500, "application/json", 
+            "{\"status\":\"error\",\"message\":\"Ошибка записи URL в память\"}");
+        response->addHeader("Access-Control-Allow-Origin", "*");
+        request->send(response);
+        return;
+    }
+    
+    DEBUG_PRINTF("URL сохранен в EEPROM (длина: %d): %s\n", urlLen, url.c_str());
+    
+    // Устанавливаем флаг OTA (через тот же namespace)
+    otaPrefs.putBool("pending", true);
+    otaPrefs.end();
+    DEBUG_PRINTLN("OTA pending flag set to: true");
     
     // Отправляем ответ с информацией о перезагрузке
     AsyncWebServerResponse *response = request->beginResponse(200, "application/json", 
@@ -674,5 +697,18 @@ void FirmwareUpdate::setOTAPending(bool pending) {
 }
 
 void FirmwareUpdate::clearOTAPending() {
-    setOTAPending(false);
+    Preferences prefs;
+    if (!prefs.begin("ota", false)) {  // Read-write
+        DEBUG_PRINTLN("ОШИБКА: Не удалось открыть preferences для очистки OTA данных");
+        return;
+    }
+    
+    // Очищаем флаг pending
+    prefs.putBool("pending", false);
+    
+    // ВАЖНО: Также очищаем сохраненный URL, чтобы избежать путаницы
+    prefs.remove("url");
+    
+    prefs.end();
+    DEBUG_PRINTLN("OTA pending flag and URL cleared");
 }

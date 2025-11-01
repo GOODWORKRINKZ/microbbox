@@ -225,7 +225,9 @@
                         </details>
                         <button id="downloadUpdateBtn" class="btn-primary">Скачать обновление</button>
                     </div>
-                    <div class="update-manual">
+                    <!-- Ручная загрузка .bin файлов скрыта - используется только GitHub обновление -->
+                    <!-- 
+                    <div class="update-manual" style="display: none;">
                         <h4>Или загрузить прошивку вручную:</h4>
                         <input type="file" id="firmwareFile" accept=".bin" style="display:none">
                         <button id="selectFirmwareBtn" class="btn-secondary">Выбрать файл .bin</button>
@@ -238,6 +240,7 @@
                             <span id="progressText">0%</span>
                         </div>
                     </div>
+                    -->
                 </div>
 
                 <button id="saveSettings" class="btn-primary">Сохранить</button>

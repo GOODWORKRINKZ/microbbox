@@ -1630,3 +1630,113 @@ body {
     0% { top: 0%; }
     100% { top: 100%; }
 }
+
+/* Уведомление об успешном обновлении */
+.update-success-notification {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    z-index: 10000;
+    animation: slideInRight 0.5s ease-out;
+}
+
+.notification-content {
+    background: linear-gradient(135deg, #00ff88, #00cc66);
+    color: #000;
+    padding: 20px;
+    border-radius: 12px;
+    box-shadow: 0 4px 20px rgba(0, 255, 136, 0.4);
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    min-width: 350px;
+    max-width: 500px;
+}
+
+.notification-icon {
+    font-size: 32px;
+    font-weight: bold;
+    background: rgba(255, 255, 255, 0.3);
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.notification-text {
+    flex: 1;
+}
+
+.notification-text h3 {
+    margin: 0 0 5px 0;
+    font-size: 18px;
+    font-weight: bold;
+}
+
+.notification-text p {
+    margin: 0;
+    font-size: 14px;
+    opacity: 0.9;
+}
+
+.notification-close {
+    background: rgba(0, 0, 0, 0.2);
+    border: none;
+    color: #000;
+    font-size: 24px;
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.3s;
+}
+
+.notification-close:hover {
+    background: rgba(0, 0, 0, 0.3);
+    transform: scale(1.1);
+}
+
+.update-success-notification.fade-out {
+    animation: slideOutRight 0.5s ease-in;
+}
+
+@keyframes slideInRight {
+    from {
+        transform: translateX(400px);
+        opacity: 0;
+    }
+    to {
+        transform: translateX(0);
+        opacity: 1;
+    }
+}
+
+@keyframes slideOutRight {
+    from {
+        transform: translateX(0);
+        opacity: 1;
+    }
+    to {
+        transform: translateX(400px);
+        opacity: 0;
+    }
+}
+
+/* Адаптивность для мобильных */
+@media (max-width: 768px) {
+    .update-success-notification {
+        top: 10px;
+        right: 10px;
+        left: 10px;
+    }
+    
+    .notification-content {
+        min-width: auto;
+        max-width: 100%;
+    }
+}
