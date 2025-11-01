@@ -26,6 +26,11 @@
 #define PROJECT_NAME "МикроББокс"
 #endif
 
+// GitHub repository для проверки обновлений
+#ifndef GITHUB_REPO_URL
+#define GITHUB_REPO_URL "GOODWORKRINKZ/microbbox"
+#endif
+
 // Настройки пинов ESP32CAM
 #ifndef LED_BUILTIN
 #define LED_BUILTIN 33          // Встроенный светодиод ESP32CAM

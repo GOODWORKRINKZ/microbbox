@@ -86,7 +86,7 @@ class MicroBoxController {
                 const data = await response.json();
                 
                 if (data.hasUpdate) {
-                    const message = `Доступна новая версия прошивки!\n\nТекущая версия: ${data.version}\nРелиз: ${data.releaseName}\n\nОткрыть настройки для обновления?`;
+                    const message = `Доступна новая версия прошивки!\n\nНовая версия: ${data.version}\nРелиз: ${data.releaseName}\n\nОткрыть настройки для обновления?`;
                     if (confirm(message)) {
                         this.showSettings();
                         // Scroll to update section
