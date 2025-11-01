@@ -1,5 +1,18 @@
 name: МикРоББокс Release
 
+# Атомарный релиз с защитой от скачивания незавершенной сборки
+# Порядок выполнения:
+# 1. Вычисление версии
+# 2. Сборка firmware (release и debug)
+# 3. Подготовка файлов и контрольных сумм
+# 4. Создание черновика релиза с тегом и всеми файлами
+# 5. Публикация релиза (делает его видимым пользователям)
+# 
+# Преимущества:
+# - Тег создается только с готовыми артефактами
+# - Пользователи никогда не видят незавершенный релиз
+# - Атомарная операция: либо все файлы доступны, либо ничего
+
 on:
   workflow_dispatch:
     inputs:
@@ -136,13 +149,6 @@ jobs:
         echo "epic_name_ru=${EPIC_NAME_RU}" >> $GITHUB_OUTPUT
         
         echo "🎭 Эпическое название релиза: ${EPIC_NAME_RU} (${EPIC_NAME_EN})"
-        
-    - name: Create Git Tag
-      run: |
-        git config user.name "GitHub Actions"
-        git config user.email "actions@github.com"
-        git tag -a ${{ steps.version.outputs.version }} -m "Release ${{ steps.version.outputs.version }}"
-        git push origin ${{ steps.version.outputs.version }}
         
     - name: Build Release Firmware
       run: |
@@ -370,7 +376,8 @@ jobs:
         # Сохраняем changelog в файл для использования в summary
         echo "$CHANGELOG" > CHANGELOG_CONTENT.txt
         
-    - name: Create GitHub Release
+    - name: Create Draft GitHub Release
+      id: create_release
       uses: softprops/action-gh-release@v1
       with:
         tag_name: ${{ steps.version.outputs.version }}
@@ -379,10 +386,20 @@ jobs:
         files: |
           microbox-*.bin
           microbox-*.sha256
-        draft: false
+        draft: true  # Создаем как черновик - релиз НЕ виден пользователям
         prerelease: false
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        
+    - name: Publish Release
+      run: |
+        # Публикуем релиз атомарно: все файлы уже загружены, 
+        # теперь делаем релиз видимым для пользователей
+        gh release edit ${{ steps.version.outputs.version }} --draft=false
+        
+        echo "✅ Релиз ${{ steps.version.outputs.version }} успешно опубликован!"
+      env:
+        GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         
     - name: Build Summary
       run: |
