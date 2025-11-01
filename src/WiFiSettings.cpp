@@ -1,4 +1,5 @@
 #include "WiFiSettings.h"
+#include "config.h"
 #include <WiFi.h>
 
 WiFiSettings::WiFiSettings() : 
@@ -32,17 +33,26 @@ void WiFiSettings::loadDefaults() {
     // По умолчанию режим CLIENT
     mode = WiFiMode::CLIENT;
     
-    // SSID и пароль пустые - пользователь должен настроить
-    ssid = "";
-    password = "";
+    // Используем дефолтные значения из config.h
+    ssid = WIFI_SSID_CLIENT;
+    password = WIFI_PASSWORD_CLIENT;
+    
+    DEBUG_PRINTLN("WiFiSettings::loadDefaults()");
+    DEBUG_PRINT("  SSID: ");
+    DEBUG_PRINTLN(ssid);
+    DEBUG_PRINTLN("  Mode: CLIENT");
 }
 
 void WiFiSettings::loadFromMemory() {
     // Проверяем, были ли сохранены настройки ранее
     bool hasSettings = preferences.getBool("initialized", false);
     
+    DEBUG_PRINT("WiFiSettings::loadFromMemory() - initialized flag: ");
+    DEBUG_PRINTLN(hasSettings ? "true" : "false");
+    
     if (!hasSettings) {
         // Первый запуск - загружаем значения по умолчанию
+        DEBUG_PRINTLN("  Первый запуск - загружаем defaults");
         loadDefaults();
         // Сохраняем их в память
         save();
@@ -52,6 +62,19 @@ void WiFiSettings::loadFromMemory() {
         password = preferences.getString("password", "");
         deviceName = preferences.getString("deviceName", generateDeviceName());
         mode = static_cast<WiFiMode>(preferences.getUChar("mode", static_cast<uint8_t>(WiFiMode::CLIENT)));
+        
+        DEBUG_PRINTLN("  Загружены сохраненные настройки:");
+        DEBUG_PRINT("    SSID: '"); DEBUG_PRINT(ssid); DEBUG_PRINTLN("'");
+        DEBUG_PRINT("    Password length: "); DEBUG_PRINTLN(password.length());
+        DEBUG_PRINT("    Device name: '"); DEBUG_PRINT(deviceName); DEBUG_PRINTLN("'");
+        DEBUG_PRINT("    Mode: "); DEBUG_PRINTLN(mode == WiFiMode::CLIENT ? "CLIENT" : "AP");
+        
+        // ВАЖНО: Если SSID пустой - это значит старые битые настройки, сбрасываем!
+        if (ssid.length() == 0) {
+            DEBUG_PRINTLN("  ⚠️ SSID пустой - загружаем дефолтные настройки");
+            loadDefaults();
+            save();
+        }
     }
 }
 
@@ -72,17 +95,37 @@ void WiFiSettings::setMode(WiFiMode value) {
 }
 
 bool WiFiSettings::save() {
-    // Сохраняем все настройки и проверяем результат
-    size_t written = 0;
+    DEBUG_PRINTLN("WiFiSettings::save() - начало сохранения");
+    DEBUG_PRINT("  SSID: '"); DEBUG_PRINT(ssid); DEBUG_PRINTLN("'");
+    DEBUG_PRINT("  Password length: "); DEBUG_PRINTLN(password.length());
+    DEBUG_PRINT("  Device name: '"); DEBUG_PRINT(deviceName); DEBUG_PRINTLN("'");
+    DEBUG_PRINT("  Mode: "); DEBUG_PRINTLN(static_cast<uint8_t>(mode));
     
-    written += preferences.putBool("initialized", true);
-    written += preferences.putString("ssid", ssid);
-    written += preferences.putString("password", password);
-    written += preferences.putString("deviceName", deviceName);
-    written += preferences.putUChar("mode", static_cast<uint8_t>(mode));
+    // Сохраняем все настройки и проверяем результат каждой операции
+    size_t w1 = preferences.putBool("initialized", true);
+    size_t w2 = preferences.putString("ssid", ssid);
+    size_t w3 = preferences.putString("password", password);
+    size_t w4 = preferences.putString("deviceName", deviceName);
+    size_t w5 = preferences.putUChar("mode", static_cast<uint8_t>(mode));
     
-    // Проверяем, что хотя бы некоторые данные были записаны
-    return written > 0;
+    DEBUG_PRINT("  Записано байт - initialized: "); DEBUG_PRINTLN(w1);
+    DEBUG_PRINT("  Записано байт - ssid: "); DEBUG_PRINTLN(w2);
+    DEBUG_PRINT("  Записано байт - password: "); DEBUG_PRINTLN(w3);
+    DEBUG_PRINT("  Записано байт - deviceName: "); DEBUG_PRINTLN(w4);
+    DEBUG_PRINT("  Записано байт - mode: "); DEBUG_PRINTLN(w5);
+    
+    // Принудительно сохраняем изменения (commit)
+    bool committed = preferences.putBool("_commit", true);
+    
+    DEBUG_PRINT("  Commit результат: "); DEBUG_PRINTLN(committed ? "OK" : "FAIL");
+    
+    // Проверяем, что критичные данные были записаны успешно
+    bool success = (w1 > 0) && (w2 > 0) && (w5 > 0);
+    
+    DEBUG_PRINT("WiFiSettings::save() - результат: "); 
+    DEBUG_PRINTLN(success ? "УСПЕХ" : "ОШИБКА");
+    
+    return success;
 }
 
 void WiFiSettings::reset() {

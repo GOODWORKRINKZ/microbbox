@@ -72,7 +72,6 @@
 #define WIFI_PASSWORD_CLIENT "1234567890"  // Пароль сети для подключения
 
 // WiFi настройки для режима точки доступа (если WIFI_MODE_CLIENT = false)
-#define WIFI_SSID_AP "МикРоББокс"
 #define WIFI_PASSWORD_AP "12345678"
 
 // Общие настройки WiFi

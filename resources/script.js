@@ -35,6 +35,12 @@ class MicroBoxController {
         this.t800Interval = null;
         this.t800StartTime = null;
         
+        // Throttling для команд движения
+        this.lastMovementTime = 0;
+        this.lastLeftSpeed = 0;
+        this.lastRightSpeed = 0;
+        this.movementThrottle = 50; // мс между командами движения
+        
         this.init();
     }
 
@@ -474,10 +480,24 @@ class MicroBoxController {
     }
 
     sendMovementCommand(leftSpeed, rightSpeed) {
-        this.sendCommand('move', {
-            left: Math.round(leftSpeed),
-            right: Math.round(rightSpeed)
-        });
+        // Throttling: отправляем только если прошло достаточно времени
+        // или значения значительно изменились
+        const now = Date.now();
+        const timeSinceLastSend = now - this.lastMovementTime;
+        const speedChanged = Math.abs(leftSpeed - this.lastLeftSpeed) > 5 || 
+                           Math.abs(rightSpeed - this.lastRightSpeed) > 5;
+        
+        // Отправляем если прошло >= 50ms ИЛИ скорость изменилась на >5%
+        if (timeSinceLastSend >= this.movementThrottle || speedChanged) {
+            this.sendCommand('move', {
+                left: Math.round(leftSpeed),
+                right: Math.round(rightSpeed)
+            });
+            
+            this.lastMovementTime = now;
+            this.lastLeftSpeed = leftSpeed;
+            this.lastRightSpeed = rightSpeed;
+        }
     }
 
     async sendCommand(command, data = {}) {
@@ -1398,13 +1418,17 @@ class MicroBoxController {
     }
 
     startMainLoop() {
+        let lastPingTime = 0;
+        
         const loop = () => {
             // Обработка геймпада
             this.processGamepad();
             
-            // Проверка соединения
-            if (Date.now() % 5000 < 16) { // Каждые 5 секунд
+            // Проверка соединения - каждые 5 секунд
+            const now = Date.now();
+            if (now - lastPingTime >= 5000) {
                 this.sendCommand('ping');
+                lastPingTime = now;
             }
             
             requestAnimationFrame(loop);

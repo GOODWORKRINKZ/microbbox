@@ -616,14 +616,24 @@ void MicroBoxRobot::initWebServer() {
                     }
                 }
                 
+                DEBUG_PRINTLN("========== ПАРСИНГ ЗАВЕРШЕН ==========");
+                DEBUG_PRINT("  Распознан SSID: '"); DEBUG_PRINT(ssid); DEBUG_PRINTLN("'");
+                DEBUG_PRINT("  Длина пароля: "); DEBUG_PRINTLN(password.length());
+                DEBUG_PRINT("  Режим: "); DEBUG_PRINTLN(mode == WiFiMode::CLIENT ? "CLIENT" : "AP");
+                DEBUG_PRINTLN("=======================================");
+                
                 // Сохраняем конфигурацию
                 if (ssid.length() > 0) {
+                    DEBUG_PRINTLN("Вызываем saveWiFiConfig()...");
                     if (saveWiFiConfig(ssid, password, mode)) {
+                        DEBUG_PRINTLN("✓ saveWiFiConfig() вернул TRUE");
                         request->send(200, "application/json", "{\"status\":\"ok\",\"message\":\"Настройки сохранены. Перезагрузите устройство.\"}");
                     } else {
+                        DEBUG_PRINTLN("✗ saveWiFiConfig() вернул FALSE");
                         request->send(500, "application/json", "{\"status\":\"error\",\"message\":\"Ошибка сохранения настроек\"}");
                     }
                 } else {
+                    DEBUG_PRINTLN("✗ SSID пустой!");
                     request->send(400, "application/json", "{\"status\":\"error\",\"message\":\"SSID не может быть пустым\"}");
                 }
                 
