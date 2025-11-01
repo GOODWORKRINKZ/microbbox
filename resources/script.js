@@ -623,16 +623,17 @@ class MicroBoxController {
             const hand = inputSource.handedness; // 'left' или 'right'
             
             // Обработка стиков (axes)
-            // В Oculus Quest: axes[2] и axes[3] - это thumbstick X и Y
+            // В WebXR для Oculus Quest: axes[0] и axes[1] - это thumbstick X и Y
+            // axes[2] и axes[3] - touchpad (если есть)
             if (gamepad.axes && gamepad.axes.length >= 2) {
                 if (hand === 'left') {
-                    // Левый стик для поворота
-                    leftThumbstick.x = gamepad.axes[2] || 0;
-                    leftThumbstick.y = gamepad.axes[3] || 0;
+                    // Левый стик для поворота/левой стороны
+                    leftThumbstick.x = gamepad.axes[0] || 0;
+                    leftThumbstick.y = gamepad.axes[1] || 0;
                 } else if (hand === 'right') {
-                    // Правый стик для движения
-                    rightThumbstick.x = gamepad.axes[2] || 0;
-                    rightThumbstick.y = gamepad.axes[3] || 0;
+                    // Правый стик для движения/правой стороны
+                    rightThumbstick.x = gamepad.axes[0] || 0;
+                    rightThumbstick.y = gamepad.axes[1] || 0;
                 }
             }
             
