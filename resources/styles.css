@@ -317,6 +317,7 @@ body {
     height: 40%;
     display: flex;
     justify-content: space-between;
+    align-items: center;
     padding: 20px;
     background: linear-gradient(to top, rgba(0, 0, 0, 0.9), transparent);
 }
@@ -328,33 +329,66 @@ body {
     gap: 10px;
 }
 
-.joystick {
-    width: 120px;
-    height: 120px;
-    border: 3px solid rgba(255, 255, 255, 0.5);
-    border-radius: 50%;
+/* Horizontal slot for left joystick (rotation) */
+.joystick-container.left .joystick {
+    width: 200px;
+    height: 80px;
+    border: 3px solid #00ff88;
+    border-radius: 40px;
     position: relative;
-    background: rgba(255, 255, 255, 0.1);
+    background: rgba(0, 255, 136, 0.1);
     backdrop-filter: blur(10px);
+    box-shadow: 0 0 20px rgba(0, 255, 136, 0.3),
+                inset 0 0 15px rgba(0, 0, 0, 0.5);
+}
+
+/* Vertical slot for right joystick (speed) */
+.joystick-container.right .joystick {
+    width: 80px;
+    height: 200px;
+    border: 3px solid #ff4444;
+    border-radius: 40px;
+    position: relative;
+    background: rgba(255, 68, 68, 0.1);
+    backdrop-filter: blur(10px);
+    box-shadow: 0 0 20px rgba(255, 68, 68, 0.3),
+                inset 0 0 15px rgba(0, 0, 0, 0.5);
 }
 
 .joystick-knob {
-    width: 40px;
-    height: 40px;
+    width: 50px;
+    height: 50px;
     background: linear-gradient(145deg, #00ff88, #00cc66);
     border-radius: 50%;
     position: absolute;
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%);
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
-    transition: all 0.1s;
+    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.5),
+                0 0 15px rgba(0, 255, 136, 0.5);
+    transition: transform 0.1s ease-out, box-shadow 0.1s ease-out;
+    border: 2px solid rgba(255, 255, 255, 0.3);
+}
+
+/* Red knob for right joystick */
+.joystick-container.right .joystick-knob {
+    background: linear-gradient(145deg, #ff4444, #cc3333);
+    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.5),
+                0 0 15px rgba(255, 68, 68, 0.5);
 }
 
 .joystick-label {
-    color: rgba(255, 255, 255, 0.8);
+    color: #00ff88;
     font-size: 0.9em;
     text-align: center;
+    font-weight: bold;
+    text-shadow: 0 0 8px rgba(0, 255, 136, 0.5);
+}
+
+/* Red label for right joystick */
+.joystick-container.right .joystick-label {
+    color: #ff4444;
+    text-shadow: 0 0 8px rgba(255, 68, 68, 0.5);
 }
 
 .mobile-panel {
@@ -553,24 +587,24 @@ body {
         width: 100vw !important;
     }
     
-    /* Джойстики компактнее */
-    .joystick-container {
-        width: 100px;
-        height: 100px;
+    /* Джойстики компактнее для мобильных */
+    .joystick-container.left .joystick {
+        width: 160px;
+        height: 65px;
     }
     
-    .joystick {
-        width: 90px;
-        height: 90px;
+    .joystick-container.right .joystick {
+        width: 65px;
+        height: 160px;
     }
     
     .joystick-knob {
-        width: 30px;
-        height: 30px;
+        width: 40px;
+        height: 40px;
     }
     
     .joystick-label {
-        font-size: 10px;
+        font-size: 11px;
     }
     
     /* Мобильная панель компактнее */
@@ -599,14 +633,19 @@ body {
         height: 50%;
     }
     
-    .joystick {
-        width: 80px;
-        height: 80px;
+    .joystick-container.left .joystick {
+        width: 140px;
+        height: 55px;
+    }
+    
+    .joystick-container.right .joystick {
+        width: 55px;
+        height: 140px;
     }
     
     .joystick-knob {
-        width: 30px;
-        height: 30px;
+        width: 35px;
+        height: 35px;
     }
 }
 
