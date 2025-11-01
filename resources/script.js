@@ -1393,7 +1393,7 @@ class MicroBoxController {
         const POLL_INTERVAL_MS = 1000; // Опрос каждую секунду
         const TOTAL_TIMEOUT_MS = 120000; // Общий таймаут 2 минуты
         const MAX_CONSECUTIVE_ERRORS = 5; // Максимум последовательных ошибок
-        const EARLY_ERROR_THRESHOLD = 30; // Порог "ранних" ошибок (первые 30 секунд)
+        const EARLY_ERROR_PERIOD_MS = 30000; // "Ранний" период - первые 30 секунд
         
         const maxPolls = TOTAL_TIMEOUT_MS / POLL_INTERVAL_MS;
         
@@ -1472,7 +1472,8 @@ class MicroBoxController {
                         console.log('Poll attempt ' + pollCount + ', error count: ' + consecutiveErrors, error.message);
                         
                         // Если слишком много последовательных ошибок в начале процесса - это проблема
-                        if (consecutiveErrors >= MAX_CONSECUTIVE_ERRORS && pollCount < EARLY_ERROR_THRESHOLD) {
+                        const elapsedTimeMs = pollCount * POLL_INTERVAL_MS;
+                        if (consecutiveErrors >= MAX_CONSECUTIVE_ERRORS && elapsedTimeMs < EARLY_ERROR_PERIOD_MS) {
                             clearInterval(pollInterval);
                             throw new Error('Не удалось получить статус обновления. Возможно, устройство недоступно.');
                         }

@@ -514,8 +514,9 @@ bool FirmwareUpdate::downloadAndInstallFirmware(const String& url) {
     
     // Проверяем размер файла
     if (updateSize <= 0) {
-        DEBUG_PRINTLN("Не удалось получить размер прошивки, используем режим неизвестного размера");
-        updateSize = 0; // Будем использовать UPDATE_SIZE_UNKNOWN
+        DEBUG_PRINTLN("Размер прошивки неизвестен, используем UPDATE_SIZE_UNKNOWN");
+        // Для Update.begin используем UPDATE_SIZE_UNKNOWN
+        updateSize = 0; // Внутри храним 0 для логики прогресса
     }
     
     // Начинаем OTA обновление
@@ -538,6 +539,8 @@ bool FirmwareUpdate::downloadAndInstallFirmware(const String& url) {
     uint8_t buff[512] = { 0 };
     unsigned long lastDataTime = millis();
     const unsigned long DOWNLOAD_TIMEOUT_MS = 30000; // 30 секунд таймаут без данных
+    int noDataCounter = 0; // Счетчик проверок без данных
+    const int MAX_NO_DATA_CHECKS = 50; // Максимум 50 проверок без данных (с yield между ними)
     
     // Скачиваем файл полностью
     // Используем updateSize если известен, иначе читаем до конца потока
@@ -545,8 +548,9 @@ bool FirmwareUpdate::downloadAndInstallFirmware(const String& url) {
         size_t available = stream->available();
         
         if (available) {
-            // Сбрасываем таймер при получении данных
+            // Сбрасываем таймер и счетчик при получении данных
             lastDataTime = millis();
+            noDataCounter = 0;
             
             // Читаем данные порциями
             int readLen = stream->readBytes(buff, ((available > sizeof(buff)) ? sizeof(buff) : available));
@@ -579,6 +583,9 @@ bool FirmwareUpdate::downloadAndInstallFirmware(const String& url) {
                 }
             }
         } else {
+            // Нет доступных данных
+            noDataCounter++;
+            
             // Проверяем таймаут без данных
             if (millis() - lastDataTime > DOWNLOAD_TIMEOUT_MS) {
                 DEBUG_PRINTLN("Таймаут загрузки - нет данных более 30 секунд");
@@ -587,6 +594,13 @@ bool FirmwareUpdate::downloadAndInstallFirmware(const String& url) {
                 http.end();
                 updating = false;
                 return false;
+            }
+            
+            // Для неизвестного размера: если долго нет данных и соединение открыто,
+            // считаем что загрузка завершена
+            if (updateSize == 0 && noDataCounter >= MAX_NO_DATA_CHECKS) {
+                DEBUG_PRINTLN("Достигнут конец потока (неизвестный размер)");
+                break;
             }
         }
         
