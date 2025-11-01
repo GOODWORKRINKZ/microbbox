@@ -1455,7 +1455,7 @@ class MicroBoxController {
     async downloadAndInstallUpdate() {
         // Проверяем что есть информация о релизе
         if (!this.updateDownloadUrl || !this.latestReleaseInfo) {
-            alert('Сначала проверьте наличие обновлений');
+            alert('URL обновления не найден. Сначала проверьте наличие обновлений.');
             return;
         }
         
@@ -1475,7 +1475,8 @@ class MicroBoxController {
         // Константы для опроса статуса
         const POLL_INTERVAL_MS = 1000; // Опрос каждую секунду
         const TOTAL_TIMEOUT_MS = 120000; // Общий таймаут 2 минуты
-        const MAX_CONSECUTIVE_ERRORS = 5; // Максимум последовательных ошибок
+        const MAX_CONSECUTIVE_ERRORS = 5; // Максимум последовательных ошибок в начале
+        const MAX_CONSECUTIVE_ERRORS_LATE = 10; // Максимум последовательных ошибок в конце (при перезагрузке)
         const EARLY_ERROR_PERIOD_MS = 30000; // "Ранний" период - первые 30 секунд
         
         const maxPolls = TOTAL_TIMEOUT_MS / POLL_INTERVAL_MS;
@@ -1562,7 +1563,7 @@ class MicroBoxController {
                         }
                         
                         // В конце процесса (когда уже идет перезагрузка) ошибки - это нормально
-                        if (elapsedTimeMs > EARLY_ERROR_PERIOD_MS && consecutiveErrors >= 10) {
+                        if (elapsedTimeMs > EARLY_ERROR_PERIOD_MS && consecutiveErrors >= MAX_CONSECUTIVE_ERRORS_LATE) {
                             // Считаем что обновление прошло успешно и устройство перезагружается
                             clearInterval(pollInterval);
                             this.updateFirmwareStatus('Устройство перезагружается...', 100);
@@ -1595,25 +1596,6 @@ class MicroBoxController {
             }
             
             alert('Ошибка автоматического обновления: ' + error.message + '\n\nПожалуйста, скачайте файл вручную с GitHub и загрузите через форму ниже.');
-        }
-    }
-                        alert('Превышено время ожидания. Проверьте статус устройства вручную.');
-                        downloadBtn.disabled = false;
-                        downloadBtn.textContent = 'Скачать и установить автоматически';
-                    }
-                }, POLL_INTERVAL_MS);
-            } else {
-                throw new Error(data.message || 'Неизвестная ошибка');
-            }
-            
-        } catch (error) {
-            console.error('Error during automatic update:', error);
-            alert('Ошибка автоматического обновления: ' + error.message + '\n\nПожалуйста, скачайте файл вручную с GitHub и загрузите через форму ниже.');
-            
-            // Восстанавливаем кнопку
-            downloadBtn.disabled = false;
-            downloadBtn.textContent = 'Скачать и установить автоматически';
-            progressDiv.classList.add('hidden');
         }
     }
     
