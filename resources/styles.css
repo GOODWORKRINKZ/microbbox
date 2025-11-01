@@ -578,6 +578,9 @@ body {
         bottom: 5px;
         gap: 8px;
         padding: 5px;
+        flex-direction: row;
+        top: unset;
+        right: 20px;
     }
     
     .panel-btn {
