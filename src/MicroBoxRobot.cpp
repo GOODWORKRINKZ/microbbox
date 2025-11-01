@@ -519,12 +519,11 @@ void MicroBoxRobot::initWebServer() {
                             int modeEnd = commandBody.indexOf("\"", modeStart + 1);
                             if (modeEnd >= 0) {
                                 String mode = commandBody.substring(modeStart + 1, modeEnd);
-                                mode.toLowerCase();  // Преобразуем в нижний регистр для сравнения
                                 
-                                if (mode.equals("tank")) {
+                                if (mode.equalsIgnoreCase("tank")) {
                                     setControlMode(ControlMode::TANK);
                                     request->send(200, "application/json", "{\"status\":\"ok\",\"action\":\"Режим управления: Танковый\"}");
-                                } else if (mode.equals("differential")) {
+                                } else if (mode.equalsIgnoreCase("differential")) {
                                     setControlMode(ControlMode::DIFFERENTIAL);
                                     request->send(200, "application/json", "{\"status\":\"ok\",\"action\":\"Режим управления: Дифференциальный\"}");
                                 } else {

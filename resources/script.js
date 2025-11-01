@@ -1233,7 +1233,7 @@ class MicroBoxController {
             const githubApiUrl = `https://api.github.com/repos/${this.GITHUB_REPO}/releases/latest`;
             const githubResponse = await fetch(githubApiUrl, {
                 headers: {
-                    'Accept': 'application/vnd.github.v3+json',
+                    'Accept': 'application/vnd.github+json',  // Current stable GitHub API version
                     'User-Agent': 'MicroBox-Web-Client'
                 }
             });
