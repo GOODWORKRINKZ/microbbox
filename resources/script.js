@@ -77,12 +77,76 @@ class MicroBoxController {
             document.getElementById('mainInterface').classList.remove('hidden');
         }, 2000);
         
+        // Проверка версии после обновления
+        setTimeout(() => {
+            this.checkVersionAfterUpdate();
+        }, 3000);
+        
         // Check for updates on startup (after a delay)
         setTimeout(() => {
             this.checkForUpdatesOnStartup();
         }, 5000);
         
         console.log('Инициализация завершена');
+    }
+    
+    async checkVersionAfterUpdate() {
+        try {
+            // Получаем текущую версию с устройства
+            const response = await fetch('/api/update/current');
+            if (!response.ok) return;
+            
+            const data = await response.json();
+            const currentVersion = data.version;
+            
+            if (!currentVersion) return;
+            
+            // Получаем сохраненную версию из localStorage
+            const savedVersion = localStorage.getItem('microbbox_version');
+            
+            // Если версия изменилась (но не первый запуск)
+            if (savedVersion && savedVersion !== currentVersion) {
+                console.log('Обновление обнаружено:', savedVersion, '->', currentVersion);
+                
+                // Показываем уведомление об успешном обновлении
+                this.showUpdateSuccessNotification(savedVersion, currentVersion);
+                
+                // Сохраняем новую версию
+                localStorage.setItem('microbbox_version', currentVersion);
+            } else if (!savedVersion) {
+                // Первый запуск - просто сохраняем версию без уведомления
+                console.log('Первый запуск, сохраняем версию:', currentVersion);
+                localStorage.setItem('microbbox_version', currentVersion);
+            }
+        } catch (error) {
+            console.log('Не удалось проверить версию после обновления:', error);
+        }
+    }
+    
+    showUpdateSuccessNotification(oldVersion, newVersion) {
+        // Создаем красивое уведомление о успешном обновлении
+        const notification = document.createElement('div');
+        notification.className = 'update-success-notification';
+        notification.innerHTML = `
+            <div class="notification-content">
+                <div class="notification-icon">✓</div>
+                <div class="notification-text">
+                    <h3>Обновление успешно!</h3>
+                    <p>Прошивка обновлена: <strong>${oldVersion}</strong> → <strong>${newVersion}</strong></p>
+                </div>
+                <button class="notification-close" onclick="this.parentElement.parentElement.remove()">×</button>
+            </div>
+        `;
+        
+        document.body.appendChild(notification);
+        
+        // Автоматически скрыть через 10 секунд
+        setTimeout(() => {
+            if (notification.parentElement) {
+                notification.classList.add('fade-out');
+                setTimeout(() => notification.remove(), 500);
+            }
+        }, 10000);
     }
     
     async checkForUpdatesOnStartup() {
@@ -1084,6 +1148,9 @@ class MicroBoxController {
             checkUpdatesBtn.addEventListener('click', () => this.checkForUpdates());
         }
         
+        // Обработчики для ручной загрузки .bin файлов закомментированы
+        // Используется только метод обновления через GitHub
+        /*
         const selectFirmwareBtn = document.getElementById('selectFirmwareBtn');
         if (selectFirmwareBtn) {
             selectFirmwareBtn.addEventListener('click', () => {
@@ -1100,6 +1167,7 @@ class MicroBoxController {
         if (uploadFirmwareBtn) {
             uploadFirmwareBtn.addEventListener('click', () => this.uploadFirmware());
         }
+        */
         
         const downloadUpdateBtn = document.getElementById('downloadUpdateBtn');
         if (downloadUpdateBtn) {
@@ -1444,12 +1512,46 @@ class MicroBoxController {
             setTimeout(() => {
                 overlay.classList.add('glitch-effect');
                 
-                // Перезагрузка страницы через 2 секунды
-                setTimeout(() => {
-                    window.location.reload();
-                }, 2000);
+                // Ждем пока устройство станет доступным, затем перезагружаем страницу
+                this.waitForDeviceAndReload();
             }, 1000);
         }
+    }
+    
+    async waitForDeviceAndReload() {
+        console.log('Ожидание доступности устройства...');
+        let attempts = 0;
+        const maxAttempts = 30; // 30 попыток * 2 секунды = 60 секунд
+        
+        const checkInterval = setInterval(async () => {
+            attempts++;
+            
+            try {
+                // Пробуем получить текущую версию - это быстрый и надежный endpoint
+                const response = await fetch('/api/update/current', { 
+                    method: 'GET',
+                    cache: 'no-cache'
+                });
+                
+                if (response.ok) {
+                    console.log('Устройство доступно! Перезагружаем страницу...');
+                    clearInterval(checkInterval);
+                    
+                    // Небольшая задержка для эффекта
+                    setTimeout(() => {
+                        window.location.reload();
+                    }, 500);
+                }
+            } catch (error) {
+                console.log(`Попытка ${attempts}/${maxAttempts}: устройство еще не доступно`);
+                
+                if (attempts >= maxAttempts) {
+                    console.log('Превышено время ожидания, перезагружаем страницу принудительно');
+                    clearInterval(checkInterval);
+                    window.location.reload();
+                }
+            }
+        }, 2000);
     }
 
     async downloadAndInstallUpdate() {
@@ -1665,6 +1767,9 @@ class MicroBoxController {
         }
     }
     
+    // Функции для ручной загрузки .bin файлов закомментированы
+    // Используется только метод обновления через GitHub
+    /*
     onFirmwareSelected(event) {
         const file = event.target.files[0];
         if (file) {
@@ -1747,6 +1852,7 @@ class MicroBoxController {
             uploadBtn.textContent = 'Загрузить прошивку';
         }
     }
+    */
     
     async saveUpdateSettings() {
         const autoUpdate = document.getElementById('autoUpdate').checked;
