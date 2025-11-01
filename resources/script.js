@@ -1048,27 +1048,45 @@ class MicroBoxController {
     }
 
     async checkVRSupport() {
+        Logger.info('🔍 Проверка поддержки VR...');
+        Logger.debug('User Agent:', navigator.userAgent);
+        Logger.debug('Platform:', navigator.platform);
+        
         if (navigator.xr) {
+            Logger.info('✓ WebXR API доступен');
+            
             try {
+                // Проверяем поддержку immersive-vr
                 const supported = await navigator.xr.isSessionSupported('immersive-vr');
+                Logger.debug('immersive-vr supported:', supported);
+                
                 if (supported) {
                     this.vrEnabled = true;
-                    console.log('VR поддерживается');
+                    Logger.info('✓ VR режим поддерживается!');
+                    Logger.info('🥽 Кнопка VR будет показана');
                     
                     // Показываем кнопку входа в VR
                     const vrBtn = document.getElementById('vrBtn');
                     if (vrBtn) {
                         vrBtn.classList.remove('hidden');
                         vrBtn.addEventListener('click', () => this.enterVR());
+                        Logger.debug('✓ Кнопка VR активирована');
+                    } else {
+                        Logger.warn('✗ Элемент vrBtn не найден в DOM');
                     }
                 } else {
-                    console.log('VR не поддерживается браузером');
+                    Logger.warn('✗ VR не поддерживается этим браузером');
+                    Logger.info('💡 Используйте Oculus Browser на Quest гарнитуре');
                 }
             } catch (error) {
-                console.log('Ошибка проверки VR поддержки:', error);
+                Logger.error('✗ Ошибка проверки VR поддержки:', error.message);
+                Logger.debug('Error details:', error);
             }
         } else {
-            console.log('WebXR API не доступен');
+            Logger.warn('✗ WebXR API не доступен');
+            Logger.info('💡 WebXR требуется для VR режима');
+            Logger.info('💡 Используйте современный браузер с поддержкой WebXR');
+            Logger.info('💡 Рекомендуется: Oculus Browser на Quest гарнитуре');
         }
     }
 
