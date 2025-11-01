@@ -44,7 +44,7 @@ jobs:
       with:
         path: |
           ~/.platformio
-          .pio
+          .pio/libdeps
         key: ${{ runner.os }}-pio-${{ hashFiles('**/platformio.ini') }}
         restore-keys: |
           ${{ runner.os }}-pio-
