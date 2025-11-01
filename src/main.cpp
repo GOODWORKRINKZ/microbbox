@@ -34,8 +34,10 @@ void setup() {
     
     // ПРОВЕРКА: Запущено ли ожидающее OTA обновление?
     if (FirmwareUpdate::isOTAPending()) {
+        int retryCount = FirmwareUpdate::getOTARetryCount();
         Serial.println("═══════════════════════════════════════");
         Serial.println("  ОБНАРУЖЕНО ОЖИДАЮЩЕЕ OTA ОБНОВЛЕНИЕ");
+        Serial.printf("  Попытка %d из %d\n", retryCount + 1, FirmwareUpdate::MAX_OTA_RETRY_ATTEMPTS);
         Serial.println("  Загрузка в безопасном режиме...");
         Serial.println("═══════════════════════════════════════");
         
