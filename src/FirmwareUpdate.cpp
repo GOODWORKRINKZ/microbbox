@@ -506,6 +506,10 @@ bool FirmwareUpdate::downloadAndInstallFirmware(const String& url) {
     currentState = UpdateState::DOWNLOADING;
     updateStatus = "Скачивание прошивки с GitHub";
     
+    // КРИТИЧНО: Сбрасываем watchdog перед началом HTTP соединения
+    esp_task_wdt_reset();
+    yield();
+    
     HTTPClient http;
     http.begin(url);
     http.addHeader("User-Agent", "MicroBox-Firmware-Updater");
@@ -513,7 +517,15 @@ bool FirmwareUpdate::downloadAndInstallFirmware(const String& url) {
     // Следуем редиректам GitHub
     http.setFollowRedirects(HTTPC_FORCE_FOLLOW_REDIRECTS);
     
+    // КРИТИЧНО: Сбрасываем watchdog перед GET запросом (SSL handshake может занять время)
+    esp_task_wdt_reset();
+    yield();
+    
     int httpCode = http.GET();
+    
+    // КРИТИЧНО: Сбрасываем watchdog после завершения GET запроса
+    esp_task_wdt_reset();
+    yield();
     
     if (httpCode != HTTP_CODE_OK) {
         DEBUG_PRINTF("Ошибка HTTP: %d\n", httpCode);
@@ -533,6 +545,10 @@ bool FirmwareUpdate::downloadAndInstallFirmware(const String& url) {
         // Для Update.begin используем UPDATE_SIZE_UNKNOWN
         updateSize = 0; // Внутри храним 0 для логики прогресса
     }
+    
+    // КРИТИЧНО: Сбрасываем watchdog перед началом OTA обновления
+    esp_task_wdt_reset();
+    yield();
     
     // Начинаем OTA обновление
     size_t updateCapacity = (updateSize > 0) ? updateSize : UPDATE_SIZE_UNKNOWN;
@@ -626,6 +642,10 @@ bool FirmwareUpdate::downloadAndInstallFirmware(const String& url) {
     }
     
     http.end();
+    
+    // КРИТИЧНО: Сбрасываем watchdog перед завершением обновления
+    esp_task_wdt_reset();
+    yield();
     
     // Завершаем обновление
     if (Update.end(true)) {
