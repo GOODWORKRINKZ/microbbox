@@ -363,6 +363,7 @@ class MicroBoxController {
     setupJoystick(element, side) {
         let isDragging = false;
         let startX, startY;
+        let touchId = null; // Track which touch is controlling this joystick
         const knob = element.querySelector('.joystick-knob');
         const maxDistance = 40; // Максимальное расстояние от центра
 
@@ -380,11 +381,32 @@ class MicroBoxController {
             e.preventDefault();
         };
 
+        const handleTouchStart = (e) => {
+            // Only handle if not already dragging
+            if (isDragging) return;
+            
+            // Get the first touch that started on this element
+            const touch = e.changedTouches[0];
+            touchId = touch.identifier;
+            
+            isDragging = true;
+            element.classList.add('active');
+            
+            const rect = element.getBoundingClientRect();
+            const centerX = rect.left + rect.width / 2;
+            const centerY = rect.top + rect.height / 2;
+            
+            startX = centerX;
+            startY = centerY;
+            
+            e.preventDefault();
+        };
+
         const handleMove = (e) => {
             if (!isDragging) return;
             
-            const clientX = e.clientX || (e.touches && e.touches[0].clientX);
-            const clientY = e.clientY || (e.touches && e.touches[0].clientY);
+            const clientX = e.clientX;
+            const clientY = e.clientY;
             
             let deltaX = clientX - startX;
             let deltaY = clientY - startY;
@@ -418,6 +440,57 @@ class MicroBoxController {
             this.updateMovement();
         };
 
+        const handleTouchMove = (e) => {
+            if (!isDragging || touchId === null) return;
+            
+            // Find the touch that belongs to this joystick
+            let touch = null;
+            for (let i = 0; i < e.touches.length; i++) {
+                if (e.touches[i].identifier === touchId) {
+                    touch = e.touches[i];
+                    break;
+                }
+            }
+            
+            if (!touch) return;
+            
+            const clientX = touch.clientX;
+            const clientY = touch.clientY;
+            
+            let deltaX = clientX - startX;
+            let deltaY = clientY - startY;
+            
+            // Ограничение движения джойстиков для дифференциального режима
+            if (side === 'left') {
+                // Левый джойстик: только горизонтальное движение (поворот)
+                deltaY = 0;
+                deltaX = Math.max(-maxDistance, Math.min(maxDistance, deltaX));
+            } else {
+                // Правый джойстик: только вертикальное движение (скорость)
+                deltaX = 0;
+                deltaY = Math.max(-maxDistance, Math.min(maxDistance, deltaY));
+            }
+            
+            let x = deltaX;
+            let y = deltaY;
+
+            knob.style.transform = 'translate(calc(-50% + ' + x + 'px), calc(-50% + ' + y + 'px))';
+
+            // Нормализация значений (-1 до 1)
+            const normalizedX = x / maxDistance;
+            const normalizedY = -y / maxDistance; // Инвертируем Y
+            
+            if (side === 'left') {
+                this.leftJoystick = { x: normalizedX, y: 0, active: true };
+            } else {
+                this.rightJoystick = { x: 0, y: normalizedY, active: true };
+            }
+            
+            this.updateMovement();
+            
+            e.preventDefault();
+        };
+
         const handleEnd = () => {
             if (!isDragging) return;
             
@@ -434,15 +507,46 @@ class MicroBoxController {
             this.updateMovement();
         };
 
+        const handleTouchEnd = (e) => {
+            if (!isDragging || touchId === null) return;
+            
+            // Check if our touch ended
+            let touchEnded = false;
+            for (let i = 0; i < e.changedTouches.length; i++) {
+                if (e.changedTouches[i].identifier === touchId) {
+                    touchEnded = true;
+                    break;
+                }
+            }
+            
+            if (!touchEnded) return;
+            
+            isDragging = false;
+            touchId = null;
+            element.classList.remove('active');
+            knob.style.transform = 'translate(-50%, -50%)';
+            
+            if (side === 'left') {
+                this.leftJoystick = { x: 0, y: 0, active: false };
+            } else {
+                this.rightJoystick = { x: 0, y: 0, active: false };
+            }
+            
+            this.updateMovement();
+            
+            e.preventDefault();
+        };
+
         // Мышь события
         element.addEventListener('mousedown', handleStart);
         document.addEventListener('mousemove', handleMove);
         document.addEventListener('mouseup', handleEnd);
 
-        // Сенсорные события
-        element.addEventListener('touchstart', handleStart);
-        document.addEventListener('touchmove', handleMove);
-        document.addEventListener('touchend', handleEnd);
+        // Сенсорные события - используем специфичные обработчики для multi-touch
+        element.addEventListener('touchstart', handleTouchStart, { passive: false });
+        element.addEventListener('touchmove', handleTouchMove, { passive: false });
+        element.addEventListener('touchend', handleTouchEnd, { passive: false });
+        element.addEventListener('touchcancel', handleTouchEnd, { passive: false });
     }
 
     handleKeyDown(e) {
