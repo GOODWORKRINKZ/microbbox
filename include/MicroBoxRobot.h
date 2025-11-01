@@ -19,6 +19,7 @@ public:
 
     // Основные методы
     bool init();
+    bool initSafeModeForOTA();  // Безопасный режим для OTA обновления
     void loop();
     void shutdown();
 

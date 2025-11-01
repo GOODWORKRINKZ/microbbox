@@ -1,5 +1,6 @@
 #include <Arduino.h>
 #include "MicroBoxRobot.h"
+#include "FirmwareUpdate.h"
 #include "config.h"
 #include "soc/soc.h"
 #include "soc/rtc_cntl_reg.h"
@@ -30,6 +31,33 @@ void setup() {
     
     // Отключение детектора сброса напряжения для предотвращения случайных перезагрузок
     WRITE_PERI_REG(RTC_CNTL_BROWN_OUT_REG, 0);
+    
+    // ПРОВЕРКА: Запущено ли ожидающее OTA обновление?
+    if (FirmwareUpdate::isOTAPending()) {
+        Serial.println("═══════════════════════════════════════");
+        Serial.println("  ОБНАРУЖЕНО ОЖИДАЮЩЕЕ OTA ОБНОВЛЕНИЕ");
+        Serial.println("  Загрузка в безопасном режиме...");
+        Serial.println("═══════════════════════════════════════");
+        
+        // Создание робота и инициализация в безопасном режиме для OTA
+        robot = new MicroBoxRobot();
+        
+        if (!robot->initSafeModeForOTA()) {
+            Serial.println("ОШИБКА: Не удалось выполнить OTA обновление!");
+            Serial.println("Перезагрузка в нормальном режиме через 5 секунд...");
+            delay(5000);
+            ESP.restart();
+        }
+        
+        // Если мы здесь, OTA обновление завершено и устройство перезагрузится
+        // Этот код не должен быть достигнут
+        return;
+    }
+    
+    // НОРМАЛЬНАЯ ЗАГРУЗКА: Полная инициализация со всеми компонентами
+    Serial.println("═══════════════════════════════════════");
+    Serial.println("  НОРМАЛЬНАЯ ЗАГРУЗКА");
+    Serial.println("═══════════════════════════════════════");
     
     // Создание и инициализация робота
     robot = new MicroBoxRobot();
