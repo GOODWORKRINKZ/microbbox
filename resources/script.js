@@ -563,7 +563,7 @@ class MicroBoxController {
         
         // Update threat level based on movement
         const isMoving = this.leftJoystick.active || this.rightJoystick.active || 
-                        Object.values(this.keyStates).some(state => state);
+                        (this.keyStates && Object.values(this.keyStates).some(state => state));
         
         const threatEl = document.getElementById('t800Threat');
         if (threatEl) {
