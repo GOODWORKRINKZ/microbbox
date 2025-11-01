@@ -885,6 +885,17 @@ class MicroBoxController {
         if (saveBtn) {
             saveBtn.addEventListener('click', () => this.saveSettings());
         }
+        
+        // WiFi настройки
+        const saveWiFiBtn = document.getElementById('saveWiFi');
+        if (saveWiFiBtn) {
+            saveWiFiBtn.addEventListener('click', () => this.saveWiFiConfig());
+        }
+        
+        const restartBtn = document.getElementById('restartDevice');
+        if (restartBtn) {
+            restartBtn.addEventListener('click', () => this.restartDevice());
+        }
     }
 
     showSettings() {
@@ -899,6 +910,9 @@ class MicroBoxController {
             // Установить текущие режимы
             document.querySelector('input[name="controlMode"][value="' + this.controlMode + '"]').checked = true;
             document.querySelector('input[name="effectMode"][value="' + this.effectMode + '"]').checked = true;
+            
+            // Загрузить статус WiFi
+            this.loadWiFiStatus();
         }
     }
 
@@ -1017,6 +1031,108 @@ class MicroBoxController {
         };
         
         loop();
+    }
+
+    async loadWiFiStatus() {
+        try {
+            const response = await fetch('/api/wifi/status');
+            const data = await response.json();
+            
+            const statusDiv = document.getElementById('wifiStatus');
+            if (statusDiv) {
+                let statusHTML = '<strong>Текущий статус:</strong><br>';
+                statusHTML += `Режим: ${data.mode}<br>`;
+                statusHTML += `Подключено: ${data.connected ? 'Да' : 'Нет'}<br>`;
+                statusHTML += `IP адрес: ${data.ip}<br>`;
+                statusHTML += `Имя устройства: ${data.deviceName}<br>`;
+                if (data.savedSSID) {
+                    statusHTML += `Сохраненная сеть: ${data.savedSSID}`;
+                }
+                statusDiv.innerHTML = statusHTML;
+            }
+            
+            // Заполнить поля формы
+            if (data.savedSSID) {
+                document.getElementById('wifiSSID').value = data.savedSSID;
+            }
+            if (data.savedMode) {
+                document.getElementById('wifiMode').value = data.savedMode;
+            }
+        } catch (error) {
+            console.error('Ошибка загрузки статуса WiFi:', error);
+        }
+    }
+
+    async saveWiFiConfig() {
+        const ssid = document.getElementById('wifiSSID').value;
+        const password = document.getElementById('wifiPassword').value;
+        const mode = document.getElementById('wifiMode').value;
+        
+        if (!ssid) {
+            alert('Пожалуйста, введите SSID сети');
+            return;
+        }
+        
+        if (ssid.length > 32) {
+            alert('SSID не может быть длиннее 32 символов');
+            return;
+        }
+        
+        if (password && password.length < 8) {
+            alert('Пароль должен быть минимум 8 символов');
+            return;
+        }
+        
+        try {
+            const response = await fetch('/api/wifi/config', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    ssid: ssid,
+                    password: password,
+                    mode: mode
+                })
+            });
+            
+            const data = await response.json();
+            
+            if (data.status === 'ok') {
+                alert('Настройки WiFi сохранены! Перезагрузите устройство для применения.');
+            } else {
+                alert('Ошибка: ' + data.message);
+            }
+        } catch (error) {
+            console.error('Ошибка сохранения WiFi:', error);
+            alert('Ошибка сохранения настроек');
+        }
+    }
+
+    async restartDevice() {
+        if (!confirm('Вы уверены, что хотите перезагрузить устройство?')) {
+            return;
+        }
+        
+        try {
+            // Отправляем подтверждение для безопасности
+            const formData = new FormData();
+            formData.append('confirm', 'yes');
+            
+            await fetch('/api/restart', {
+                method: 'POST',
+                body: formData
+            });
+            
+            alert('Устройство перезагружается... Подождите около 30 секунд.');
+            
+            // Попытаться переподключиться через 30 секунд
+            setTimeout(() => {
+                window.location.reload();
+            }, 30000);
+        } catch (error) {
+            console.error('Ошибка перезагрузки:', error);
+        }
     }
 }
 

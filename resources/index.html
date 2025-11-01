@@ -157,6 +157,28 @@
                     <label>Чувствительность поворота: <input type="range" id="turnSensitivity" min="50" max="100" value="70"></label>
                 </div>
 
+                <div class="settings-section">
+                    <h3>WiFi настройки</h3>
+                    <div id="wifiStatus" class="wifi-status"></div>
+                    <label>
+                        Режим:
+                        <select id="wifiMode">
+                            <option value="CLIENT">Подключение к сети (Client)</option>
+                            <option value="AP">Точка доступа (AP)</option>
+                        </select>
+                    </label>
+                    <label>
+                        SSID сети:
+                        <input type="text" id="wifiSSID" placeholder="Имя WiFi сети">
+                    </label>
+                    <label>
+                        Пароль:
+                        <input type="password" id="wifiPassword" placeholder="Пароль сети">
+                    </label>
+                    <button id="saveWiFi" class="btn-secondary">Сохранить WiFi</button>
+                    <button id="restartDevice" class="btn-danger">Перезагрузить устройство</button>
+                </div>
+
                 <button id="saveSettings" class="btn-primary">Сохранить</button>
             </div>
         </div>
