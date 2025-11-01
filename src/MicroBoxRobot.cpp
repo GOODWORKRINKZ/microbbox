@@ -509,6 +509,28 @@ void MicroBoxRobot::initWebServer() {
                     request->send(200, "application/json", "{\"status\":\"ok\",\"action\":\"Эффекты недоступны\"}");
 #endif
                 }
+                else if (commandBody.indexOf("setControlMode") >= 0) {
+                    // Обработка команды setControlMode
+                    if (commandBody.indexOf("tank") >= 0 || commandBody.indexOf("TANK") >= 0) {
+                        setControlMode(ControlMode::TANK);
+                        request->send(200, "application/json", "{\"status\":\"ok\",\"action\":\"Режим управления: Танковый\"}");
+                    } else if (commandBody.indexOf("differential") >= 0 || commandBody.indexOf("DIFFERENTIAL") >= 0) {
+                        setControlMode(ControlMode::DIFFERENTIAL);
+                        request->send(200, "application/json", "{\"status\":\"ok\",\"action\":\"Режим управления: Дифференциальный\"}");
+                    } else {
+                        request->send(200, "application/json", "{\"status\":\"ok\",\"action\":\"Режим управления установлен\"}");
+                    }
+                }
+                else if (commandBody.indexOf("ping") >= 0) {
+                    // Обработка команды ping - просто отправляем OK
+                    request->send(200, "application/json", "{\"status\":\"ok\",\"action\":\"pong\"}");
+                }
+                else {
+                    // Неизвестная команда - всё равно отправляем ответ
+                    DEBUG_PRINT("Неизвестная команда: ");
+                    DEBUG_PRINTLN(commandBody);
+                    request->send(200, "application/json", "{\"status\":\"ok\",\"action\":\"Команда получена\"}");
+                }
                 
                 // Очищаем буфер для следующей команды
                 commandBody = "";
