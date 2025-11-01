@@ -1380,6 +1380,15 @@ class MicroBoxController {
             return;
         }
         
+        // Константы для состояний обновления (соответствуют UpdateState в FirmwareUpdate.h)
+        const UpdateState = {
+            IDLE: 0,
+            DOWNLOADING: 1,
+            UPLOADING: 2,
+            SUCCESS: 3,
+            FAILED: 4
+        };
+        
         const progressDiv = document.getElementById('uploadProgress');
         const progressFill = document.getElementById('progressFill');
         const progressText = document.getElementById('progressText');
@@ -1415,6 +1424,8 @@ class MicroBoxController {
                 // Начинаем опрос статуса обновления
                 let pollCount = 0;
                 const maxPolls = 120; // 2 минуты максимум
+                let consecutiveErrors = 0;
+                const maxConsecutiveErrors = 5; // Разрешаем 5 последовательных ошибок (во время перезагрузки)
                 
                 const pollInterval = setInterval(async () => {
                     pollCount++;
@@ -1424,12 +1435,15 @@ class MicroBoxController {
                         if (statusResponse.ok) {
                             const status = await statusResponse.json();
                             
+                            // Сбрасываем счетчик ошибок при успешном ответе
+                            consecutiveErrors = 0;
+                            
                             // Обновляем прогресс
                             progressFill.style.width = status.progress + '%';
                             progressText.textContent = status.progress + '%';
                             
                             // Проверяем состояние
-                            if (status.state === 3) { // SUCCESS
+                            if (status.state === UpdateState.SUCCESS) {
                                 clearInterval(pollInterval);
                                 progressFill.style.width = '100%';
                                 progressText.textContent = '100%';
@@ -1439,14 +1453,23 @@ class MicroBoxController {
                                 setTimeout(() => {
                                     window.location.reload();
                                 }, 5000);
-                            } else if (status.state === 4) { // FAILED
+                            } else if (status.state === UpdateState.FAILED) {
                                 clearInterval(pollInterval);
                                 throw new Error('Ошибка обновления: ' + status.status);
                             }
+                        } else {
+                            consecutiveErrors++;
                         }
                     } catch (error) {
-                        // Игнорируем ошибки опроса - возможно устройство перезагружается
-                        console.log('Poll error (expected during reboot):', error);
+                        consecutiveErrors++;
+                        // Логируем только для отладки
+                        console.log('Poll attempt ' + pollCount + ', error count: ' + consecutiveErrors, error.message);
+                        
+                        // Если слишком много последовательных ошибок в начале процесса - это проблема
+                        if (consecutiveErrors >= maxConsecutiveErrors && pollCount < 30) {
+                            clearInterval(pollInterval);
+                            throw new Error('Не удалось получить статус обновления. Возможно, устройство недоступно.');
+                        }
                     }
                     
                     // Таймаут

@@ -156,10 +156,6 @@ void FirmwareUpdate::registerUpdateHandlers(AsyncWebServer* server) {
     // API для автоматического скачивания и установки прошивки
     server->on("/api/update/download", HTTP_POST,
         [this](AsyncWebServerRequest *request) {
-            // Ответ будет отправлен в onBody
-        },
-        NULL,
-        [this](AsyncWebServerRequest *request, uint8_t *data, size_t len, size_t index, size_t total) {
             this->handleDownloadAndInstall(request);
         });
     
@@ -459,8 +455,9 @@ void FirmwareUpdate::handleDownloadAndInstall(AsyncWebServerRequest *request) {
     response->addHeader("Access-Control-Allow-Origin", "*");
     request->send(response);
     
-    // Запускаем скачивание в отдельном "потоке" (на самом деле в loop это будет происходить)
-    // Для простоты делаем синхронно, но с небольшой задержкой
+    // ВАЖНО: Блокирующая операция скачивания и установки прошивки
+    // Это нормально для OTA обновления - нельзя прерывать процесс
+    // Веб-сервер будет недоступен во время обновления (~30-60 секунд)
     delay(100); // Даем время отправиться ответу
     
     // Скачиваем и устанавливаем
@@ -529,29 +526,36 @@ bool FirmwareUpdate::downloadAndInstallFirmware(const String& url) {
     WiFiClient* stream = http.getStreamPtr();
     
     uint8_t buff[512] = { 0 };
-    int len = 0;
     
-    while (http.connected() && (len = stream->available())) {
-        // Читаем данные порциями
-        size_t size = stream->readBytes(buff, ((len > sizeof(buff)) ? sizeof(buff) : len));
+    // Скачиваем файл полностью
+    while (http.connected() && (updateReceived < updateSize || updateSize == 0)) {
+        size_t available = stream->available();
         
-        // Записываем в Update
-        if (Update.write(buff, size) != size) {
-            Update.printError(Serial);
-            updateStatus = "Ошибка записи прошивки";
-            http.end();
-            updating = false;
-            return false;
-        }
-        
-        updateReceived += size;
-        
-        // Обновляем прогресс
-        if (updateSize > 0) {
-            int progress = (updateReceived * 100) / updateSize;
-            if (progress != currentProgress) {
-                currentProgress = progress;
-                updateProgress(progress);
+        if (available) {
+            // Читаем данные порциями
+            int readLen = stream->readBytes(buff, ((available > sizeof(buff)) ? sizeof(buff) : available));
+            
+            if (readLen > 0) {
+                // Записываем в Update
+                if (Update.write(buff, readLen) != (size_t)readLen) {
+                    Update.printError(Serial);
+                    updateStatus = "Ошибка записи прошивки";
+                    http.end();
+                    updating = false;
+                    currentState = UpdateState::FAILED;
+                    return false;
+                }
+                
+                updateReceived += readLen;
+                
+                // Обновляем прогресс
+                if (updateSize > 0) {
+                    int progress = (updateReceived * 100) / updateSize;
+                    if (progress != currentProgress) {
+                        currentProgress = progress;
+                        updateProgress(progress);
+                    }
+                }
             }
         }
         
@@ -571,6 +575,7 @@ bool FirmwareUpdate::downloadAndInstallFirmware(const String& url) {
         return true;
     } else {
         Update.printError(Serial);
+        currentState = UpdateState::FAILED;
         updateStatus = "Ошибка завершения обновления";
         updating = false;
         return false;
