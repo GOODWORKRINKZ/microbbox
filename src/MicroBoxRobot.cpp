@@ -509,6 +509,43 @@ void MicroBoxRobot::initWebServer() {
                     request->send(200, "application/json", "{\"status\":\"ok\",\"action\":\"Эффекты недоступны\"}");
 #endif
                 }
+                else if (commandBody.indexOf("setControlMode") >= 0) {
+                    // Обработка команды setControlMode
+                    // Ищем значение mode в JSON: "mode":"tank" или "mode":"differential"
+                    int modePos = commandBody.indexOf("\"mode\":");
+                    if (modePos >= 0) {
+                        int modeStart = commandBody.indexOf("\"", modePos + 7);
+                        if (modeStart >= 0) {
+                            int modeEnd = commandBody.indexOf("\"", modeStart + 1);
+                            if (modeEnd >= 0) {
+                                String mode = commandBody.substring(modeStart + 1, modeEnd);
+                                
+                                if (mode.equalsIgnoreCase("tank")) {
+                                    setControlMode(ControlMode::TANK);
+                                    request->send(200, "application/json", "{\"status\":\"ok\",\"action\":\"Режим управления: Танковый\"}");
+                                } else if (mode.equalsIgnoreCase("differential")) {
+                                    setControlMode(ControlMode::DIFFERENTIAL);
+                                    request->send(200, "application/json", "{\"status\":\"ok\",\"action\":\"Режим управления: Дифференциальный\"}");
+                                } else {
+                                    request->send(200, "application/json", "{\"status\":\"ok\",\"action\":\"Режим управления установлен\"}");
+                                }
+                                return;
+                            }
+                        }
+                    }
+                    // Если не удалось распарсить, отправляем OK
+                    request->send(200, "application/json", "{\"status\":\"ok\",\"action\":\"Режим управления установлен\"}");
+                }
+                else if (commandBody.indexOf("ping") >= 0) {
+                    // Обработка команды ping - просто отправляем OK
+                    request->send(200, "application/json", "{\"status\":\"ok\",\"action\":\"pong\"}");
+                }
+                else {
+                    // Неизвестная команда - всё равно отправляем ответ
+                    DEBUG_PRINT("Неизвестная команда: ");
+                    DEBUG_PRINTLN(commandBody);
+                    request->send(200, "application/json", "{\"status\":\"ok\",\"action\":\"Команда получена\"}");
+                }
                 
                 // Очищаем буфер для следующей команды
                 commandBody = "";

@@ -1,6 +1,9 @@
 // МикроББокс - Система управления
 class MicroBoxController {
     constructor() {
+        // Конфигурация
+        this.GITHUB_REPO = 'GOODWORKRINKZ/microbbox';  // GitHub репозиторий для проверки обновлений
+        
         this.deviceType = 'unknown';
         this.controlMode = 'tank';
         this.effectMode = 'normal';
@@ -1214,33 +1217,110 @@ class MicroBoxController {
         btn.textContent = 'Проверка...';
         
         try {
-            const response = await fetch('/api/update/check');
-            if (response.ok) {
-                const data = await response.json();
-                
-                if (data.hasUpdate) {
-                    // Show update available section
-                    const updateSection = document.getElementById('updateAvailable');
-                    updateSection.classList.remove('hidden');
-                    document.getElementById('newVersion').textContent = data.version;
-                    document.getElementById('newReleaseName').textContent = `Релиз: ${data.releaseName}`;
-                    document.getElementById('releaseNotes').textContent = data.releaseNotes || 'Нет описания';
-                    
-                    // Store download URL for later
-                    this.updateDownloadUrl = data.downloadUrl;
-                } else {
-                    alert('У вас установлена последняя версия прошивки!');
+            // Получаем текущую версию с устройства
+            const currentVersionResponse = await fetch('/api/update/current');
+            if (!currentVersionResponse.ok) {
+                throw new Error('Не удалось получить текущую версию');
+            }
+            const currentVersionData = await currentVersionResponse.json();
+            const currentVersion = currentVersionData.version;
+            
+            if (!currentVersion) {
+                throw new Error('Не удалось получить текущую версию устройства');
+            }
+            
+            // Проверяем обновления на GitHub API напрямую с клиента
+            const githubApiUrl = `https://api.github.com/repos/${this.GITHUB_REPO}/releases/latest`;
+            const githubResponse = await fetch(githubApiUrl, {
+                headers: {
+                    'Accept': 'application/vnd.github+json',  // Current stable GitHub API version
+                    'User-Agent': 'MicroBox-Web-Client'
                 }
+            });
+            
+            if (!githubResponse.ok) {
+                throw new Error('Не удалось получить информацию о релизах с GitHub');
+            }
+            
+            const releaseData = await githubResponse.json();
+            
+            // Валидация обязательных полей GitHub API response
+            if (!releaseData || !releaseData.tag_name) {
+                throw new Error('Некорректный ответ от GitHub API');
+            }
+            
+            // Извлекаем информацию о релизе
+            const latestVersion = releaseData.tag_name;
+            const releaseName = releaseData.name || latestVersion;
+            const releaseNotes = releaseData.body || 'Нет описания';
+            const publishedAt = releaseData.published_at;
+            
+            // Находим .bin файл для загрузки
+            let downloadUrl = '';
+            if (releaseData.assets && Array.isArray(releaseData.assets) && releaseData.assets.length > 0) {
+                const binAsset = releaseData.assets.find(asset => 
+                    asset && asset.name && asset.name.endsWith('-release.bin') && asset.browser_download_url
+                );
+                if (binAsset && binAsset.browser_download_url) {
+                    downloadUrl = binAsset.browser_download_url;
+                }
+            }
+            
+            // Сравниваем версии
+            const hasUpdate = this.isVersionNewer(currentVersion, latestVersion);
+            
+            if (hasUpdate) {
+                // Show update available section
+                const updateSection = document.getElementById('updateAvailable');
+                updateSection.classList.remove('hidden');
+                document.getElementById('newVersion').textContent = latestVersion;
+                document.getElementById('newReleaseName').textContent = `Релиз: ${releaseName}`;
+                document.getElementById('releaseNotes').textContent = releaseNotes;
+                
+                // Store download URL for later
+                this.updateDownloadUrl = downloadUrl;
+                
+                console.log('Доступно обновление:', {
+                    current: currentVersion,
+                    latest: latestVersion,
+                    downloadUrl: downloadUrl
+                });
             } else {
-                alert('Не удалось проверить обновления. Проверьте подключение к интернету.');
+                alert('У вас установлена последняя версия прошивки!');
             }
         } catch (error) {
             console.error('Error checking updates:', error);
-            alert('Ошибка при проверке обновлений');
+            alert('Ошибка при проверке обновлений: ' + error.message);
         } finally {
             btn.disabled = false;
             btn.textContent = 'Проверить обновления';
         }
+    }
+    
+    // Функция сравнения версий
+    isVersionNewer(currentVersion, latestVersion) {
+        // Убираем префикс 'v' если есть и берем только числовую часть до дефиса
+        const cleanCurrent = currentVersion.replace(/^v/, '').split('-')[0];
+        const cleanLatest = latestVersion.replace(/^v/, '').split('-')[0];
+        
+        const currentParts = cleanCurrent.split('.').map(part => {
+            const num = parseInt(part, 10);
+            return isNaN(num) ? 0 : num;
+        });
+        const latestParts = cleanLatest.split('.').map(part => {
+            const num = parseInt(part, 10);
+            return isNaN(num) ? 0 : num;
+        });
+        
+        for (let i = 0; i < Math.max(currentParts.length, latestParts.length); i++) {
+            const current = currentParts[i] || 0;
+            const latest = latestParts[i] || 0;
+            
+            if (latest > current) return true;
+            if (latest < current) return false;
+        }
+        
+        return false;
     }
     
     async downloadAndInstallUpdate() {
