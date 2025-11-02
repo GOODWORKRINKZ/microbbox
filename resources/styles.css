@@ -398,6 +398,7 @@ body {
     flex-direction: row;
     top: unset;
     right: 80px;
+    position: absolute;
 }
 
 .panel-btn {
@@ -746,6 +747,7 @@ body {
         flex-direction: row;
         top: unset;
         right: 80px;
+        position: absolute;
     }
     
     .panel-btn {
