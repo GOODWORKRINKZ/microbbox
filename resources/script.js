@@ -2654,10 +2654,6 @@ class MicroBoxController {
                 document.getElementById('motorSwapLeftRight').checked = config.motorSwapLeftRight || false;
                 document.getElementById('motorInvertLeft').checked = config.motorInvertLeft || false;
                 document.getElementById('motorInvertRight').checked = config.motorInvertRight || false;
-                document.getElementById('motorInvertLeftForward').checked = config.motorInvertLeftForward || false;
-                document.getElementById('motorInvertLeftBackward').checked = config.motorInvertLeftBackward || false;
-                document.getElementById('motorInvertRightForward').checked = config.motorInvertRightForward || false;
-                document.getElementById('motorInvertRightBackward').checked = config.motorInvertRightBackward || false;
                 
                 console.log('Настройки моторов загружены:', config);
             }
@@ -2670,11 +2666,7 @@ class MicroBoxController {
         const config = {
             motorSwapLeftRight: document.getElementById('motorSwapLeftRight').checked,
             motorInvertLeft: document.getElementById('motorInvertLeft').checked,
-            motorInvertRight: document.getElementById('motorInvertRight').checked,
-            motorInvertLeftForward: document.getElementById('motorInvertLeftForward').checked,
-            motorInvertLeftBackward: document.getElementById('motorInvertLeftBackward').checked,
-            motorInvertRightForward: document.getElementById('motorInvertRightForward').checked,
-            motorInvertRightBackward: document.getElementById('motorInvertRightBackward').checked
+            motorInvertRight: document.getElementById('motorInvertRight').checked
         };
         
         try {

@@ -9,11 +9,7 @@ WiFiSettings::WiFiSettings() :
     mode(WiFiMode::CLIENT),
     motorSwapLeftRight(false),
     motorInvertLeft(false),
-    motorInvertRight(false),
-    motorInvertLeftForward(false),
-    motorInvertLeftBackward(false),
-    motorInvertRightForward(false),
-    motorInvertRightBackward(false)
+    motorInvertRight(false)
 {
 }
 
@@ -48,10 +44,6 @@ void WiFiSettings::loadDefaults() {
     motorSwapLeftRight = false;
     motorInvertLeft = false;
     motorInvertRight = false;
-    motorInvertLeftForward = false;
-    motorInvertLeftBackward = false;
-    motorInvertRightForward = false;
-    motorInvertRightBackward = false;
     
     DEBUG_PRINTLN("WiFiSettings::loadDefaults()");
     DEBUG_PRINT("  SSID: ");
@@ -83,10 +75,6 @@ void WiFiSettings::loadFromMemory() {
         motorSwapLeftRight = preferences.getBool("motorSwap", false);
         motorInvertLeft = preferences.getBool("motorInvL", false);
         motorInvertRight = preferences.getBool("motorInvR", false);
-        motorInvertLeftForward = preferences.getBool("motorInvLF", false);
-        motorInvertLeftBackward = preferences.getBool("motorInvLB", false);
-        motorInvertRightForward = preferences.getBool("motorInvRF", false);
-        motorInvertRightBackward = preferences.getBool("motorInvRB", false);
         
         DEBUG_PRINTLN("  Загружены сохраненные настройки:");
         DEBUG_PRINT("    SSID: '"); DEBUG_PRINT(ssid); DEBUG_PRINTLN("'");
@@ -96,10 +84,6 @@ void WiFiSettings::loadFromMemory() {
         DEBUG_PRINT("    Motor swap L/R: "); DEBUG_PRINTLN(motorSwapLeftRight ? "YES" : "NO");
         DEBUG_PRINT("    Motor invert L: "); DEBUG_PRINTLN(motorInvertLeft ? "YES" : "NO");
         DEBUG_PRINT("    Motor invert R: "); DEBUG_PRINTLN(motorInvertRight ? "YES" : "NO");
-        DEBUG_PRINT("    Motor invert L Fwd: "); DEBUG_PRINTLN(motorInvertLeftForward ? "YES" : "NO");
-        DEBUG_PRINT("    Motor invert L Back: "); DEBUG_PRINTLN(motorInvertLeftBackward ? "YES" : "NO");
-        DEBUG_PRINT("    Motor invert R Fwd: "); DEBUG_PRINTLN(motorInvertRightForward ? "YES" : "NO");
-        DEBUG_PRINT("    Motor invert R Back: "); DEBUG_PRINTLN(motorInvertRightBackward ? "YES" : "NO");
         
         // ВАЖНО: Если SSID пустой - это значит старые битые настройки, сбрасываем!
         if (ssid.length() == 0) {
@@ -138,22 +122,6 @@ void WiFiSettings::setMotorInvertRight(bool value) {
     motorInvertRight = value;
 }
 
-void WiFiSettings::setMotorInvertLeftForward(bool value) {
-    motorInvertLeftForward = value;
-}
-
-void WiFiSettings::setMotorInvertLeftBackward(bool value) {
-    motorInvertLeftBackward = value;
-}
-
-void WiFiSettings::setMotorInvertRightForward(bool value) {
-    motorInvertRightForward = value;
-}
-
-void WiFiSettings::setMotorInvertRightBackward(bool value) {
-    motorInvertRightBackward = value;
-}
-
 bool WiFiSettings::save() {
     DEBUG_PRINTLN("WiFiSettings::save() - начало сохранения");
     DEBUG_PRINT("  SSID: '"); DEBUG_PRINT(ssid); DEBUG_PRINTLN("'");
@@ -163,10 +131,6 @@ bool WiFiSettings::save() {
     DEBUG_PRINT("  Motor swap L/R: "); DEBUG_PRINTLN(motorSwapLeftRight ? "YES" : "NO");
     DEBUG_PRINT("  Motor invert L: "); DEBUG_PRINTLN(motorInvertLeft ? "YES" : "NO");
     DEBUG_PRINT("  Motor invert R: "); DEBUG_PRINTLN(motorInvertRight ? "YES" : "NO");
-    DEBUG_PRINT("  Motor invert L Fwd: "); DEBUG_PRINTLN(motorInvertLeftForward ? "YES" : "NO");
-    DEBUG_PRINT("  Motor invert L Back: "); DEBUG_PRINTLN(motorInvertLeftBackward ? "YES" : "NO");
-    DEBUG_PRINT("  Motor invert R Fwd: "); DEBUG_PRINTLN(motorInvertRightForward ? "YES" : "NO");
-    DEBUG_PRINT("  Motor invert R Back: "); DEBUG_PRINTLN(motorInvertRightBackward ? "YES" : "NO");
     
     // Сохраняем все настройки и проверяем результат каждой операции
     size_t w1 = preferences.putBool("initialized", true);
@@ -179,10 +143,6 @@ bool WiFiSettings::save() {
     size_t w6 = preferences.putBool("motorSwap", motorSwapLeftRight);
     size_t w7 = preferences.putBool("motorInvL", motorInvertLeft);
     size_t w8 = preferences.putBool("motorInvR", motorInvertRight);
-    size_t w9 = preferences.putBool("motorInvLF", motorInvertLeftForward);
-    size_t w10 = preferences.putBool("motorInvLB", motorInvertLeftBackward);
-    size_t w11 = preferences.putBool("motorInvRF", motorInvertRightForward);
-    size_t w12 = preferences.putBool("motorInvRB", motorInvertRightBackward);
     
     DEBUG_PRINT("  Записано байт - initialized: "); DEBUG_PRINTLN(w1);
     DEBUG_PRINT("  Записано байт - ssid: "); DEBUG_PRINTLN(w2);
@@ -192,10 +152,6 @@ bool WiFiSettings::save() {
     DEBUG_PRINT("  Записано байт - motorSwap: "); DEBUG_PRINTLN(w6);
     DEBUG_PRINT("  Записано байт - motorInvL: "); DEBUG_PRINTLN(w7);
     DEBUG_PRINT("  Записано байт - motorInvR: "); DEBUG_PRINTLN(w8);
-    DEBUG_PRINT("  Записано байт - motorInvLF: "); DEBUG_PRINTLN(w9);
-    DEBUG_PRINT("  Записано байт - motorInvLB: "); DEBUG_PRINTLN(w10);
-    DEBUG_PRINT("  Записано байт - motorInvRF: "); DEBUG_PRINTLN(w11);
-    DEBUG_PRINT("  Записано байт - motorInvRB: "); DEBUG_PRINTLN(w12);
     
     // Принудительно сохраняем изменения (commit)
     bool committed = preferences.putBool("_commit", true);

@@ -809,11 +809,7 @@ void MicroBoxRobot::initWebServer() {
         if (wifiSettings) {
             json += "\"motorSwapLeftRight\":" + String(wifiSettings->getMotorSwapLeftRight() ? "true" : "false") + ",";
             json += "\"motorInvertLeft\":" + String(wifiSettings->getMotorInvertLeft() ? "true" : "false") + ",";
-            json += "\"motorInvertRight\":" + String(wifiSettings->getMotorInvertRight() ? "true" : "false") + ",";
-            json += "\"motorInvertLeftForward\":" + String(wifiSettings->getMotorInvertLeftForward() ? "true" : "false") + ",";
-            json += "\"motorInvertLeftBackward\":" + String(wifiSettings->getMotorInvertLeftBackward() ? "true" : "false") + ",";
-            json += "\"motorInvertRightForward\":" + String(wifiSettings->getMotorInvertRightForward() ? "true" : "false") + ",";
-            json += "\"motorInvertRightBackward\":" + String(wifiSettings->getMotorInvertRightBackward() ? "true" : "false");
+            json += "\"motorInvertRight\":" + String(wifiSettings->getMotorInvertRight() ? "true" : "false");
         }
         json += "}";
         request->send(200, "application/json", json);
@@ -856,30 +852,6 @@ void MicroBoxRobot::initWebServer() {
                         wifiSettings->setMotorInvertRight(true);
                     } else if (motorConfigBody.indexOf("\"motorInvertRight\":false") >= 0) {
                         wifiSettings->setMotorInvertRight(false);
-                    }
-                    
-                    if (motorConfigBody.indexOf("\"motorInvertLeftForward\":true") >= 0) {
-                        wifiSettings->setMotorInvertLeftForward(true);
-                    } else if (motorConfigBody.indexOf("\"motorInvertLeftForward\":false") >= 0) {
-                        wifiSettings->setMotorInvertLeftForward(false);
-                    }
-                    
-                    if (motorConfigBody.indexOf("\"motorInvertLeftBackward\":true") >= 0) {
-                        wifiSettings->setMotorInvertLeftBackward(true);
-                    } else if (motorConfigBody.indexOf("\"motorInvertLeftBackward\":false") >= 0) {
-                        wifiSettings->setMotorInvertLeftBackward(false);
-                    }
-                    
-                    if (motorConfigBody.indexOf("\"motorInvertRightForward\":true") >= 0) {
-                        wifiSettings->setMotorInvertRightForward(true);
-                    } else if (motorConfigBody.indexOf("\"motorInvertRightForward\":false") >= 0) {
-                        wifiSettings->setMotorInvertRightForward(false);
-                    }
-                    
-                    if (motorConfigBody.indexOf("\"motorInvertRightBackward\":true") >= 0) {
-                        wifiSettings->setMotorInvertRightBackward(true);
-                    } else if (motorConfigBody.indexOf("\"motorInvertRightBackward\":false") >= 0) {
-                        wifiSettings->setMotorInvertRightBackward(false);
                     }
                     
                     // Сохраняем настройки
@@ -1157,27 +1129,13 @@ void MicroBoxRobot::setMotorSpeed(int leftSpeed, int rightSpeed) {
             rightSpeed = temp;
         }
         
-        // Применяем общую инверсию для левого мотора
+        // Применяем инверсию для левого мотора
         if (wifiSettings->getMotorInvertLeft()) {
             leftSpeed = -leftSpeed;
         }
         
-        // Применяем общую инверсию для правого мотора
+        // Применяем инверсию для правого мотора
         if (wifiSettings->getMotorInvertRight()) {
-            rightSpeed = -rightSpeed;
-        }
-        
-        // Применяем инверсию для конкретных направлений левого мотора
-        if (leftSpeed > 0 && wifiSettings->getMotorInvertLeftForward()) {
-            leftSpeed = -leftSpeed;
-        } else if (leftSpeed < 0 && wifiSettings->getMotorInvertLeftBackward()) {
-            leftSpeed = -leftSpeed;
-        }
-        
-        // Применяем инверсию для конкретных направлений правого мотора
-        if (rightSpeed > 0 && wifiSettings->getMotorInvertRightForward()) {
-            rightSpeed = -rightSpeed;
-        } else if (rightSpeed < 0 && wifiSettings->getMotorInvertRightBackward()) {
             rightSpeed = -rightSpeed;
         }
     }
