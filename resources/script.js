@@ -840,8 +840,15 @@ class MicroBoxController {
         const speedChanged = Math.abs(leftSpeed - this.lastLeftSpeed) > 5 || 
                            Math.abs(rightSpeed - this.lastRightSpeed) > 5;
         
-        // Отправляем если прошло >= 50ms ИЛИ скорость изменилась на >5%
-        if (timeSinceLastSend >= this.movementThrottle || speedChanged) {
+        // ВАЖНО: Всегда отправляем команду остановки (0, 0) чтобы предотвратить залипание
+        const isStopCommand = (leftSpeed === 0 && rightSpeed === 0);
+        const wasMoving = (this.lastLeftSpeed !== 0 || this.lastRightSpeed !== 0);
+        
+        // Отправляем если:
+        // 1. Это команда остановки после движения (предотвращает залипание)
+        // 2. Прошло >= 50ms с последней отправки
+        // 3. Скорость изменилась на >5%
+        if ((isStopCommand && wasMoving) || timeSinceLastSend >= this.movementThrottle || speedChanged) {
             this.sendCommand('move', {
                 left: Math.round(leftSpeed),
                 right: Math.round(rightSpeed)
