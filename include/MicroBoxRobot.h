@@ -118,6 +118,10 @@ private:
     int currentRightSpeed;
     unsigned long lastMotorCommandTime;  // Watchdog для автоостановки
     
+    // Целевые значения PWM (записываются из HTTP handler, применяются в loop)
+    volatile int targetThrottlePWM;
+    volatile int targetSteeringPWM;
+    
 #if defined(FEATURE_NEOPIXEL) || defined(FEATURE_BUZZER)
     // Состояние эффектов
     unsigned long lastEffectUpdate;

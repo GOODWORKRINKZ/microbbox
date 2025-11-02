@@ -23,6 +23,8 @@ MicroBoxRobot::MicroBoxRobot() :
     currentLeftSpeed(0),
     currentRightSpeed(0),
     lastMotorCommandTime(0),
+    targetThrottlePWM(1500),
+    targetSteeringPWM(1500),
 #if defined(FEATURE_NEOPIXEL) || defined(FEATURE_BUZZER)
     lastEffectUpdate(0),
     effectState(false),
@@ -192,6 +194,17 @@ void MicroBoxRobot::loop() {
     if (firmwareUpdate && firmwareUpdate->isUpdating()) {
         firmwareUpdate->loop();
         return; // В режиме обновления не выполняем другие операции
+    }
+    
+    // ВАЖНО: Применение команд моторов (неблокирующее)
+    // HTTP handler только записывает targetThrottle/Steering, loop() применяет их
+    static int lastAppliedThrottle = 1500;
+    static int lastAppliedSteering = 1500;
+    
+    if (targetThrottlePWM != lastAppliedThrottle || targetSteeringPWM != lastAppliedSteering) {
+        setMotorPWM(targetThrottlePWM, targetSteeringPWM);
+        lastAppliedThrottle = targetThrottlePWM;
+        lastAppliedSteering = targetSteeringPWM;
     }
     
     // ВАЖНО: Motor Watchdog - автоматическая остановка если команды не приходят
@@ -526,6 +539,23 @@ void MicroBoxRobot::initWebServer() {
     // Главная страница
     server->on("/", HTTP_GET, [this](AsyncWebServerRequest *request) {
         this->handleRoot(request);
+    });
+    
+    // БЫСТРЫЙ GET endpoint для управления моторами (оптимизация производительности)
+    // Использование: /move?t=1500&s=1500
+    // t = throttle (1000-2000), s = steering (1000-2000)
+    server->on("/move", HTTP_GET, [this](AsyncWebServerRequest *request) {
+        if (request->hasParam("t") && request->hasParam("s")) {
+            // Просто записываем значения (неблокирующая операция)
+            this->targetThrottlePWM = request->getParam("t")->value().toInt();
+            this->targetSteeringPWM = request->getParam("s")->value().toInt();
+            this->lastMotorCommandTime = millis();
+            
+            // Мгновенный ответ без обработки
+            request->send(200, "text/plain", "OK");
+        } else {
+            request->send(400, "text/plain", "Missing parameters");
+        }
     });
     
     // API команды - тестовый GET для отладки

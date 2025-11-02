@@ -191,10 +191,10 @@ class MicroBoxController {
             lastSentThrottle: 1500,  // Последнее отправленное
             lastSentSteering: 1500,  // Последнее отправленное
             lastSendTime: 0,         // Время последней отправки
-            sendInterval: 150,       // Интервал отправки (мс) - получим с сервера
-            commandTimeout: 250,     // Таймаут на сервере (мс) - получим с сервера
+            sendInterval: 250,       // Интервал отправки (мс) - получим с сервера
+            commandTimeout: 500,     // Таймаут на сервере (мс) - получим с сервера
             isSending: false,        // Флаг: выполняется ли отправка прямо сейчас
-            fetchTimeout: 200        // Таймаут HTTP запроса (мс)
+            fetchTimeout: 150        // Таймаут HTTP запроса (мс)
         };
         
         this.init();
@@ -852,6 +852,42 @@ class MicroBoxController {
         this.commandController.targetSteering = Math.max(1000, Math.min(2000, steering));
         
         // Команда будет отправлена автоматически из главного цикла
+    }
+
+    // БЫСТРЫЙ метод отправки команд движения через GET (оптимизация)
+    async sendMoveCommand(throttle, steering) {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), this.commandController.fetchTimeout);
+        
+        try {
+            // GET запрос намного быстрее - нет парсинга JSON на сервере
+            const response = await fetch(`/move?t=${throttle}&s=${steering}`, {
+                method: 'GET',
+                signal: controller.signal
+            });
+            
+            clearTimeout(timeoutId);
+            
+            if (response.ok) {
+                this.updateConnectionStatus(true);
+                return true;
+            } else {
+                this.updateConnectionStatus(false);
+                console.error('Ошибка команды движения:', response.statusText);
+                return false;
+            }
+        } catch (error) {
+            clearTimeout(timeoutId);
+            
+            if (error.name === 'AbortError') {
+                console.warn(`Команда движения превысила таймаут ${this.commandController.fetchTimeout}мс`);
+            } else {
+                console.error('Ошибка соединения:', error);
+            }
+            
+            this.updateConnectionStatus(false);
+            return false;
+        }
     }
 
     async sendCommand(command, data = {}) {
@@ -2557,12 +2593,15 @@ class MicroBoxController {
                 
                 if (shouldSend) {
                     this.commandController.isSending = true;
-                    this.sendCommand('move', {
-                        throttle: this.commandController.targetThrottle,
-                        steering: this.commandController.targetSteering
-                    }).finally(() => {
+                    
+                    // Используем быстрый GET запрос вместо POST
+                    this.sendMoveCommand(
+                        this.commandController.targetThrottle,
+                        this.commandController.targetSteering
+                    ).finally(() => {
                         this.commandController.isSending = false;
                     });
+                    
                     this.commandController.lastSentThrottle = this.commandController.targetThrottle;
                     this.commandController.lastSentSteering = this.commandController.targetSteering;
                     this.commandController.lastSendTime = now;
