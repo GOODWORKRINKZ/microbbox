@@ -912,44 +912,48 @@ void MicroBoxRobot::initWebServer() {
                 }
                 
                 // Выполняем тест
-                int speed = 50; // 50% мощности для теста
+                int speed = 100; // 100% мощности для теста
                 if (direction == "backward") {
                     speed = -speed;
                 }
                 
+                // Логируем текущие настройки моторов для визуальной обратной связи
+                DEBUG_PRINTLN("========== НАСТРОЙКИ МОТОРОВ ==========");
+                if (wifiSettings) {
+                    DEBUG_PRINT("Смена местами лево/право: ");
+                    DEBUG_PRINTLN(wifiSettings->getMotorSwapLeftRight() ? "ДА" : "НЕТ");
+                    DEBUG_PRINT("Инверсия левого мотора: ");
+                    DEBUG_PRINTLN(wifiSettings->getMotorInvertLeft() ? "ДА" : "НЕТ");
+                    DEBUG_PRINT("Инверсия правого мотора: ");
+                    DEBUG_PRINTLN(wifiSettings->getMotorInvertRight() ? "ДА" : "НЕТ");
+                } else {
+                    DEBUG_PRINTLN("WiFiSettings не инициализирован");
+                }
+                DEBUG_PRINT("Тестируемый мотор: ");
+                DEBUG_PRINTLN(motor);
+                DEBUG_PRINT("Направление: ");
+                DEBUG_PRINTLN(direction);
+                DEBUG_PRINT("Мощность: ");
+                DEBUG_PRINT(abs(speed));
+                DEBUG_PRINTLN("%");
+                DEBUG_PRINTLN("=======================================");
+                
                 if (motor == "left") {
-                    // Временно отключаем применение настроек для прямого теста
-                    // Тестируем напрямую левый мотор
-                    int leftPWM = map(abs(speed), 0, 100, 0, 8191);
-                    if (speed > 0) {
-                        ledcWrite(MOTOR_PWM_CHANNEL_LF, leftPWM);
-                        ledcWrite(MOTOR_PWM_CHANNEL_LR, 0);
-                    } else {
-                        ledcWrite(MOTOR_PWM_CHANNEL_LF, 0);
-                        ledcWrite(MOTOR_PWM_CHANNEL_LR, leftPWM);
-                    }
+                    // Тестируем левый мотор с применением настроек
+                    setMotorSpeed(speed, 0);
                     // Останавливаем через 1 секунду
                     delay(1000);
-                    ledcWrite(MOTOR_PWM_CHANNEL_LF, 0);
-                    ledcWrite(MOTOR_PWM_CHANNEL_LR, 0);
+                    setMotorSpeed(0, 0);
                     
-                    request->send(200, "application/json", "{\"status\":\"ok\",\"message\":\"Левый мотор протестирован: " + direction + "\"}");
+                    request->send(200, "application/json", "{\"status\":\"ok\",\"message\":\"Левый мотор протестирован: " + direction + " (настройки применены)\"}");
                 } else if (motor == "right") {
-                    // Тестируем напрямую правый мотор
-                    int rightPWM = map(abs(speed), 0, 100, 0, 8191);
-                    if (speed > 0) {
-                        ledcWrite(MOTOR_PWM_CHANNEL_RR, rightPWM);
-                        ledcWrite(MOTOR_PWM_CHANNEL_RF, 0);
-                    } else {
-                        ledcWrite(MOTOR_PWM_CHANNEL_RR, 0);
-                        ledcWrite(MOTOR_PWM_CHANNEL_RF, rightPWM);
-                    }
+                    // Тестируем правый мотор с применением настроек
+                    setMotorSpeed(0, speed);
                     // Останавливаем через 1 секунду
                     delay(1000);
-                    ledcWrite(MOTOR_PWM_CHANNEL_RR, 0);
-                    ledcWrite(MOTOR_PWM_CHANNEL_RF, 0);
+                    setMotorSpeed(0, 0);
                     
-                    request->send(200, "application/json", "{\"status\":\"ok\",\"message\":\"Правый мотор протестирован: " + direction + "\"}");
+                    request->send(200, "application/json", "{\"status\":\"ok\",\"message\":\"Правый мотор протестирован: " + direction + " (настройки применены)\"}");
                 } else {
                     request->send(400, "application/json", "{\"status\":\"error\",\"message\":\"Неверный параметр motor\"}");
                 }
