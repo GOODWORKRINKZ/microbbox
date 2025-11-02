@@ -595,7 +595,6 @@ body {
     justify-content: center;
     align-items: center;
     z-index: 1000;
-    overflow-y: auto;
 }
 
 .modal-content {
@@ -748,7 +747,7 @@ body {
 }
 
 /* Range slider value display */
-#speedValue, #turnValue {
+.range-value {
     color: #00ff88;
     font-weight: bold;
     margin-left: 5px;

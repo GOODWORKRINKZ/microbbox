@@ -1727,13 +1727,19 @@ class MicroBoxController {
             btn.addEventListener('click', (e) => {
                 const targetTab = e.target.dataset.tab;
                 
+                // Validate tab exists
+                if (!targetTab) return;
+                
                 // Remove active class from all tabs and panes
                 document.querySelectorAll('.settings-tab').forEach(t => t.classList.remove('active'));
                 document.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active'));
                 
                 // Add active class to clicked tab and corresponding pane
                 e.target.classList.add('active');
-                document.getElementById(`tab-${targetTab}`).classList.add('active');
+                const targetPane = document.getElementById(`tab-${targetTab}`);
+                if (targetPane) {
+                    targetPane.classList.add('active');
+                }
             });
         });
         
