@@ -194,7 +194,7 @@ class MicroBoxController {
             sendInterval: 250,       // Интервал отправки (мс) - получим с сервера
             commandTimeout: 500,     // Таймаут на сервере (мс) - получим с сервера
             isSending: false,        // Флаг: выполняется ли отправка прямо сейчас
-            fetchTimeout: 150        // Таймаут HTTP запроса (мс)
+            fetchTimeout: 250        // Таймаут HTTP запроса (мс)
         };
         
         this.init();

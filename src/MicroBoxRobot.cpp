@@ -213,6 +213,11 @@ void MicroBoxRobot::loop() {
         if (currentLeftSpeed != 0 || currentRightSpeed != 0) {
             DEBUG_PRINTLN("⚠️ Motor Watchdog: Принудительная остановка (таймаут команд)");
             stopMotors();
+            // Сбрасываем target значения чтобы следующая команда с теми же значениями сработала
+            targetThrottlePWM = 1500;
+            targetSteeringPWM = 1500;
+            lastAppliedThrottle = 1500;
+            lastAppliedSteering = 1500;
         }
     }
     
@@ -1166,8 +1171,8 @@ void MicroBoxRobot::handleNotFound(AsyncWebServerRequest *request) {
 }
 
 void MicroBoxRobot::setMotorPWM(int throttlePWM, int steeringPWM) {
-    // Обновляем время последней команды (для motor watchdog)
-    lastMotorCommandTime = millis();
+    // ВАЖНО: lastMotorCommandTime обновляется в GET /move endpoint
+    // Здесь НЕ обновляем, чтобы watchdog следил за получением команд, а не за их применением
     
     // Ограничение входных значений PWM (1000-2000 мкс)
     throttlePWM = constrain(throttlePWM, 1000, 2000);
