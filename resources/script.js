@@ -192,7 +192,8 @@ class MicroBoxController {
             lastSentSteering: 1500,  // Последнее отправленное
             lastSendTime: 0,         // Время последней отправки
             sendInterval: 150,       // Интервал отправки (мс) - получим с сервера
-            commandTimeout: 250      // Таймаут на сервере (мс) - получим с сервера
+            commandTimeout: 250,     // Таймаут на сервере (мс) - получим с сервера
+            isSending: false         // Флаг: выполняется ли отправка прямо сейчас
         };
         
         this.init();
@@ -2521,29 +2522,36 @@ class MicroBoxController {
             this.processGamepad();
             
             // ВАЖНО: Command Controller - отправка команд с контролируемым интервалом
-            // Отправляем команды только если:
-            // 1. Прошло достаточно времени с последней отправки (sendInterval)
-            // 2. ИЛИ значения значительно изменились (>20 PWM)
-            // 3. ИЛИ нужно отправить команду остановки
-            const timeSinceSend = now - this.commandController.lastSendTime;
-            const throttleChanged = Math.abs(this.commandController.targetThrottle - this.commandController.lastSentThrottle) > 20;
-            const steeringChanged = Math.abs(this.commandController.targetSteering - this.commandController.lastSentSteering) > 20;
-            const isStopCommand = (this.commandController.targetThrottle === 1500 && this.commandController.targetSteering === 1500);
-            const wasMoving = (this.commandController.lastSentThrottle !== 1500 || this.commandController.lastSentSteering !== 1500);
-            
-            const shouldSend = timeSinceSend >= this.commandController.sendInterval || 
-                             throttleChanged || 
-                             steeringChanged ||
-                             (isStopCommand && wasMoving);
-            
-            if (shouldSend) {
-                this.sendCommand('move', {
-                    throttle: this.commandController.targetThrottle,
-                    steering: this.commandController.targetSteering
-                });
-                this.commandController.lastSentThrottle = this.commandController.targetThrottle;
-                this.commandController.lastSentSteering = this.commandController.targetSteering;
-                this.commandController.lastSendTime = now;
+            // НЕ отправляем если уже идёт отправка (ждём завершения предыдущего запроса)
+            if (!this.commandController.isSending) {
+                const timeSinceSend = now - this.commandController.lastSendTime;
+                const throttleChanged = Math.abs(this.commandController.targetThrottle - this.commandController.lastSentThrottle) > 20;
+                const steeringChanged = Math.abs(this.commandController.targetSteering - this.commandController.lastSentSteering) > 20;
+                const isStopCommand = (this.commandController.targetThrottle === 1500 && this.commandController.targetSteering === 1500);
+                const wasMoving = (this.commandController.lastSentThrottle !== 1500 || this.commandController.lastSentSteering !== 1500);
+                const isMovingNow = (this.commandController.targetThrottle !== 1500 || this.commandController.targetSteering !== 1500);
+                
+                // Отправляем если:
+                // 1. Моторы активны И прошёл интервал (периодическая отправка для watchdog)
+                // 2. ИЛИ значения изменились >20 PWM
+                // 3. ИЛИ команда остановки после движения (обязательно отправляем стоп)
+                const shouldSend = (isMovingNow && timeSinceSend >= this.commandController.sendInterval) || 
+                                 throttleChanged || 
+                                 steeringChanged ||
+                                 (isStopCommand && wasMoving);
+                
+                if (shouldSend) {
+                    this.commandController.isSending = true;
+                    this.sendCommand('move', {
+                        throttle: this.commandController.targetThrottle,
+                        steering: this.commandController.targetSteering
+                    }).finally(() => {
+                        this.commandController.isSending = false;
+                    });
+                    this.commandController.lastSentThrottle = this.commandController.targetThrottle;
+                    this.commandController.lastSentSteering = this.commandController.targetSteering;
+                    this.commandController.lastSendTime = now;
+                }
             }
             
             // Проверка соединения - каждые 5 секунд
