@@ -608,6 +608,64 @@ body {
     position: relative;
 }
 
+/* Settings modal with tabs */
+.settings-modal {
+    max-width: 700px;
+    max-height: 90vh;
+}
+
+/* Tabs navigation */
+.settings-tabs {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-bottom: 20px;
+    border-bottom: 2px solid rgba(255, 255, 255, 0.2);
+    padding-bottom: 10px;
+}
+
+.settings-tab {
+    background: rgba(255, 255, 255, 0.1);
+    border: none;
+    color: white;
+    padding: 10px 15px;
+    border-radius: 8px 8px 0 0;
+    cursor: pointer;
+    transition: all 0.3s;
+    font-size: 14px;
+    flex: 1;
+    min-width: 120px;
+}
+
+.settings-tab:hover {
+    background: rgba(255, 255, 255, 0.2);
+}
+
+.settings-tab.active {
+    background: linear-gradient(145deg, #00ff88, #00cc66);
+    color: black;
+    font-weight: bold;
+}
+
+/* Tab content */
+.settings-tab-content {
+    min-height: 300px;
+}
+
+.tab-pane {
+    display: none;
+}
+
+.tab-pane.active {
+    display: block;
+    animation: fadeIn 0.3s;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
 .close {
     position: absolute;
     top: 10px;
@@ -627,18 +685,72 @@ body {
 
 .settings-section h3 {
     color: #00ff88;
+    margin-bottom: 15px;
+    font-size: 1.2em;
+}
+
+.settings-section h4 {
+    color: #00ff88;
+    margin-top: 20px;
     margin-bottom: 10px;
+    font-size: 1em;
 }
 
 .settings-section label {
     display: block;
-    margin-bottom: 8px;
+    margin-bottom: 12px;
     cursor: pointer;
+    font-size: 14px;
 }
 
 .settings-section input[type="range"] {
     width: 100%;
-    margin-left: 10px;
+    margin-top: 5px;
+}
+
+.settings-help {
+    font-size: 0.9em;
+    color: rgba(255, 255, 255, 0.7);
+    margin-bottom: 15px;
+    line-height: 1.4;
+}
+
+.settings-help-small {
+    font-size: 0.85em;
+    color: rgba(255, 255, 255, 0.6);
+    margin: 10px 0 0 0;
+    line-height: 1.3;
+}
+
+/* Motor test box */
+.motor-test-box {
+    background: rgba(0, 0, 0, 0.3);
+    padding: 15px;
+    border-radius: 8px;
+    margin-bottom: 20px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.motor-test-box h4 {
+    margin: 0 0 10px 0;
+    color: #00ff88;
+}
+
+.motor-test-radios {
+    margin-bottom: 10px;
+}
+
+.motor-test-radios label {
+    display: inline-block;
+    margin-right: 20px;
+    margin-bottom: 5px;
+}
+
+/* Range slider value display */
+.range-value {
+    color: #00ff88;
+    font-weight: bold;
+    margin-left: 5px;
 }
 
 .btn-primary {
@@ -761,6 +873,58 @@ body {
 @media (min-width: 769px) {
     .header h1 {
         font-size: 1.5em;
+    }
+    
+    .settings-modal {
+        max-width: 700px;
+    }
+}
+
+/* Mobile settings modal */
+@media (max-width: 768px) {
+    .modal-content {
+        padding: 20px;
+        max-height: 95vh;
+        width: 95%;
+    }
+    
+    .settings-modal {
+        max-width: 100%;
+    }
+    
+    .settings-modal h2 {
+        font-size: 1.3em;
+        margin-bottom: 15px;
+    }
+    
+    .settings-tabs {
+        gap: 5px;
+        padding-bottom: 8px;
+    }
+    
+    .settings-tab {
+        padding: 8px 10px;
+        font-size: 12px;
+        min-width: 70px;
+        flex: 1 1 45%;
+    }
+    
+    .settings-section h3 {
+        font-size: 1.1em;
+    }
+    
+    .settings-section label {
+        font-size: 13px;
+    }
+    
+    .motor-test-box {
+        padding: 12px;
+    }
+    
+    .motor-test-radios label {
+        display: block;
+        margin-right: 0;
+        margin-bottom: 8px;
     }
 }
 
