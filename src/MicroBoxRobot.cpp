@@ -1164,9 +1164,11 @@ void MicroBoxRobot::setMotorPWM(int throttlePWM, int steeringPWM) {
         }
     }
     
-    // 5. Преобразование в PWM значения (0-8191 для 13-битного разрешения)
-    int leftPWM = map(abs(leftSpeed), 0, 100, 0, 8191);
-    int rightPWM = map(abs(rightSpeed), 0, 100, 0, 8191);
+    // 5. Преобразование в PWM значения с учетом ограничения мощности
+    // Рассчитываем максимальное PWM значение на основе настройки защиты (80% от 8191)
+    const int MAX_PWM = (int)(8191 * MOTOR_MAX_POWER_PERCENT / 100.0);
+    int leftPWM = map(abs(leftSpeed), 0, 100, 0, MAX_PWM);
+    int rightPWM = map(abs(rightSpeed), 0, 100, 0, MAX_PWM);
     
     // 6. Управление моторами через H-мост (MX1508)
     // Левый мотор
