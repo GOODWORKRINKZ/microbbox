@@ -496,7 +496,13 @@ class MicroBoxController {
             helpBtn.addEventListener('click', () => this.showHelp());
         }
 
-        // Настройки
+        // Настройки для ПК
+        const pcSettingsBtn = document.getElementById('pcSettingsBtn');
+        if (pcSettingsBtn) {
+            pcSettingsBtn.addEventListener('click', () => this.showSettings());
+        }
+
+        // Настройки для мобильных
         const settingsBtn = document.getElementById('mobileSettings');
         if (settingsBtn) {
             settingsBtn.addEventListener('click', () => this.showSettings());
@@ -506,6 +512,12 @@ class MicroBoxController {
         const vrDebugBtn = document.getElementById('vrDebugBtn');
         if (vrDebugBtn) {
             vrDebugBtn.addEventListener('click', () => this.sendVRDebugLog());
+        }
+        
+        // VR Settings кнопка
+        const vrSettingsBtn = document.getElementById('vrSettingsBtn');
+        if (vrSettingsBtn) {
+            vrSettingsBtn.addEventListener('click', () => this.showSettings());
         }
         
         // VR Debug закрыть
@@ -1709,6 +1721,39 @@ class MicroBoxController {
             });
         }
         
+        // Tab switching
+        const tabButtons = document.querySelectorAll('.settings-tab');
+        tabButtons.forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const targetTab = e.target.dataset.tab;
+                
+                // Remove active class from all tabs and panes
+                document.querySelectorAll('.settings-tab').forEach(t => t.classList.remove('active'));
+                document.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active'));
+                
+                // Add active class to clicked tab and corresponding pane
+                e.target.classList.add('active');
+                document.getElementById(`tab-${targetTab}`).classList.add('active');
+            });
+        });
+        
+        // Range slider value display
+        const speedSlider = document.getElementById('speedSensitivity');
+        const speedValue = document.getElementById('speedValue');
+        if (speedSlider && speedValue) {
+            speedSlider.addEventListener('input', (e) => {
+                speedValue.textContent = e.target.value;
+            });
+        }
+        
+        const turnSlider = document.getElementById('turnSensitivity');
+        const turnValue = document.getElementById('turnValue');
+        if (turnSlider && turnValue) {
+            turnSlider.addEventListener('input', (e) => {
+                turnValue.textContent = e.target.value;
+            });
+        }
+        
         // Кнопка сохранения настроек
         const saveBtn = document.getElementById('saveSettings');
         if (saveBtn) {
@@ -1861,11 +1906,25 @@ class MicroBoxController {
             modal.classList.remove('hidden');
             
             // Загрузить текущие настройки
-            document.getElementById('speedSensitivity').value = this.speedSensitivity;
-            document.getElementById('turnSensitivity').value = this.turnSensitivity;
+            const speedSlider = document.getElementById('speedSensitivity');
+            const speedValue = document.getElementById('speedValue');
+            if (speedSlider && speedValue) {
+                speedSlider.value = this.speedSensitivity;
+                speedValue.textContent = this.speedSensitivity;
+            }
+            
+            const turnSlider = document.getElementById('turnSensitivity');
+            const turnValue = document.getElementById('turnValue');
+            if (turnSlider && turnValue) {
+                turnSlider.value = this.turnSensitivity;
+                turnValue.textContent = this.turnSensitivity;
+            }
             
             // Установить текущий режим эффектов
-            document.querySelector('input[name="effectMode"][value="' + this.effectMode + '"]').checked = true;
+            const effectRadio = document.querySelector('input[name="effectMode"][value="' + this.effectMode + '"]');
+            if (effectRadio) {
+                effectRadio.checked = true;
+            }
             
             // Загрузить статус WiFi
             this.loadWiFiStatus();

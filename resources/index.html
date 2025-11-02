@@ -101,6 +101,7 @@
 
                 <div class="control-section">
                     <h3>Дополнительно</h3>
+                    <button id="pcSettingsBtn" class="feature-btn">⚙️ Настройки</button>
                     <button id="flashlightBtn" class="feature-btn">💡 Фонарик</button>
                     <button id="hornBtn" class="feature-btn">🔊 Сигнал</button>
                     <button id="updateBtn" class="feature-btn update-btn">🔄 Обновление</button>
@@ -125,14 +126,10 @@
                 <span class="joystick-label">Скорость</span>
             </div>
 
-            <!-- Мобильная панель режимов -->
+            <!-- Мобильная панель - упрощенная и функциональная -->
             <div class="mobile-panel">
-                <button id="mobileSettings" class="panel-btn">⚙️</button>
-                <button id="mobileFlashlight" class="panel-btn">💡</button>
-                <button id="mobileHorn" class="panel-btn">🔊</button>
-                <button id="mobileEffects" class="panel-btn">✨</button>
-                <button id="mobileUpdate" class="panel-btn">🔄</button>
-                <button id="mobileHelp" class="panel-btn">❓</button>
+                <button id="mobileSettings" class="panel-btn" title="Настройки">⚙️</button>
+                <button id="mobileHelp" class="panel-btn" title="Справка">❓</button>
             </div>
         </div>
 
@@ -145,6 +142,7 @@
                     <span id="vrStatus">Поиск контроллеров...</span>
                 </div>
                 <div class="vr-buttons">
+                    <button id="vrSettingsBtn" class="vr-debug-btn">⚙️ Settings</button>
                     <button id="vrDebugBtn" class="vr-debug-btn">🔍 Debug Info</button>
                     <button id="vrLiveLogBtn" class="vr-debug-btn">📊 Live Log</button>
                 </div>
@@ -169,146 +167,160 @@
             </div>
         </div>
 
-        <!-- Модальное окно настроек -->
+        <!-- Модальное окно настроек с табами -->
         <div id="settingsModal" class="modal hidden">
-            <div class="modal-content">
+            <div class="modal-content settings-modal">
                 <span class="close">&times;</span>
-                <h2>Настройки МикРоББокс</h2>
+                <h2>⚙️ Настройки МикРоББокс</h2>
                 
-                <div class="settings-section">
-                    <h3>Эффекты</h3>
-                    <label>
-                        <input type="radio" name="effectMode" value="normal" checked> Обычный
-                    </label>
-                    <label>
-                        <input type="radio" name="effectMode" value="police"> Полиция
-                    </label>
-                    <label>
-                        <input type="radio" name="effectMode" value="fire"> Пожарные
-                    </label>
-                    <label>
-                        <input type="radio" name="effectMode" value="ambulance"> Скорая помощь
-                    </label>
-                    <label>
-                        <input type="radio" name="effectMode" value="terminator"> T-800 (Терминатор) 🤖
-                    </label>
+                <!-- Вкладки навигации -->
+                <div class="settings-tabs">
+                    <button class="settings-tab active" data-tab="effects">✨ Эффекты</button>
+                    <button class="settings-tab" data-tab="motors">🚗 Моторы</button>
+                    <button class="settings-tab" data-tab="wifi">📶 WiFi</button>
+                    <button class="settings-tab" data-tab="updates">🔄 Обновления</button>
                 </div>
 
-                <div class="settings-section">
-                    <h3>Чувствительность</h3>
-                    <label>Скорость движения: <input type="range" id="speedSensitivity" min="50" max="100" value="80"></label>
-                    <label>Чувствительность поворота: <input type="range" id="turnSensitivity" min="50" max="100" value="70"></label>
-                </div>
-
-                <div class="settings-section">
-                    <h3>WiFi настройки</h3>
-                    <div id="wifiStatus" class="wifi-status"></div>
-                    <label>
-                        Режим:
-                        <select id="wifiMode">
-                            <option value="CLIENT">Подключение к сети (Client)</option>
-                            <option value="AP">Точка доступа (AP)</option>
-                        </select>
-                    </label>
-                    <label>
-                        SSID сети:
-                        <input type="text" id="wifiSSID" placeholder="Имя WiFi сети">
-                    </label>
-                    <label>
-                        Пароль:
-                        <input type="password" id="wifiPassword" placeholder="Пароль сети">
-                    </label>
-                    <button id="saveWiFi" class="btn-secondary">Сохранить WiFi</button>
-                    <button id="restartDevice" class="btn-danger">Перезагрузить устройство</button>
-                </div>
-
-                <div class="settings-section">
-                    <h3>⚙️ Настройка колес</h3>
-                    <p style="font-size: 0.9em; color: #888; margin-bottom: 15px;">
-                        Используйте кнопки тестирования, чтобы определить правильные настройки для ваших моторов
-                    </p>
-                    
-                    <div style="margin-bottom: 20px; padding: 15px; background: #f5f5f5; border-radius: 5px;">
-                        <h4 style="margin-top: 0;">Тест моторов</h4>
-                        <div style="margin-bottom: 10px;">
-                            <label style="display: inline-block; margin-right: 20px;">
-                                <input type="radio" name="testMotor" value="left" checked> Левый мотор
+                <!-- Контент вкладок -->
+                <div class="settings-tab-content">
+                    <!-- Вкладка: Эффекты -->
+                    <div class="tab-pane active" id="tab-effects">
+                        <div class="settings-section">
+                            <h3>Световые эффекты</h3>
+                            <label>
+                                <input type="radio" name="effectMode" value="normal" checked> Обычный
                             </label>
-                            <label style="display: inline-block;">
-                                <input type="radio" name="testMotor" value="right"> Правый мотор
+                            <label>
+                                <input type="radio" name="effectMode" value="police"> 🚔 Полиция
+                            </label>
+                            <label>
+                                <input type="radio" name="effectMode" value="fire"> 🚒 Пожарные
+                            </label>
+                            <label>
+                                <input type="radio" name="effectMode" value="ambulance"> 🚑 Скорая помощь
+                            </label>
+                            <label>
+                                <input type="radio" name="effectMode" value="terminator"> 🤖 T-800 (Терминатор)
                             </label>
                         </div>
-                        <button id="testMotorBtn" class="btn-secondary" style="width: 100%;">▶️ Запустить тест (1 сек)</button>
-                        <p style="font-size: 0.85em; color: #666; margin: 10px 0 0 0;">
-                            Тест: полный газ вперёд + руль в сторону выбранного мотора
-                        </p>
-                    </div>
-                    
-                    <label>
-                        <input type="checkbox" id="motorSwapLeftRight"> Поменять местами левое и правое колеса
-                    </label>
-                    <label>
-                        <input type="checkbox" id="motorInvertLeft"> Инвертировать левое колесо
-                    </label>
-                    <label>
-                        <input type="checkbox" id="motorInvertRight"> Инвертировать правое колесо
-                    </label>
-                    
-                    <h4 style="margin-top: 20px;">Инверсия стиков управления</h4>
-                    <label>
-                        <input type="checkbox" id="invertThrottleStick"> Инвертировать газ (вперёд ⇄ назад)
-                    </label>
-                    <label>
-                        <input type="checkbox" id="invertSteeringStick"> Инвертировать руль (лево ⇄ право)
-                    </label>
-                    
-                    <button id="saveMotorConfig" class="btn-primary" style="margin-top: 15px;">Сохранить настройки моторов</button>
-                </div>
 
-                <div class="settings-section">
-                    <h3>🔄 Обновление прошивки</h3>
-                    <div id="updateInfo" class="update-info">
-                        <p>Текущая версия: <strong id="currentVersion">Загрузка...</strong></p>
-                        <p id="releaseName"></p>
+                        <div class="settings-section">
+                            <h3>Чувствительность управления</h3>
+                            <label>
+                                Скорость движения: <span id="speedValue">80</span>%
+                                <input type="range" id="speedSensitivity" min="50" max="100" value="80">
+                            </label>
+                            <label>
+                                Чувствительность поворота: <span id="turnValue">70</span>%
+                                <input type="range" id="turnSensitivity" min="50" max="100" value="70">
+                            </label>
+                        </div>
+                        
+                        <button id="saveSettings" class="btn-primary">💾 Сохранить настройки</button>
                     </div>
-                    <div class="update-actions">
-                        <button id="checkUpdatesBtn" class="btn-secondary">Проверить обновления</button>
-                        <label class="update-checkbox">
-                            <input type="checkbox" id="autoUpdate"> Автоматически проверять обновления при запуске
-                        </label>
-                        <label class="update-checkbox">
-                            <input type="checkbox" id="dontOfferUpdates"> Не предлагать обновления
-                        </label>
-                    </div>
-                    <div id="updateAvailable" class="update-available hidden">
-                        <h4>Доступна новая версия!</h4>
-                        <p>Версия: <strong id="newVersion"></strong></p>
-                        <p id="newReleaseName"></p>
-                        <details>
-                            <summary>Что нового?</summary>
-                            <pre id="releaseNotes"></pre>
-                        </details>
-                        <button id="downloadUpdateBtn" class="btn-primary">Скачать обновление</button>
-                    </div>
-                    <!-- Ручная загрузка .bin файлов скрыта - используется только GitHub обновление -->
-                    <!-- 
-                    <div class="update-manual" style="display: none;">
-                        <h4>Или загрузить прошивку вручную:</h4>
-                        <input type="file" id="firmwareFile" accept=".bin" style="display:none">
-                        <button id="selectFirmwareBtn" class="btn-secondary">Выбрать файл .bin</button>
-                        <span id="selectedFileName"></span>
-                        <button id="uploadFirmwareBtn" class="btn-primary" disabled>Загрузить прошивку</button>
-                        <div id="uploadProgress" class="upload-progress hidden">
-                            <div class="progress-bar">
-                                <div id="progressFill" class="progress-fill"></div>
+
+                    <!-- Вкладка: Моторы -->
+                    <div class="tab-pane" id="tab-motors">
+                        <div class="settings-section">
+                            <h3>⚙️ Настройка моторов</h3>
+                            <p class="settings-help">
+                                Используйте тестирование, чтобы определить правильные настройки для ваших моторов
+                            </p>
+                            
+                            <div class="motor-test-box">
+                                <h4>Тест моторов</h4>
+                                <div class="motor-test-radios">
+                                    <label>
+                                        <input type="radio" name="testMotor" value="left" checked> Левый мотор
+                                    </label>
+                                    <label>
+                                        <input type="radio" name="testMotor" value="right"> Правый мотор
+                                    </label>
+                                </div>
+                                <button id="testMotorBtn" class="btn-secondary">▶️ Запустить тест (1 сек)</button>
+                                <p class="settings-help-small">
+                                    Тест: полный газ вперёд + руль в сторону выбранного мотора
+                                </p>
                             </div>
-                            <span id="progressText">0%</span>
+                            
+                            <h4>Настройки моторов</h4>
+                            <label>
+                                <input type="checkbox" id="motorSwapLeftRight"> Поменять местами левое и правое колеса
+                            </label>
+                            <label>
+                                <input type="checkbox" id="motorInvertLeft"> Инвертировать левое колесо
+                            </label>
+                            <label>
+                                <input type="checkbox" id="motorInvertRight"> Инвертировать правое колесо
+                            </label>
+                            
+                            <h4>Инверсия стиков управления</h4>
+                            <label>
+                                <input type="checkbox" id="invertThrottleStick"> Инвертировать газ (вперёд ⇄ назад)
+                            </label>
+                            <label>
+                                <input type="checkbox" id="invertSteeringStick"> Инвертировать руль (лево ⇄ право)
+                            </label>
+                            
+                            <button id="saveMotorConfig" class="btn-primary">💾 Сохранить настройки моторов</button>
                         </div>
                     </div>
-                    -->
-                </div>
 
-                <button id="saveSettings" class="btn-primary">Сохранить</button>
+                    <!-- Вкладка: WiFi -->
+                    <div class="tab-pane" id="tab-wifi">
+                        <div class="settings-section">
+                            <h3>📶 WiFi настройки</h3>
+                            <div id="wifiStatus" class="wifi-status"></div>
+                            <label>
+                                Режим:
+                                <select id="wifiMode">
+                                    <option value="CLIENT">📡 Подключение к сети (Client)</option>
+                                    <option value="AP">📶 Точка доступа (AP)</option>
+                                </select>
+                            </label>
+                            <label>
+                                SSID сети:
+                                <input type="text" id="wifiSSID" placeholder="Имя WiFi сети">
+                            </label>
+                            <label>
+                                Пароль:
+                                <input type="password" id="wifiPassword" placeholder="Пароль сети">
+                            </label>
+                            <button id="saveWiFi" class="btn-secondary">💾 Сохранить WiFi</button>
+                            <button id="restartDevice" class="btn-danger">🔄 Перезагрузить устройство</button>
+                        </div>
+                    </div>
+
+                    <!-- Вкладка: Обновления -->
+                    <div class="tab-pane" id="tab-updates">
+                        <div class="settings-section">
+                            <h3>🔄 Обновление прошивки</h3>
+                            <div id="updateInfo" class="update-info">
+                                <p>Текущая версия: <strong id="currentVersion">Загрузка...</strong></p>
+                                <p id="releaseName"></p>
+                            </div>
+                            <div class="update-actions">
+                                <button id="checkUpdatesBtn" class="btn-secondary">🔍 Проверить обновления</button>
+                                <label class="update-checkbox">
+                                    <input type="checkbox" id="autoUpdate"> Автоматически проверять обновления при запуске
+                                </label>
+                                <label class="update-checkbox">
+                                    <input type="checkbox" id="dontOfferUpdates"> Не предлагать обновления
+                                </label>
+                            </div>
+                            <div id="updateAvailable" class="update-available hidden">
+                                <h4>Доступна новая версия!</h4>
+                                <p>Версия: <strong id="newVersion"></strong></p>
+                                <p id="newReleaseName"></p>
+                                <details>
+                                    <summary>Что нового?</summary>
+                                    <pre id="releaseNotes"></pre>
+                                </details>
+                                <button id="downloadUpdateBtn" class="btn-primary">⬇️ Скачать обновление</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
 
