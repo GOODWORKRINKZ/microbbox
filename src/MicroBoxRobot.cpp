@@ -22,6 +22,7 @@ MicroBoxRobot::MicroBoxRobot() :
 #endif
     currentLeftSpeed(0),
     currentRightSpeed(0),
+    lastMotorCommandTime(0),
 #if defined(FEATURE_NEOPIXEL) || defined(FEATURE_BUZZER)
     lastEffectUpdate(0),
     effectState(false),
@@ -191,6 +192,15 @@ void MicroBoxRobot::loop() {
     if (firmwareUpdate && firmwareUpdate->isUpdating()) {
         firmwareUpdate->loop();
         return; // В режиме обновления не выполняем другие операции
+    }
+    
+    // ВАЖНО: Motor Watchdog - автоматическая остановка если команды не приходят
+    // Если прошло >MOTOR_COMMAND_TIMEOUT_MS с последней команды И моторы ещё крутятся - останавливаем
+    if (currentTime - lastMotorCommandTime > MOTOR_COMMAND_TIMEOUT_MS) {
+        if (currentLeftSpeed != 0 || currentRightSpeed != 0) {
+            DEBUG_PRINTLN("⚠️ Motor Watchdog: Принудительная остановка (таймаут команд)");
+            stopMotors();
+        }
     }
     
 #if defined(FEATURE_NEOPIXEL) || defined(FEATURE_BUZZER)
@@ -677,6 +687,14 @@ void MicroBoxRobot::initWebServer() {
         }
     );
     
+    // API конфигурации - получение параметров для клиента
+    server->on("/api/config", HTTP_GET, [](AsyncWebServerRequest *request) {
+        String json = "{";
+        json += "\"motorCommandTimeout\":" + String(MOTOR_COMMAND_TIMEOUT_MS);
+        json += "}";
+        request->send(200, "application/json", json);
+    });
+    
     // WiFi конфигурация - получение текущих настроек
     server->on("/api/wifi/status", HTTP_GET, [this](AsyncWebServerRequest *request) {
         String json = "{";
@@ -1118,6 +1136,9 @@ void MicroBoxRobot::handleNotFound(AsyncWebServerRequest *request) {
 }
 
 void MicroBoxRobot::setMotorPWM(int throttlePWM, int steeringPWM) {
+    // Обновляем время последней команды (для motor watchdog)
+    lastMotorCommandTime = millis();
+    
     // Ограничение входных значений PWM (1000-2000 мкс)
     throttlePWM = constrain(throttlePWM, 1000, 2000);
     steeringPWM = constrain(steeringPWM, 1000, 2000);

@@ -176,8 +176,6 @@ class MicroBoxController {
         this.vrGripPressed = false;
         this.vrButtonAPressed = false;
         this.vrButtonBPressed = false;
-        this.lastVRThrottle = 1500; // Центр PWM
-        this.lastVRSteering = 1500; // Центр PWM
         
         // T-800 overlay state
         this.t800Interval = null;
@@ -186,17 +184,25 @@ class MicroBoxController {
         // Help animation
         this.helpAnimationId = null;
         
-        // Throttling для команд движения (PWM формат)
-        this.lastMovementTime = 0;
-        this.lastThrottle = 1500; // Центр PWM
-        this.lastSteering = 1500; // Центр PWM
-        this.movementThrottle = 50; // мс между командами движения
+        // Command Controller - централизованная система отправки команд
+        this.commandController = {
+            targetThrottle: 1500,    // Целевое положение газа (PWM)
+            targetSteering: 1500,    // Целевое положение руля (PWM)
+            lastSentThrottle: 1500,  // Последнее отправленное
+            lastSentSteering: 1500,  // Последнее отправленное
+            lastSendTime: 0,         // Время последней отправки
+            sendInterval: 150,       // Интервал отправки (мс) - получим с сервера
+            commandTimeout: 250      // Таймаут на сервере (мс) - получим с сервера
+        };
         
         this.init();
     }
 
     async init() {
         console.log('Инициализация МикроББокс контроллера...');
+        
+        // Получаем конфигурацию с сервера
+        await this.loadServerConfig();
         
         // Определение типа устройства
         this.detectDeviceType();
@@ -233,6 +239,31 @@ class MicroBoxController {
         }, 5000);
         
         console.log('Инициализация завершена');
+    }
+    
+    async loadServerConfig() {
+        try {
+            Logger.info('Загрузка конфигурации с сервера...');
+            const response = await fetch('/api/config');
+            if (!response.ok) {
+                Logger.warn('Не удалось загрузить конфиг, используем значения по умолчанию');
+                return;
+            }
+            
+            const config = await response.json();
+            
+            // Обновляем параметры CommandController
+            if (config.motorCommandTimeout) {
+                this.commandController.commandTimeout = config.motorCommandTimeout;
+            }
+            
+            // Интервал отправки = 60% от таймаута (для запаса)
+            this.commandController.sendInterval = Math.floor(this.commandController.commandTimeout * 0.6);
+            
+            Logger.info(`Конфигурация загружена: timeout=${this.commandController.commandTimeout}ms, interval=${this.commandController.sendInterval}ms`);
+        } catch (error) {
+            Logger.error('Ошибка загрузки конфигурации:', error);
+        }
     }
     
     async checkVersionAfterUpdate() {
@@ -758,14 +789,12 @@ class MicroBoxController {
         if (left) steeringNorm = -1.0;
         if (right) steeringNorm = 1.0;
         
-        // Простое преобразование в PWM
+        // Простое преобразование в PWM и обновление командного контроллера
         const throttle = Math.round(1500 + (throttleNorm * 500 * this.speedSensitivity / 100));
         const steering = Math.round(1500 + (steeringNorm * 500 * this.turnSensitivity / 100));
         
-        this.sendMovementCommand(
-            Math.max(1000, Math.min(2000, throttle)),
-            Math.max(1000, Math.min(2000, steering))
-        );
+        this.commandController.targetThrottle = Math.max(1000, Math.min(2000, throttle));
+        this.commandController.targetSteering = Math.max(1000, Math.min(2000, steering));
     }
 
     handleControlButton(e, pressed) {
@@ -774,27 +803,39 @@ class MicroBoxController {
         if (pressed) {
             e.target.classList.add('active');
             
+            // Преобразуем в PWM (1000-2000, центр 1500)
+            const forwardPWM = Math.round(1500 + (500 * this.speedSensitivity / 100));
+            const backwardPWM = Math.round(1500 - (500 * this.speedSensitivity / 100));
+            const leftSteer = Math.round(1500 - (500 * this.turnSensitivity / 100));
+            const rightSteer = Math.round(1500 + (500 * this.turnSensitivity / 100));
+            
             switch (direction) {
                 case 'forward':
-                    this.sendMovementCommand(this.speedSensitivity, this.speedSensitivity);
+                    this.commandController.targetThrottle = forwardPWM;
+                    this.commandController.targetSteering = 1500;
                     break;
                 case 'backward':
-                    this.sendMovementCommand(-this.speedSensitivity, -this.speedSensitivity);
+                    this.commandController.targetThrottle = backwardPWM;
+                    this.commandController.targetSteering = 1500;
                     break;
                 case 'left':
-                    this.sendMovementCommand(-this.turnSensitivity, this.turnSensitivity);
+                    this.commandController.targetThrottle = 1500;
+                    this.commandController.targetSteering = leftSteer;
                     break;
                 case 'right':
-                    this.sendMovementCommand(this.turnSensitivity, -this.turnSensitivity);
+                    this.commandController.targetThrottle = 1500;
+                    this.commandController.targetSteering = rightSteer;
                     break;
                 case 'stop':
-                    this.sendMovementCommand(0, 0);
+                    this.commandController.targetThrottle = 1500;
+                    this.commandController.targetSteering = 1500;
                     break;
             }
         } else {
             e.target.classList.remove('active');
             if (direction !== 'stop') {
-                this.sendMovementCommand(0, 0);
+                this.commandController.targetThrottle = 1500;
+                this.commandController.targetSteering = 1500;
             }
         }
     }
@@ -804,40 +845,11 @@ class MicroBoxController {
         const throttle = Math.round(1500 + (this.rightJoystick.y * 500 * this.speedSensitivity / 100));
         const steering = Math.round(1500 + (this.leftJoystick.x * 500 * this.turnSensitivity / 100));
         
-        this.sendMovementCommand(
-            Math.max(1000, Math.min(2000, throttle)),
-            Math.max(1000, Math.min(2000, steering))
-        );
-    }
-
-    sendMovementCommand(throttle, steering) {
-        // Throttling: отправляем только если прошло достаточно времени
-        // или значения значительно изменились
-        const now = Date.now();
-        const timeSinceLastSend = now - this.lastMovementTime;
+        // Ограничение диапазона
+        this.commandController.targetThrottle = Math.max(1000, Math.min(2000, throttle));
+        this.commandController.targetSteering = Math.max(1000, Math.min(2000, steering));
         
-        // Проверяем изменение PWM значений (>10 мкс разница)
-        const throttleChanged = Math.abs(throttle - this.lastThrottle) > 10;
-        const steeringChanged = Math.abs(steering - this.lastSteering) > 10;
-        
-        // ВАЖНО: Всегда отправляем команду остановки (1500, 1500) чтобы предотвратить залипание
-        const isStopCommand = (throttle === 1500 && steering === 1500);
-        const wasMoving = (this.lastThrottle !== 1500 || this.lastSteering !== 1500);
-        
-        // Отправляем если:
-        // 1. Это команда остановки после движения (предотвращает залипание)
-        // 2. Прошло >= 50ms с последней отправки
-        // 3. PWM значение изменилось на >10 мкс
-        if ((isStopCommand && wasMoving) || timeSinceLastSend >= this.movementThrottle || throttleChanged || steeringChanged) {
-            this.sendCommand('move', {
-                throttle: throttle,
-                steering: steering
-            });
-            
-            this.lastMovementTime = now;
-            this.lastThrottle = throttle;
-            this.lastSteering = steering;
-        }
+        // Команда будет отправлена автоматически из главного цикла
     }
 
     async sendCommand(command, data = {}) {
@@ -1231,20 +1243,12 @@ class MicroBoxController {
         if (Math.abs(rightStick.x) < deadzone) rightStick.x = 0;
         if (Math.abs(rightStick.y) < deadzone) rightStick.y = 0;
         
-        // Простое преобразование стиков VR в PWM
+        // Простое преобразование стиков VR в PWM и обновление командного контроллера
         const throttle = Math.round(1500 + (-rightStick.y * 500 * this.speedSensitivity / 100));
         const steering = Math.round(1500 + (-leftStick.x * 500 * this.turnSensitivity / 100));
         
-        const throttleClamped = Math.max(1000, Math.min(2000, throttle));
-        const steeringClamped = Math.max(1000, Math.min(2000, steering));
-        
-        // Отправляем если есть изменения
-        if (Math.abs(throttleClamped - this.lastVRThrottle) > 10 || 
-            Math.abs(steeringClamped - this.lastVRSteering) > 10) {
-            this.sendMovementCommand(throttleClamped, steeringClamped);
-            this.lastVRThrottle = throttleClamped;
-            this.lastVRSteering = steeringClamped;
-        }
+        this.commandController.targetThrottle = Math.max(1000, Math.min(2000, throttle));
+        this.commandController.targetSteering = Math.max(1000, Math.min(2000, steering));
     }
 
     handleVRButtons(trigger, grip, buttonA, buttonB) {
@@ -1336,11 +1340,10 @@ class MicroBoxController {
         this.vrGripPressed = false;
         this.vrButtonAPressed = false;
         this.vrButtonBPressed = false;
-        this.lastVRThrottle = 1500;
-        this.lastVRSteering = 1500;
         
-        // Остановить робота (центр PWM = стоп)
-        this.sendMovementCommand(1500, 1500);
+        // Остановить робота (сброс командного контроллера)
+        this.commandController.targetThrottle = 1500;
+        this.commandController.targetSteering = 1500;
     }
 
     // Сбор VR диагностической информации
@@ -2512,11 +2515,38 @@ class MicroBoxController {
         let lastPingTime = 0;
         
         const loop = () => {
-            // Обработка геймпада
+            const now = Date.now();
+            
+            // Обработка геймпада (обновляет commandController.target*)
             this.processGamepad();
             
+            // ВАЖНО: Command Controller - отправка команд с контролируемым интервалом
+            // Отправляем команды только если:
+            // 1. Прошло достаточно времени с последней отправки (sendInterval)
+            // 2. ИЛИ значения значительно изменились (>20 PWM)
+            // 3. ИЛИ нужно отправить команду остановки
+            const timeSinceSend = now - this.commandController.lastSendTime;
+            const throttleChanged = Math.abs(this.commandController.targetThrottle - this.commandController.lastSentThrottle) > 20;
+            const steeringChanged = Math.abs(this.commandController.targetSteering - this.commandController.lastSentSteering) > 20;
+            const isStopCommand = (this.commandController.targetThrottle === 1500 && this.commandController.targetSteering === 1500);
+            const wasMoving = (this.commandController.lastSentThrottle !== 1500 || this.commandController.lastSentSteering !== 1500);
+            
+            const shouldSend = timeSinceSend >= this.commandController.sendInterval || 
+                             throttleChanged || 
+                             steeringChanged ||
+                             (isStopCommand && wasMoving);
+            
+            if (shouldSend) {
+                this.sendCommand('move', {
+                    throttle: this.commandController.targetThrottle,
+                    steering: this.commandController.targetSteering
+                });
+                this.commandController.lastSentThrottle = this.commandController.targetThrottle;
+                this.commandController.lastSentSteering = this.commandController.targetSteering;
+                this.commandController.lastSendTime = now;
+            }
+            
             // Проверка соединения - каждые 5 секунд
-            const now = Date.now();
             if (now - lastPingTime >= 5000) {
                 this.sendCommand('ping');
                 lastPingTime = now;

@@ -116,6 +116,7 @@ private:
     // Состояние моторов
     int currentLeftSpeed;
     int currentRightSpeed;
+    unsigned long lastMotorCommandTime;  // Watchdog для автоостановки
     
 #if defined(FEATURE_NEOPIXEL) || defined(FEATURE_BUZZER)
     // Состояние эффектов
