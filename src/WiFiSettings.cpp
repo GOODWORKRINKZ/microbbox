@@ -45,6 +45,10 @@ void WiFiSettings::loadDefaults() {
     motorInvertLeft = false;
     motorInvertRight = false;
     
+    // По умолчанию стики не инвертированы (нормальное управление)
+    invertThrottleStick = false;
+    invertSteeringStick = false;
+    
     DEBUG_PRINTLN("WiFiSettings::loadDefaults()");
     DEBUG_PRINT("  SSID: ");
     DEBUG_PRINTLN(ssid);
@@ -76,6 +80,10 @@ void WiFiSettings::loadFromMemory() {
         motorInvertLeft = preferences.getBool("motorInvL", false);
         motorInvertRight = preferences.getBool("motorInvR", false);
         
+        // Загружаем настройки инверсии стиков
+        invertThrottleStick = preferences.getBool("invThrottle", false);
+        invertSteeringStick = preferences.getBool("invSteering", false);
+        
         DEBUG_PRINTLN("  Загружены сохраненные настройки:");
         DEBUG_PRINT("    SSID: '"); DEBUG_PRINT(ssid); DEBUG_PRINTLN("'");
         DEBUG_PRINT("    Password length: "); DEBUG_PRINTLN(password.length());
@@ -84,6 +92,8 @@ void WiFiSettings::loadFromMemory() {
         DEBUG_PRINT("    Motor swap L/R: "); DEBUG_PRINTLN(motorSwapLeftRight ? "YES" : "NO");
         DEBUG_PRINT("    Motor invert L: "); DEBUG_PRINTLN(motorInvertLeft ? "YES" : "NO");
         DEBUG_PRINT("    Motor invert R: "); DEBUG_PRINTLN(motorInvertRight ? "YES" : "NO");
+        DEBUG_PRINT("    Invert Throttle: "); DEBUG_PRINTLN(invertThrottleStick ? "YES" : "NO");
+        DEBUG_PRINT("    Invert Steering: "); DEBUG_PRINTLN(invertSteeringStick ? "YES" : "NO");
         
         // ВАЖНО: Если SSID пустой - это значит старые битые настройки, сбрасываем!
         if (ssid.length() == 0) {
@@ -122,6 +132,14 @@ void WiFiSettings::setMotorInvertRight(bool value) {
     motorInvertRight = value;
 }
 
+void WiFiSettings::setInvertThrottleStick(bool value) {
+    invertThrottleStick = value;
+}
+
+void WiFiSettings::setInvertSteeringStick(bool value) {
+    invertSteeringStick = value;
+}
+
 bool WiFiSettings::save() {
     DEBUG_PRINTLN("WiFiSettings::save() - начало сохранения");
     DEBUG_PRINT("  SSID: '"); DEBUG_PRINT(ssid); DEBUG_PRINTLN("'");
@@ -131,6 +149,8 @@ bool WiFiSettings::save() {
     DEBUG_PRINT("  Motor swap L/R: "); DEBUG_PRINTLN(motorSwapLeftRight ? "YES" : "NO");
     DEBUG_PRINT("  Motor invert L: "); DEBUG_PRINTLN(motorInvertLeft ? "YES" : "NO");
     DEBUG_PRINT("  Motor invert R: "); DEBUG_PRINTLN(motorInvertRight ? "YES" : "NO");
+    DEBUG_PRINT("  Invert Throttle: "); DEBUG_PRINTLN(invertThrottleStick ? "YES" : "NO");
+    DEBUG_PRINT("  Invert Steering: "); DEBUG_PRINTLN(invertSteeringStick ? "YES" : "NO");
     
     // Сохраняем все настройки и проверяем результат каждой операции
     size_t w1 = preferences.putBool("initialized", true);
@@ -144,6 +164,10 @@ bool WiFiSettings::save() {
     size_t w7 = preferences.putBool("motorInvL", motorInvertLeft);
     size_t w8 = preferences.putBool("motorInvR", motorInvertRight);
     
+    // Сохраняем настройки инверсии стиков
+    size_t w9 = preferences.putBool("invThrottle", invertThrottleStick);
+    size_t w10 = preferences.putBool("invSteering", invertSteeringStick);
+    
     DEBUG_PRINT("  Записано байт - initialized: "); DEBUG_PRINTLN(w1);
     DEBUG_PRINT("  Записано байт - ssid: "); DEBUG_PRINTLN(w2);
     DEBUG_PRINT("  Записано байт - password: "); DEBUG_PRINTLN(w3);
@@ -152,6 +176,8 @@ bool WiFiSettings::save() {
     DEBUG_PRINT("  Записано байт - motorSwap: "); DEBUG_PRINTLN(w6);
     DEBUG_PRINT("  Записано байт - motorInvL: "); DEBUG_PRINTLN(w7);
     DEBUG_PRINT("  Записано байт - motorInvR: "); DEBUG_PRINTLN(w8);
+    DEBUG_PRINT("  Записано байт - invThrottle: "); DEBUG_PRINTLN(w9);
+    DEBUG_PRINT("  Записано байт - invSteering: "); DEBUG_PRINTLN(w10);
     
     // Принудительно сохраняем изменения (commit)
     bool committed = preferences.putBool("_commit", true);

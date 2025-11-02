@@ -551,9 +551,25 @@ void MicroBoxRobot::initWebServer() {
     // t = throttle (1000-2000), s = steering (1000-2000)
     server->on("/move", HTTP_GET, [this](AsyncWebServerRequest *request) {
         if (request->hasParam("t") && request->hasParam("s")) {
-            // Просто записываем значения (неблокирующая операция)
-            this->targetThrottlePWM = request->getParam("t")->value().toInt();
-            this->targetSteeringPWM = request->getParam("s")->value().toInt();
+            // Получаем значения
+            int throttle = request->getParam("t")->value().toInt();
+            int steering = request->getParam("s")->value().toInt();
+            
+            // Применяем инверсию стиков (если включено в настройках)
+            if (this->wifiSettings) {
+                if (this->wifiSettings->getInvertThrottleStick()) {
+                    // Инвертируем газ: 1000 <-> 2000, 1500 остаётся 1500
+                    throttle = 3000 - throttle;
+                }
+                if (this->wifiSettings->getInvertSteeringStick()) {
+                    // Инвертируем руль: 1000 <-> 2000, 1500 остаётся 1500
+                    steering = 3000 - steering;
+                }
+            }
+            
+            // Записываем значения (неблокирующая операция)
+            this->targetThrottlePWM = throttle;
+            this->targetSteeringPWM = steering;
             this->lastMotorCommandTime = millis();
             
             // Мгновенный ответ без обработки
@@ -723,9 +739,11 @@ void MicroBoxRobot::initWebServer() {
     );
     
     // API конфигурации - получение параметров для клиента
-    server->on("/api/config", HTTP_GET, [](AsyncWebServerRequest *request) {
+    server->on("/api/config", HTTP_GET, [this](AsyncWebServerRequest *request) {
         String json = "{";
         json += "\"motorCommandTimeout\":" + String(MOTOR_COMMAND_TIMEOUT_MS);
+        json += ",\"invertThrottleStick\":" + String(this->wifiSettings->getInvertThrottleStick() ? "true" : "false");
+        json += ",\"invertSteeringStick\":" + String(this->wifiSettings->getInvertSteeringStick() ? "true" : "false");
         json += "}";
         request->send(200, "application/json", json);
     });
@@ -862,7 +880,9 @@ void MicroBoxRobot::initWebServer() {
         if (wifiSettings) {
             json += "\"motorSwapLeftRight\":" + String(wifiSettings->getMotorSwapLeftRight() ? "true" : "false") + ",";
             json += "\"motorInvertLeft\":" + String(wifiSettings->getMotorInvertLeft() ? "true" : "false") + ",";
-            json += "\"motorInvertRight\":" + String(wifiSettings->getMotorInvertRight() ? "true" : "false");
+            json += "\"motorInvertRight\":" + String(wifiSettings->getMotorInvertRight() ? "true" : "false") + ",";
+            json += "\"invertThrottleStick\":" + String(wifiSettings->getInvertThrottleStick() ? "true" : "false") + ",";
+            json += "\"invertSteeringStick\":" + String(wifiSettings->getInvertSteeringStick() ? "true" : "false");
         }
         json += "}";
         request->send(200, "application/json", json);
@@ -907,6 +927,18 @@ void MicroBoxRobot::initWebServer() {
                         wifiSettings->setMotorInvertRight(false);
                     }
                     
+                    if (motorConfigBody.indexOf("\"invertThrottleStick\":true") >= 0) {
+                        wifiSettings->setInvertThrottleStick(true);
+                    } else if (motorConfigBody.indexOf("\"invertThrottleStick\":false") >= 0) {
+                        wifiSettings->setInvertThrottleStick(false);
+                    }
+                    
+                    if (motorConfigBody.indexOf("\"invertSteeringStick\":true") >= 0) {
+                        wifiSettings->setInvertSteeringStick(true);
+                    } else if (motorConfigBody.indexOf("\"invertSteeringStick\":false") >= 0) {
+                        wifiSettings->setInvertSteeringStick(false);
+                    }
+                    
                     // Сохраняем настройки
                     if (wifiSettings->save()) {
                         request->send(200, "application/json", "{\"status\":\"ok\",\"message\":\"Настройки моторов сохранены\"}");
@@ -923,99 +955,7 @@ void MicroBoxRobot::initWebServer() {
     );
     
     // Тест моторов - включает конкретный мотор на короткое время
-    server->on("/api/motor/test", HTTP_POST,
-        [this](AsyncWebServerRequest *request) {
-            // Ответ будет отправлен в onBody
-        },
-        NULL,
-        [this](AsyncWebServerRequest *request, uint8_t *data, size_t len, size_t index, size_t total) {
-            static String motorTestBody = "";
-            
-            // Добавляем полученный фрагмент
-            for (size_t i = 0; i < len; i++) {
-                motorTestBody += (char)data[i];
-            }
-            
-            // Если это последний фрагмент
-            if (index + len == total) {
-                DEBUG_PRINT("Тест мотора: ");
-                DEBUG_PRINTLN(motorTestBody);
-                
-                // Определяем какой мотор и направление тестировать
-                // Формат: {"motor": "left|right", "direction": "forward|backward"}
-                String motor = "";
-                String direction = "";
-                
-                int motorPos = motorTestBody.indexOf("\"motor\":\"");
-                if (motorPos >= 0) {
-                    int start = motorPos + 9;
-                    int end = motorTestBody.indexOf("\"", start);
-                    if (end > start) {
-                        motor = motorTestBody.substring(start, end);
-                    }
-                }
-                
-                int dirPos = motorTestBody.indexOf("\"direction\":\"");
-                if (dirPos >= 0) {
-                    int start = dirPos + 13;
-                    int end = motorTestBody.indexOf("\"", start);
-                    if (end > start) {
-                        direction = motorTestBody.substring(start, end);
-                    }
-                }
-                
-                // Выполняем тест
-                int speed = 100; // 100% мощности для теста
-                if (direction == "backward") {
-                    speed = -speed;
-                }
-                
-                // Логируем текущие настройки моторов для визуальной обратной связи
-                DEBUG_PRINTLN("========== НАСТРОЙКИ МОТОРОВ ==========");
-                if (wifiSettings) {
-                    DEBUG_PRINT("Смена местами лево/право: ");
-                    DEBUG_PRINTLN(wifiSettings->getMotorSwapLeftRight() ? "ДА" : "НЕТ");
-                    DEBUG_PRINT("Инверсия левого мотора: ");
-                    DEBUG_PRINTLN(wifiSettings->getMotorInvertLeft() ? "ДА" : "НЕТ");
-                    DEBUG_PRINT("Инверсия правого мотора: ");
-                    DEBUG_PRINTLN(wifiSettings->getMotorInvertRight() ? "ДА" : "НЕТ");
-                } else {
-                    DEBUG_PRINTLN("WiFiSettings не инициализирован");
-                }
-                DEBUG_PRINT("Тестируемый мотор: ");
-                DEBUG_PRINTLN(motor);
-                DEBUG_PRINT("Направление: ");
-                DEBUG_PRINTLN(direction);
-                DEBUG_PRINT("Мощность: ");
-                DEBUG_PRINT(abs(speed));
-                DEBUG_PRINTLN("%");
-                DEBUG_PRINTLN("=======================================");
-                
-                if (motor == "left") {
-                    // Тестируем левый мотор: throttle=1900 (80%), steering=1000 (полный влево)
-                    // Это заставит левый мотор вращаться вперед
-                    int testThrottle = (direction == "forward") ? 1900 : 1100;
-                    setMotorPWM(testThrottle, 1000); // Руль влево = левый мотор активен
-                    delay(1000);
-                    stopMotors();
-                    
-                    request->send(200, "application/json", "{\"status\":\"ok\",\"message\":\"Левый мотор: " + direction + "\"}");
-                } else if (motor == "right") {
-                    // Тестируем правый мотор: throttle=1900 (80%), steering=2000 (полный вправо)
-                    int testThrottle = (direction == "forward") ? 1900 : 1100;
-                    setMotorPWM(testThrottle, 2000); // Руль вправо = правый мотор активен
-                    delay(1000);
-                    stopMotors();
-                    
-                    request->send(200, "application/json", "{\"status\":\"ok\",\"message\":\"Правый мотор: " + direction + "\"}");
-                } else {
-                    request->send(400, "application/json", "{\"status\":\"error\",\"message\":\"Неверный параметр motor\"}");
-                }
-                
-                motorTestBody = "";
-            }
-        }
-    );
+
     
     // VR Debug логирование - POST JSON с диагностической информацией
     // ПРИМЕЧАНИЕ: Статическая переменная vrLogBody может вызвать проблемы при одновременных запросах.
@@ -1177,6 +1117,18 @@ void MicroBoxRobot::setMotorPWM(int throttlePWM, int steeringPWM) {
     // Ограничение входных значений PWM (1000-2000 мкс)
     throttlePWM = constrain(throttlePWM, 1000, 2000);
     steeringPWM = constrain(steeringPWM, 1000, 2000);
+    
+    // Применение инверсии стиков (если включено в настройках)
+    if (wifiSettings) {
+        if (wifiSettings->getInvertThrottleStick()) {
+            // Инвертируем газ: 1000 <-> 2000, 1500 остаётся 1500
+            throttlePWM = 3000 - throttlePWM;
+        }
+        if (wifiSettings->getInvertSteeringStick()) {
+            // Инвертируем руль: 1000 <-> 2000, 1500 остаётся 1500
+            steeringPWM = 3000 - steeringPWM;
+        }
+    }
     
     // 1. Нормализация PWM в диапазон -1.0 до +1.0 (центр 1500)
     float throttle_norm = (throttlePWM - 1500) / 500.0;

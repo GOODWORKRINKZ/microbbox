@@ -230,14 +230,17 @@
                     
                     <div style="margin-bottom: 20px; padding: 15px; background: #f5f5f5; border-radius: 5px;">
                         <h4 style="margin-top: 0;">Тест моторов</h4>
-                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px;">
-                            <button id="testLeftForward" class="btn-secondary" style="font-size: 0.9em;">⬆️ Левое вперед</button>
-                            <button id="testRightForward" class="btn-secondary" style="font-size: 0.9em;">⬆️ Правое вперед</button>
-                            <button id="testLeftBackward" class="btn-secondary" style="font-size: 0.9em;">⬇️ Левое назад</button>
-                            <button id="testRightBackward" class="btn-secondary" style="font-size: 0.9em;">⬇️ Правое назад</button>
+                        <div style="margin-bottom: 10px;">
+                            <label style="display: inline-block; margin-right: 20px;">
+                                <input type="radio" name="testMotor" value="left" checked> Левый мотор
+                            </label>
+                            <label style="display: inline-block;">
+                                <input type="radio" name="testMotor" value="right"> Правый мотор
+                            </label>
                         </div>
-                        <p style="font-size: 0.85em; color: #666; margin: 5px 0 0 0;">
-                            Каждая кнопка крутит соответствующее колесо 1 секунду
+                        <button id="testMotorBtn" class="btn-secondary" style="width: 100%;">▶️ Запустить тест (1 сек)</button>
+                        <p style="font-size: 0.85em; color: #666; margin: 10px 0 0 0;">
+                            Тест: полный газ вперёд + руль в сторону выбранного мотора
                         </p>
                     </div>
                     
@@ -249,6 +252,14 @@
                     </label>
                     <label>
                         <input type="checkbox" id="motorInvertRight"> Инвертировать правое колесо
+                    </label>
+                    
+                    <h4 style="margin-top: 20px;">Инверсия стиков управления</h4>
+                    <label>
+                        <input type="checkbox" id="invertThrottleStick"> Инвертировать газ (вперёд ⇄ назад)
+                    </label>
+                    <label>
+                        <input type="checkbox" id="invertSteeringStick"> Инвертировать руль (лево ⇄ право)
                     </label>
                     
                     <button id="saveMotorConfig" class="btn-primary" style="margin-top: 15px;">Сохранить настройки моторов</button>

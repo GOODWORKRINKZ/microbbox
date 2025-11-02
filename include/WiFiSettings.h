@@ -31,6 +31,10 @@ public:
     bool getMotorSwapLeftRight() const { return motorSwapLeftRight; }
     bool getMotorInvertLeft() const { return motorInvertLeft; }
     bool getMotorInvertRight() const { return motorInvertRight; }
+    
+    // Получение настроек инверсии стиков
+    bool getInvertThrottleStick() const { return invertThrottleStick; }
+    bool getInvertSteeringStick() const { return invertSteeringStick; }
 
     // Установка настроек
     void setSSID(const String& value);
@@ -42,6 +46,10 @@ public:
     void setMotorSwapLeftRight(bool value);
     void setMotorInvertLeft(bool value);
     void setMotorInvertRight(bool value);
+    
+    // Установка настроек инверсии стиков
+    void setInvertThrottleStick(bool value);
+    void setInvertSteeringStick(bool value);
 
     // Сохранение в память
     bool save();
@@ -64,6 +72,10 @@ private:
     bool motorSwapLeftRight;    // Поменять местами левый и правый моторы
     bool motorInvertLeft;       // Инвертировать направление левого мотора
     bool motorInvertRight;      // Инвертировать направление правого мотора
+    
+    // Настройки инверсии стиков
+    bool invertThrottleStick;   // Инвертировать стик газа (вперёд/назад)
+    bool invertSteeringStick;   // Инвертировать стик руля (лево/право)
 
     void loadDefaults();
     void loadFromMemory();

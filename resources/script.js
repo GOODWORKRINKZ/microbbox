@@ -1774,25 +1774,15 @@ class MicroBoxController {
             saveMotorConfigBtn.addEventListener('click', () => this.saveMotorConfig());
         }
         
-        // Кнопки тестирования моторов
-        const testLeftForwardBtn = document.getElementById('testLeftForward');
-        if (testLeftForwardBtn) {
-            testLeftForwardBtn.addEventListener('click', () => this.testMotor('left', 'forward'));
-        }
-        
-        const testLeftBackwardBtn = document.getElementById('testLeftBackward');
-        if (testLeftBackwardBtn) {
-            testLeftBackwardBtn.addEventListener('click', () => this.testMotor('left', 'backward'));
-        }
-        
-        const testRightForwardBtn = document.getElementById('testRightForward');
-        if (testRightForwardBtn) {
-            testRightForwardBtn.addEventListener('click', () => this.testMotor('right', 'forward'));
-        }
-        
-        const testRightBackwardBtn = document.getElementById('testRightBackward');
-        if (testRightBackwardBtn) {
-            testRightBackwardBtn.addEventListener('click', () => this.testMotor('right', 'backward'));
+        // Кнопка тестирования мотора (одна кнопка + радиокнопки для выбора)
+        const testMotorBtn = document.getElementById('testMotorBtn');
+        if (testMotorBtn) {
+            testMotorBtn.addEventListener('click', () => {
+                const selected = document.querySelector('input[name="testMotor"]:checked');
+                if (selected) {
+                    this.testMotor(selected.value);
+                }
+            });
         }
         
         // Help modal
@@ -2732,6 +2722,8 @@ class MicroBoxController {
                 document.getElementById('motorSwapLeftRight').checked = config.motorSwapLeftRight || false;
                 document.getElementById('motorInvertLeft').checked = config.motorInvertLeft || false;
                 document.getElementById('motorInvertRight').checked = config.motorInvertRight || false;
+                document.getElementById('invertThrottleStick').checked = config.invertThrottleStick || false;
+                document.getElementById('invertSteeringStick').checked = config.invertSteeringStick || false;
                 
                 console.log('Настройки моторов загружены:', config);
             }
@@ -2744,7 +2736,9 @@ class MicroBoxController {
         const config = {
             motorSwapLeftRight: document.getElementById('motorSwapLeftRight').checked,
             motorInvertLeft: document.getElementById('motorInvertLeft').checked,
-            motorInvertRight: document.getElementById('motorInvertRight').checked
+            motorInvertRight: document.getElementById('motorInvertRight').checked,
+            invertThrottleStick: document.getElementById('invertThrottleStick').checked,
+            invertSteeringStick: document.getElementById('invertSteeringStick').checked
         };
         
         try {
@@ -2767,45 +2761,60 @@ class MicroBoxController {
         }
     }
     
-    async testMotor(motor, direction) {
-        const testData = {
-            motor: motor,
-            direction: direction
-        };
-        
+    async testMotor(motor) {
         try {
-            // Отключаем кнопку на время теста
-            const buttonId = `test${motor.charAt(0).toUpperCase() + motor.slice(1)}${direction.charAt(0).toUpperCase() + direction.slice(1)}`;
-            const button = document.getElementById(buttonId);
-            if (button) {
-                button.disabled = true;
-                button.textContent = 'Тест...';
+            // Блокируем кнопку и радиокнопки на время теста
+            const testBtn = document.getElementById('testMotorBtn');
+            const radioButtons = document.querySelectorAll('input[name="testMotor"]');
+            
+            if (testBtn) {
+                testBtn.disabled = true;
+                testBtn.textContent = '⏳ Тестирование...';
+            }
+            radioButtons.forEach(radio => radio.disabled = true);
+            
+            // Определяем параметры для теста через /move
+            let throttle, steering;
+            if (motor === 'left') {
+                // Левый мотор: газ вперёд + руль влево
+                throttle = 2000; // Полный газ вперёд
+                steering = 1000; // Полный влево
+            } else {
+                // Правый мотор: газ вперёд + руль вправо  
+                throttle = 2000; // Полный газ вперёд
+                steering = 2000; // Полный вправо
             }
             
-            const response = await fetch('/api/motor/test', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(testData)
-            });
+            console.log(`Тест ${motor} мотора: /move?t=${throttle}&s=${steering}`);
             
-            if (response.ok) {
-                const result = await response.json();
-                console.log('Тест мотора:', result.message);
-            }
+            // Отправляем команду через GET /move
+            await fetch(`/move?t=${throttle}&s=${steering}`);
             
-            // Возвращаем кнопку в исходное состояние
-            if (button) {
-                setTimeout(() => {
-                    button.disabled = false;
-                    const arrow = direction === 'forward' ? '⬆️' : '⬇️';
-                    const motorName = motor === 'left' ? 'Левое' : 'Правое';
-                    const dirName = direction === 'forward' ? 'вперед' : 'назад';
-                    button.textContent = `${arrow} ${motorName} ${dirName}`;
-                }, 1200);
-            }
+            // Через 1 секунду останавливаем
+            setTimeout(async () => {
+                await fetch('/move?t=1500&s=1500');
+                console.log('Тест завершён, моторы остановлены');
+                
+                // Разблокируем элементы
+                if (testBtn) {
+                    testBtn.disabled = false;
+                    testBtn.textContent = '▶️ Запустить тест (1 сек)';
+                }
+                radioButtons.forEach(radio => radio.disabled = false);
+            }, 1000);
+            
         } catch (error) {
             console.error('Ошибка теста мотора:', error);
             alert('Ошибка теста мотора');
+            
+            // Разблокируем в случае ошибки
+            const testBtn = document.getElementById('testMotorBtn');
+            const radioButtons = document.querySelectorAll('input[name="testMotor"]');
+            if (testBtn) {
+                testBtn.disabled = false;
+                testBtn.textContent = '▶️ Запустить тест (1 сек)';
+            }
+            radioButtons.forEach(radio => radio.disabled = false);
         }
     }
 }
