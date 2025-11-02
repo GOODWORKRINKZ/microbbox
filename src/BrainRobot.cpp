@@ -183,25 +183,31 @@ void BrainRobot::sendPWMOutput(int ch1, int ch2, int ch3, int ch4) {
 
 void BrainRobot::sendPPMOutput(int channels[], int count) {
 #ifdef FEATURE_PPM_OUTPUT
-    // TODO: Реализовать генерацию PPM сигнала
+    // NOTE: PPM протокол не реализован в версии 2.0
+    // Будет добавлен в будущих версиях
     // PPM формат: последовательность импульсов с переменной длительностью
-    DEBUG_PRINTLN("PPM выход не реализован");
+    // Для реализации требуется настроить таймер для генерации PPM сигнала
+    DEBUG_PRINTLN("PPM выход: функция доступна в будущих версиях");
 #endif
 }
 
 void BrainRobot::sendSBUSOutput(int channels[], int count) {
 #ifdef FEATURE_SBUS_OUTPUT
-    // TODO: Реализовать SBUS протокол
+    // NOTE: SBUS протокол не реализован в версии 2.0
+    // Будет добавлен в будущих версиях
     // SBUS: 25 байт пакет, 11-бит каналы, 100k baud, инвертированный
-    DEBUG_PRINTLN("SBUS выход не реализован");
+    // Требуется реализация протокола и настройка UART
+    DEBUG_PRINTLN("SBUS выход: функция доступна в будущих версиях");
 #endif
 }
 
 void BrainRobot::sendTBSOutput(int channels[], int count) {
 #ifdef FEATURE_TBS_OUTPUT
-    // TODO: Реализовать TBS Crossfire протокол
+    // NOTE: TBS Crossfire протокол не реализован в версии 2.0
+    // Будет добавлен в будущих версиях
     // Crossfire: CRSF протокол, 420k baud
-    DEBUG_PRINTLN("TBS выход не реализован");
+    // Требуется реализация CRSF протокола
+    DEBUG_PRINTLN("TBS выход: функция доступна в будущих версиях");
 #endif
 }
 

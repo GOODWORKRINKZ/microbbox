@@ -222,10 +222,25 @@ float LinerRobot::detectLinePosition() {
         return 0.0f;
     }
     
+    // Проверка формата кадра
+    if (fb->format != PIXFORMAT_GRAYSCALE) {
+        DEBUG_PRINTLN("ПРЕДУПРЕЖДЕНИЕ: Камера не в режиме GRAYSCALE!");
+        esp_camera_fb_return(fb);
+        return 0.0f;
+    }
+    
+    // Проверка размера кадра
+    if (fb->width != LINE_CAMERA_WIDTH || fb->height != LINE_CAMERA_HEIGHT) {
+        DEBUG_PRINTF("ПРЕДУПРЕЖДЕНИЕ: Размер кадра %dx%d, ожидалось %dx%d\n", 
+                    fb->width, fb->height, LINE_CAMERA_WIDTH, LINE_CAMERA_HEIGHT);
+        esp_camera_fb_return(fb);
+        return 0.0f;
+    }
+    
     // Анализ изображения 96x96 grayscale
     // Ищем линию в нижней части изображения
-    int width = LINE_CAMERA_WIDTH;
-    int height = LINE_CAMERA_HEIGHT;
+    int width = fb->width;
+    int height = fb->height;
     int scanLine = height * 3 / 4; // Сканируем на 75% высоты
     
     uint8_t* img = fb->buf;
@@ -249,6 +264,7 @@ float LinerRobot::detectLinePosition() {
     
     if (count == 0) {
         // Линия не найдена
+        DEBUG_PRINTLN("ПРЕДУПРЕЖДЕНИЕ: Линия не обнаружена");
         return 0.0f;
     }
     
