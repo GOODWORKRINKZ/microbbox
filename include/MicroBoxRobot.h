@@ -38,12 +38,8 @@ public:
     // Камера
     bool initCamera();
 
-    // Моторы
-    void setMotorSpeed(int leftSpeed, int rightSpeed);  // -255 до 255
-    void moveForward(int speed);
-    void moveBackward(int speed);
-    void turnLeft(int speed);
-    void turnRight(int speed);
+    // Моторы (PWM формат 1000-2000 мкс, центр 1500)
+    void setMotorPWM(int throttlePWM, int steeringPWM);
     void stopMotors();
 
 #ifdef FEATURE_NEOPIXEL
@@ -73,7 +69,6 @@ public:
 
     // Управление
     void setControlMode(ControlMode mode);
-    void processControlInput(int leftX, int leftY, int rightX, int rightY);
 
     // Статус
     bool isInitialized() const { return initialized; }

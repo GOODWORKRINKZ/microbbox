@@ -826,7 +826,7 @@ body {
 
 .update-btn:hover {
     background: linear-gradient(145deg, #ff9900, #ff8800);
-}}
+}
 
 /* WiFi Settings Styles */
 .wifi-status {
@@ -1588,6 +1588,10 @@ body {
     align-items: center;
     color: #00ff88;
     font-family: 'Courier New', monospace;
+}
+
+.firmware-update-overlay.hidden {
+    display: none;
 }
 
 .firmware-update-overlay.glitch-effect {

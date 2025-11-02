@@ -176,8 +176,8 @@ class MicroBoxController {
         this.vrGripPressed = false;
         this.vrButtonAPressed = false;
         this.vrButtonBPressed = false;
-        this.lastVRLeftSpeed = 0;
-        this.lastVRRightSpeed = 0;
+        this.lastVRThrottle = 1500; // Центр PWM
+        this.lastVRSteering = 1500; // Центр PWM
         
         // T-800 overlay state
         this.t800Interval = null;
@@ -186,10 +186,10 @@ class MicroBoxController {
         // Help animation
         this.helpAnimationId = null;
         
-        // Throttling для команд движения
+        // Throttling для команд движения (PWM формат)
         this.lastMovementTime = 0;
-        this.lastLeftSpeed = 0;
-        this.lastRightSpeed = 0;
+        this.lastThrottle = 1500; // Центр PWM
+        this.lastSteering = 1500; // Центр PWM
         this.movementThrottle = 50; // мс между командами движения
         
         this.init();
@@ -744,8 +744,8 @@ class MicroBoxController {
     }
 
     updateMovementFromKeyboard() {
-        let leftSpeed = 0;
-        let rightSpeed = 0;
+        let throttleNorm = 0; // -1..+1
+        let steeringNorm = 0; // -1..+1
         
         // WASD или стрелки
         const forward = this.keyStates['KeyW'] || this.keyStates['ArrowUp'];
@@ -753,31 +753,19 @@ class MicroBoxController {
         const left = this.keyStates['KeyA'] || this.keyStates['ArrowLeft'];
         const right = this.keyStates['KeyD'] || this.keyStates['ArrowRight'];
         
-        if (forward) {
-            leftSpeed = this.speedSensitivity;
-            rightSpeed = this.speedSensitivity;
-        }
+        if (forward) throttleNorm = 1.0;
+        if (backward) throttleNorm = -1.0;
+        if (left) steeringNorm = -1.0;
+        if (right) steeringNorm = 1.0;
         
-        if (backward) {
-            leftSpeed = -this.speedSensitivity;
-            rightSpeed = -this.speedSensitivity;
-        }
+        // Простое преобразование в PWM
+        const throttle = Math.round(1500 + (throttleNorm * 500 * this.speedSensitivity / 100));
+        const steering = Math.round(1500 + (steeringNorm * 500 * this.turnSensitivity / 100));
         
-        if (left) {
-            leftSpeed -= this.turnSensitivity;
-            rightSpeed += this.turnSensitivity;
-        }
-        
-        if (right) {
-            leftSpeed += this.turnSensitivity;
-            rightSpeed -= this.turnSensitivity;
-        }
-        
-        // Ограничение значений
-        leftSpeed = Math.max(-100, Math.min(100, leftSpeed));
-        rightSpeed = Math.max(-100, Math.min(100, rightSpeed));
-        
-        this.sendMovementCommand(leftSpeed, rightSpeed);
+        this.sendMovementCommand(
+            Math.max(1000, Math.min(2000, throttle)),
+            Math.max(1000, Math.min(2000, steering))
+        );
     }
 
     handleControlButton(e, pressed) {
@@ -812,51 +800,43 @@ class MicroBoxController {
     }
 
     updateMovement() {
-        let leftSpeed = 0;
-        let rightSpeed = 0;
+        // Простое преобразование стиков в PWM (1000-2000, центр 1500)
+        const throttle = Math.round(1500 + (this.rightJoystick.y * 500 * this.speedSensitivity / 100));
+        const steering = Math.round(1500 + (this.leftJoystick.x * 500 * this.turnSensitivity / 100));
         
-        // Дифференциальный режим: правый стик = скорость (только вертикаль), левый стик = поворот (только горизонталь)
-        // Формула соответствует ROS diff_drive_controller и ArduPilot:
-        // left_motor = speed + turn (поворот вправо: левый быстрее)
-        // right_motor = speed - turn (поворот вправо: правый медленнее)
-        const speed = this.rightJoystick.y * this.speedSensitivity;
-        const turn = this.leftJoystick.x * this.turnSensitivity;
-        
-        leftSpeed = speed + turn;
-        rightSpeed = speed - turn;
-        
-        // Ограничение значений
-        leftSpeed = Math.max(-100, Math.min(100, leftSpeed));
-        rightSpeed = Math.max(-100, Math.min(100, rightSpeed));
-        
-        this.sendMovementCommand(leftSpeed, rightSpeed);
+        this.sendMovementCommand(
+            Math.max(1000, Math.min(2000, throttle)),
+            Math.max(1000, Math.min(2000, steering))
+        );
     }
 
-    sendMovementCommand(leftSpeed, rightSpeed) {
+    sendMovementCommand(throttle, steering) {
         // Throttling: отправляем только если прошло достаточно времени
         // или значения значительно изменились
         const now = Date.now();
         const timeSinceLastSend = now - this.lastMovementTime;
-        const speedChanged = Math.abs(leftSpeed - this.lastLeftSpeed) > 5 || 
-                           Math.abs(rightSpeed - this.lastRightSpeed) > 5;
         
-        // ВАЖНО: Всегда отправляем команду остановки (0, 0) чтобы предотвратить залипание
-        const isStopCommand = (leftSpeed === 0 && rightSpeed === 0);
-        const wasMoving = (this.lastLeftSpeed !== 0 || this.lastRightSpeed !== 0);
+        // Проверяем изменение PWM значений (>10 мкс разница)
+        const throttleChanged = Math.abs(throttle - this.lastThrottle) > 10;
+        const steeringChanged = Math.abs(steering - this.lastSteering) > 10;
+        
+        // ВАЖНО: Всегда отправляем команду остановки (1500, 1500) чтобы предотвратить залипание
+        const isStopCommand = (throttle === 1500 && steering === 1500);
+        const wasMoving = (this.lastThrottle !== 1500 || this.lastSteering !== 1500);
         
         // Отправляем если:
         // 1. Это команда остановки после движения (предотвращает залипание)
         // 2. Прошло >= 50ms с последней отправки
-        // 3. Скорость изменилась на >5%
-        if ((isStopCommand && wasMoving) || timeSinceLastSend >= this.movementThrottle || speedChanged) {
+        // 3. PWM значение изменилось на >10 мкс
+        if ((isStopCommand && wasMoving) || timeSinceLastSend >= this.movementThrottle || throttleChanged || steeringChanged) {
             this.sendCommand('move', {
-                left: Math.round(leftSpeed),
-                right: Math.round(rightSpeed)
+                throttle: throttle,
+                steering: steering
             });
             
             this.lastMovementTime = now;
-            this.lastLeftSpeed = leftSpeed;
-            this.lastRightSpeed = rightSpeed;
+            this.lastThrottle = throttle;
+            this.lastSteering = steering;
         }
     }
 
@@ -1246,35 +1226,24 @@ class MicroBoxController {
     updateVRMovement(leftStick, rightStick) {
         // Применяем deadzone
         const deadzone = 0.15;
-        
         if (Math.abs(leftStick.x) < deadzone) leftStick.x = 0;
         if (Math.abs(leftStick.y) < deadzone) leftStick.y = 0;
         if (Math.abs(rightStick.x) < deadzone) rightStick.x = 0;
         if (Math.abs(rightStick.y) < deadzone) rightStick.y = 0;
         
-        let leftSpeed = 0;
-        let rightSpeed = 0;
+        // Простое преобразование стиков VR в PWM
+        const throttle = Math.round(1500 + (-rightStick.y * 500 * this.speedSensitivity / 100));
+        const steering = Math.round(1500 + (-leftStick.x * 500 * this.turnSensitivity / 100));
         
-        // Дифференциальный режим: правый стик Y = скорость, левый стик X = поворот
-        // (согласовано с мобильным управлением: левый = поворот, правый = скорость)
-        // Формула соответствует ROS diff_drive_controller и ArduPilot:
-        // left_motor = speed + turn (поворот вправо: левый быстрее)
-        // right_motor = speed - turn (поворот вправо: правый медленнее)
-        const speed = -rightStick.y * this.speedSensitivity;
-        const turn = -leftStick.x * this.turnSensitivity;
+        const throttleClamped = Math.max(1000, Math.min(2000, throttle));
+        const steeringClamped = Math.max(1000, Math.min(2000, steering));
         
-        leftSpeed = speed + turn;
-        rightSpeed = speed - turn;
-        
-        // Ограничение значений
-        leftSpeed = Math.max(-100, Math.min(100, leftSpeed));
-        rightSpeed = Math.max(-100, Math.min(100, rightSpeed));
-        
-        // Отправляем команды только если есть изменения
-        if (leftSpeed !== this.lastVRLeftSpeed || rightSpeed !== this.lastVRRightSpeed) {
-            this.sendMovementCommand(leftSpeed, rightSpeed);
-            this.lastVRLeftSpeed = leftSpeed;
-            this.lastVRRightSpeed = rightSpeed;
+        // Отправляем если есть изменения
+        if (Math.abs(throttleClamped - this.lastVRThrottle) > 10 || 
+            Math.abs(steeringClamped - this.lastVRSteering) > 10) {
+            this.sendMovementCommand(throttleClamped, steeringClamped);
+            this.lastVRThrottle = throttleClamped;
+            this.lastVRSteering = steeringClamped;
         }
     }
 
@@ -1367,11 +1336,11 @@ class MicroBoxController {
         this.vrGripPressed = false;
         this.vrButtonAPressed = false;
         this.vrButtonBPressed = false;
-        this.lastVRLeftSpeed = 0;
-        this.lastVRRightSpeed = 0;
+        this.lastVRThrottle = 1500;
+        this.lastVRSteering = 1500;
         
-        // Остановить робота
-        this.sendMovementCommand(0, 0);
+        // Остановить робота (центр PWM = стоп)
+        this.sendMovementCommand(1500, 1500);
     }
 
     // Сбор VR диагностической информации
@@ -2036,44 +2005,47 @@ class MicroBoxController {
     
     // Функция для показа экрана обновления прошивки с глитч-эффектом
     showFirmwareUpdateScreen(releaseInfo) {
-        // Создаем оверлей
-        const overlay = document.createElement('div');
-        overlay.className = 'firmware-update-overlay glitch-effect';
-        overlay.id = 'firmwareUpdateOverlay';
+        // Получаем существующий оверлей
+        const overlay = document.getElementById('firmwareUpdateOverlay');
+        if (!overlay) {
+            console.error('Элемент firmwareUpdateOverlay не найден в DOM');
+            return null;
+        }
         
-        overlay.innerHTML = `
-            <div class="firmware-scanner"></div>
-            <div class="firmware-glitch-text glitching">ОБНОВЛЕНИЕ СИСТЕМЫ</div>
-            
-            <div class="firmware-release-info">
-                <h3>Новая прошивка</h3>
-                <p><strong>Версия:</strong> ${releaseInfo.version}</p>
-                <p><strong>Релиз:</strong> ${releaseInfo.releaseName || 'Без названия'}</p>
-                ${releaseInfo.releaseNotes ? `<p><strong>Изменения:</strong></p><p style="font-size: 0.9em; opacity: 0.8; white-space: pre-wrap;">${releaseInfo.releaseNotes}</p>` : ''}
-            </div>
-            
-            <div class="firmware-warnings">
-                <strong>⚠️ Внимание:</strong>
-                <ul>
-                    <li>Не отключайте питание</li>
-                    <li>Процесс займет 1-2 минуты</li>
-                    <li>Устройство автоматически перезагрузится</li>
-                </ul>
-            </div>
-            
-            <div class="firmware-spinner"></div>
-            
-            <div class="firmware-status" id="firmwareStatus">
-                Подготовка к загрузке...
-            </div>
-            
-            <div class="firmware-progress">
-                <div class="firmware-progress-fill" id="firmwareProgressFill"></div>
-                <div class="firmware-progress-text" id="firmwareProgressText">0%</div>
-            </div>
-        `;
+        // Заполняем информацию о релизе
+        const versionEl = document.getElementById('firmwareVersion');
+        const releaseNameEl = document.getElementById('firmwareReleaseName');
+        const releaseNotesEl = document.getElementById('firmwareReleaseNotes');
+        const glitchTextEl = document.getElementById('firmwareGlitchText');
         
-        document.body.appendChild(overlay);
+        if (versionEl) {
+            versionEl.innerHTML = `<strong>Версия:</strong> ${releaseInfo.version}`;
+        }
+        
+        if (releaseNameEl) {
+            releaseNameEl.innerHTML = `<strong>Релиз:</strong> ${releaseInfo.releaseName || 'Без названия'}`;
+        }
+        
+        if (releaseNotesEl) {
+            if (releaseInfo.releaseNotes) {
+                releaseNotesEl.innerHTML = `<p><strong>Изменения:</strong></p><p style="font-size: 0.9em; opacity: 0.8; white-space: pre-wrap;">${releaseInfo.releaseNotes}</p>`;
+            } else {
+                releaseNotesEl.innerHTML = '';
+            }
+        }
+        
+        if (glitchTextEl) {
+            glitchTextEl.textContent = 'ОБНОВЛЕНИЕ СИСТЕМЫ';
+            glitchTextEl.classList.add('glitching');
+        }
+        
+        // Сбрасываем прогресс
+        this.updateFirmwareStatus('Подготовка к загрузке...', 0);
+        
+        // Добавляем глитч-эффект и показываем оверлей
+        overlay.classList.add('glitch-effect');
+        overlay.classList.remove('hidden');
+        
         return overlay;
     }
     
@@ -2092,19 +2064,28 @@ class MicroBoxController {
     hideFirmwareUpdateScreen() {
         const overlay = document.getElementById('firmwareUpdateOverlay');
         if (overlay) {
-            const glitchText = overlay.querySelector('.firmware-glitch-text');
+            const glitchText = document.getElementById('firmwareGlitchText');
             if (glitchText) {
                 glitchText.textContent = 'ПЕРЕЗАГРУЗКА...';
                 glitchText.classList.add('glitching');
             }
             
-            // Финальный глитч эффект перед перезагрузкой
+            // Финальный глитч эффект перед скрытием
             setTimeout(() => {
                 overlay.classList.add('glitch-effect');
                 
                 // Ждем пока устройство станет доступным, затем перезагружаем страницу
                 this.waitForDeviceAndReload();
             }, 1000);
+        }
+    }
+    
+    // Функция для немедленного скрытия оверлея (при ошибке)
+    closeFirmwareUpdateScreen() {
+        const overlay = document.getElementById('firmwareUpdateOverlay');
+        if (overlay) {
+            overlay.classList.remove('glitch-effect');
+            overlay.classList.add('hidden');
         }
     }
     
@@ -2259,7 +2240,7 @@ class MicroBoxController {
             this.updateFirmwareStatus('Ошибка: ' + error.message, 0);
             
             setTimeout(() => {
-                this.hideFirmwareUpdateScreen();
+                this.closeFirmwareUpdateScreen();
                 alert('Ошибка обновления: ' + error.message);
             }, 3000);
         }
@@ -2342,9 +2323,7 @@ class MicroBoxController {
                     if (pollCount >= maxPolls) {
                         clearInterval(pollInterval);
                         alert('Превышено время ожидания. Устройство может перезагружаться. Проверьте статус вручную.');
-                        if (overlay && overlay.parentNode) {
-                            overlay.parentNode.removeChild(overlay);
-                        }
+                        this.closeFirmwareUpdateScreen();
                     }
                 }, POLL_INTERVAL_MS);
         } catch (error) {
@@ -2358,7 +2337,7 @@ class MicroBoxController {
             this.updateFirmwareStatus('Ошибка: ' + error.message, 0);
             
             setTimeout(() => {
-                this.hideFirmwareUpdateScreen();
+                this.closeFirmwareUpdateScreen();
                 alert('Ошибка обновления: ' + error.message);
             }, 3000);
         }

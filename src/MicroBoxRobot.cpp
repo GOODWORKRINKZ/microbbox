@@ -528,11 +528,11 @@ void MicroBoxRobot::initWebServer() {
             DEBUG_PRINTLN(testValue);
             
             if (testValue == "motor") {
-                DEBUG_PRINTLN("Тест моторов: вперед на 50%");
-                setMotorSpeed(50, 50);
+                DEBUG_PRINTLN("Тест моторов: вперед на 80%");
+                setMotorPWM(1900, 1500); // Throttle 1900 = 80% вперед, Steering 1500 = прямо
                 delay(2000);
-                setMotorSpeed(0, 0);
-                request->send(200, "text/plain", "Motors test OK: forward 50% for 2 sec");
+                stopMotors();
+                request->send(200, "text/plain", "Motors test OK: forward 80% for 2 sec");
                 return;
             }
         }
@@ -562,25 +562,25 @@ void MicroBoxRobot::initWebServer() {
                 
                 // Парсинг JSON команды
                 if (commandBody.indexOf("move") >= 0) {
-                    int leftSpeed = 0, rightSpeed = 0;
+                    int throttlePWM = 1500, steeringPWM = 1500; // Центр по умолчанию
                     
-                    int leftPos = commandBody.indexOf("\"left\":");
-                    int rightPos = commandBody.indexOf("\"right\":");
+                    int throttlePos = commandBody.indexOf("\"throttle\":");
+                    int steeringPos = commandBody.indexOf("\"steering\":");
                     
-                    if (leftPos >= 0) {
-                        leftSpeed = commandBody.substring(leftPos + 7).toInt();
+                    if (throttlePos >= 0) {
+                        throttlePWM = commandBody.substring(throttlePos + 11).toInt();
                     }
-                    if (rightPos >= 0) {
-                        rightSpeed = commandBody.substring(rightPos + 8).toInt();
+                    if (steeringPos >= 0) {
+                        steeringPWM = commandBody.substring(steeringPos + 11).toInt();
                     }
                     
-                    DEBUG_PRINT("Движение: left=");
-                    DEBUG_PRINT(leftSpeed);
-                    DEBUG_PRINT(" right=");
-                    DEBUG_PRINTLN(rightSpeed);
+                    DEBUG_PRINT("Движение: throttle=");
+                    DEBUG_PRINT(throttlePWM);
+                    DEBUG_PRINT(" steering=");
+                    DEBUG_PRINTLN(steeringPWM);
                     
-                    setMotorSpeed(leftSpeed, rightSpeed);
-                    request->send(200, "application/json", "{\"status\":\"ok\",\"action\":\"Поехал: left=" + String(leftSpeed) + ", right=" + String(rightSpeed) + "\"}");
+                    setMotorPWM(throttlePWM, steeringPWM);
+                    request->send(200, "application/json", "{\"status\":\"ok\"}");
                 }
                 else if (commandBody.indexOf("flashlight") >= 0) {
 #ifdef FEATURE_NEOPIXEL
@@ -939,21 +939,22 @@ void MicroBoxRobot::initWebServer() {
                 DEBUG_PRINTLN("=======================================");
                 
                 if (motor == "left") {
-                    // Тестируем левый мотор с применением настроек
-                    setMotorSpeed(speed, 0);
-                    // Останавливаем через 1 секунду
+                    // Тестируем левый мотор: throttle=1900 (80%), steering=1000 (полный влево)
+                    // Это заставит левый мотор вращаться вперед
+                    int testThrottle = (direction == "forward") ? 1900 : 1100;
+                    setMotorPWM(testThrottle, 1000); // Руль влево = левый мотор активен
                     delay(1000);
-                    setMotorSpeed(0, 0);
+                    stopMotors();
                     
-                    request->send(200, "application/json", "{\"status\":\"ok\",\"message\":\"Левый мотор протестирован: " + direction + " (настройки применены)\"}");
+                    request->send(200, "application/json", "{\"status\":\"ok\",\"message\":\"Левый мотор: " + direction + "\"}");
                 } else if (motor == "right") {
-                    // Тестируем правый мотор с применением настроек
-                    setMotorSpeed(0, speed);
-                    // Останавливаем через 1 секунду
+                    // Тестируем правый мотор: throttle=1900 (80%), steering=2000 (полный вправо)
+                    int testThrottle = (direction == "forward") ? 1900 : 1100;
+                    setMotorPWM(testThrottle, 2000); // Руль вправо = правый мотор активен
                     delay(1000);
-                    setMotorSpeed(0, 0);
+                    stopMotors();
                     
-                    request->send(200, "application/json", "{\"status\":\"ok\",\"message\":\"Правый мотор протестирован: " + direction + " (настройки применены)\"}");
+                    request->send(200, "application/json", "{\"status\":\"ok\",\"message\":\"Правый мотор: " + direction + "\"}");
                 } else {
                     request->send(400, "application/json", "{\"status\":\"error\",\"message\":\"Неверный параметр motor\"}");
                 }
@@ -1116,15 +1117,34 @@ void MicroBoxRobot::handleNotFound(AsyncWebServerRequest *request) {
     request->send(404, "text/plain", "Страница не найдена");
 }
 
-void MicroBoxRobot::setMotorSpeed(int leftSpeed, int rightSpeed) {
-    // Ограничение значений
-    leftSpeed = constrain(leftSpeed, -100, 100);
-    rightSpeed = constrain(rightSpeed, -100, 100);
+void MicroBoxRobot::setMotorPWM(int throttlePWM, int steeringPWM) {
+    // Ограничение входных значений PWM (1000-2000 мкс)
+    throttlePWM = constrain(throttlePWM, 1000, 2000);
+    steeringPWM = constrain(steeringPWM, 1000, 2000);
     
+    // 1. Нормализация PWM в диапазон -1.0 до +1.0 (центр 1500)
+    float throttle_norm = (throttlePWM - 1500) / 500.0;
+    float steering_norm = (steeringPWM - 1500) / 500.0;
+    
+    // 2. Микширование (ArduPilot-стиль)
+    // left_motor = throttle + steering (поворот вправо: левый быстрее)
+    // right_motor = throttle - steering (поворот вправо: правый медленнее)
+    float left_norm  = throttle_norm + steering_norm;
+    float right_norm = throttle_norm - steering_norm;
+    
+    // 3. Ограничение результата [-1.0, +1.0]
+    left_norm  = constrain(left_norm, -1.0, 1.0);
+    right_norm = constrain(right_norm, -1.0, 1.0);
+    
+    // 4. Преобразование в проценты для удобства (-100 до +100)
+    int leftSpeed  = (int)(left_norm * 100);
+    int rightSpeed = (int)(right_norm * 100);
+    
+    // Сохраняем текущие значения
     currentLeftSpeed = leftSpeed;
     currentRightSpeed = rightSpeed;
     
-    // Применяем настройки моторов
+    // Применяем настройки моторов из WiFiSettings
     if (wifiSettings) {
         // Меняем местами левый и правый если нужно
         if (wifiSettings->getMotorSwapLeftRight()) {
@@ -1144,10 +1164,11 @@ void MicroBoxRobot::setMotorSpeed(int leftSpeed, int rightSpeed) {
         }
     }
     
-    // Преобразование в PWM значения (0-8191 для 13-битного разрешения)
+    // 5. Преобразование в PWM значения (0-8191 для 13-битного разрешения)
     int leftPWM = map(abs(leftSpeed), 0, 100, 0, 8191);
     int rightPWM = map(abs(rightSpeed), 0, 100, 0, 8191);
     
+    // 6. Управление моторами через H-мост (MX1508)
     // Левый мотор
     if (leftSpeed > 0) {
         ledcWrite(MOTOR_PWM_CHANNEL_LF, leftPWM);
@@ -1172,27 +1193,12 @@ void MicroBoxRobot::setMotorSpeed(int leftSpeed, int rightSpeed) {
         ledcWrite(MOTOR_PWM_CHANNEL_RF, 0);
     }
     
-    DEBUG_PRINTF("Моторы: левый=%d, правый=%d\n", currentLeftSpeed, currentRightSpeed);
-}
-
-void MicroBoxRobot::moveForward(int speed) {
-    setMotorSpeed(speed, speed);
-}
-
-void MicroBoxRobot::moveBackward(int speed) {
-    setMotorSpeed(-speed, -speed);
-}
-
-void MicroBoxRobot::turnLeft(int speed) {
-    setMotorSpeed(-speed, speed);
-}
-
-void MicroBoxRobot::turnRight(int speed) {
-    setMotorSpeed(speed, -speed);
+    DEBUG_PRINTF("PWM IN: throttle=%d steering=%d | Моторы OUT: left=%d%% right=%d%%\n", 
+                 throttlePWM, steeringPWM, currentLeftSpeed, currentRightSpeed);
 }
 
 void MicroBoxRobot::stopMotors() {
-    setMotorSpeed(0, 0);
+    setMotorPWM(1500, 1500); // Центр = стоп
 }
 
 #ifdef FEATURE_NEOPIXEL
@@ -1407,21 +1413,6 @@ void MicroBoxRobot::stopBuzzer() {
 void MicroBoxRobot::setControlMode(ControlMode mode) {
     currentControlMode = mode;
     DEBUG_PRINTF("Режим управления изменен на: %d\n", (int)mode);
-}
-
-void MicroBoxRobot::processControlInput(int leftX, int leftY, int rightX, int rightY) {
-    // Дифференциальный режим управления (единственный доступный)
-    // rightY = скорость (вперед/назад), leftX = поворот (лево/право)
-    // Формула соответствует ROS diff_drive_controller и ArduPilot:
-    // left_motor = throttle + steering (поворот вправо: левый быстрее)
-    // right_motor = throttle - steering (поворот вправо: правый медленнее)
-    int speed = rightY;
-    int turn = leftX;
-    
-    int leftSpeed = speed + turn;
-    int rightSpeed = speed - turn;
-    
-    setMotorSpeed(leftSpeed, rightSpeed);
 }
 
 bool MicroBoxRobot::connectToSavedWiFi() {
