@@ -1,0 +1,125 @@
+version: '3.8'
+
+# Расширенный пример Docker Compose для множества устройств
+# Этот файл демонстрирует дополнительные возможности
+
+services:
+  nginx:
+    image: nginx:alpine
+    container_name: microbbox-nginx
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/conf.d:/etc/nginx/conf.d:ro
+      - ./nginx/templates:/etc/nginx/templates:ro
+      - ./certbot/conf:/etc/letsencrypt:ro
+      - ./certbot/www:/var/www/certbot:ro
+      - ./nginx/logs:/var/log/nginx
+    networks:
+      - microbbox-network
+    depends_on:
+      - certbot
+    # Мониторинг здоровья контейнера
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost/nginx-health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    command: >
+      /bin/sh -c "
+      while [ ! -f /etc/letsencrypt/options-ssl-nginx.conf ]; do
+        echo 'Ожидание настройки SSL...';
+        sleep 5;
+      done;
+      nginx -g 'daemon off;'
+      "
+
+  certbot:
+    image: certbot/certbot
+    container_name: microbbox-certbot
+    volumes:
+      - ./certbot/conf:/etc/letsencrypt
+      - ./certbot/www:/var/www/certbot
+      - ./certbot/logs:/var/log/letsencrypt
+    entrypoint: >
+      /bin/sh -c "
+      mkdir -p /etc/letsencrypt /var/www/certbot /var/log/letsencrypt;
+      
+      if [ ! -f /etc/letsencrypt/options-ssl-nginx.conf ]; then
+        wget -O /etc/letsencrypt/options-ssl-nginx.conf https://raw.githubusercontent.com/certbot/certbot/master/certbot-nginx/certbot_nginx/_internal/tls_configs/options-ssl-nginx.conf;
+      fi;
+      
+      if [ ! -f /etc/letsencrypt/ssl-dhparams.pem ]; then
+        wget -O /etc/letsencrypt/ssl-dhparams.pem https://raw.githubusercontent.com/certbot/certbot/master/certbot/certbot/ssl-dhparams.pem;
+      fi;
+      
+      trap exit TERM;
+      while :; do
+        certbot renew --webroot --webroot-path=/var/www/certbot --quiet;
+        sleep 12h & wait $${!};
+      done
+      "
+    networks:
+      - microbbox-network
+
+  # Опционально: Prometheus для мониторинга
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: microbbox-prometheus
+    restart: unless-stopped
+    volumes:
+      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus-data:/prometheus
+    ports:
+      - "9090:9090"
+    networks:
+      - microbbox-network
+    profiles:
+      - monitoring
+
+  # Опционально: Grafana для визуализации
+  grafana:
+    image: grafana/grafana:latest
+    container_name: microbbox-grafana
+    restart: unless-stopped
+    volumes:
+      - grafana-data:/var/lib/grafana
+      - ./monitoring/grafana-dashboards:/etc/grafana/provisioning/dashboards:ro
+      - ./monitoring/grafana-datasources.yml:/etc/grafana/provisioning/datasources/datasources.yml:ro
+    ports:
+      - "3000:3000"
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+      - GF_USERS_ALLOW_SIGN_UP=false
+    networks:
+      - microbbox-network
+    profiles:
+      - monitoring
+
+  # Опционально: nginx-prometheus-exporter
+  nginx-exporter:
+    image: nginx/nginx-prometheus-exporter:latest
+    container_name: microbbox-nginx-exporter
+    restart: unless-stopped
+    command:
+      - '-nginx.scrape-uri=http://nginx:80/nginx-status'
+    ports:
+      - "9113:9113"
+    networks:
+      - microbbox-network
+    depends_on:
+      - nginx
+    profiles:
+      - monitoring
+
+networks:
+  microbbox-network:
+    driver: bridge
+
+volumes:
+  prometheus-data:
+  grafana-data:
