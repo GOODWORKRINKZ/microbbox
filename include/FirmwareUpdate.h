@@ -8,7 +8,7 @@
 #include <Update.h>
 #include <HTTPClient.h>
 #include <Preferences.h>
-#include "config.h"
+#include "target_config.h"
 
 // Структура для информации о релизе
 struct ReleaseInfo {
