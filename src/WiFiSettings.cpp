@@ -6,7 +6,14 @@ WiFiSettings::WiFiSettings() :
     ssid(""),
     password(""),
     deviceName(""),
-    mode(WiFiMode::CLIENT)
+    mode(WiFiMode::CLIENT),
+    motorSwapLeftRight(false),
+    motorInvertLeft(false),
+    motorInvertRight(false),
+    motorInvertLeftForward(false),
+    motorInvertLeftBackward(false),
+    motorInvertRightForward(false),
+    motorInvertRightBackward(false)
 {
 }
 
@@ -37,6 +44,15 @@ void WiFiSettings::loadDefaults() {
     ssid = WIFI_SSID_CLIENT;
     password = WIFI_PASSWORD_CLIENT;
     
+    // По умолчанию моторы не перевернуты
+    motorSwapLeftRight = false;
+    motorInvertLeft = false;
+    motorInvertRight = false;
+    motorInvertLeftForward = false;
+    motorInvertLeftBackward = false;
+    motorInvertRightForward = false;
+    motorInvertRightBackward = false;
+    
     DEBUG_PRINTLN("WiFiSettings::loadDefaults()");
     DEBUG_PRINT("  SSID: ");
     DEBUG_PRINTLN(ssid);
@@ -63,11 +79,27 @@ void WiFiSettings::loadFromMemory() {
         deviceName = preferences.getString("deviceName", generateDeviceName());
         mode = static_cast<WiFiMode>(preferences.getUChar("mode", static_cast<uint8_t>(WiFiMode::CLIENT)));
         
+        // Загружаем настройки моторов
+        motorSwapLeftRight = preferences.getBool("motorSwap", false);
+        motorInvertLeft = preferences.getBool("motorInvL", false);
+        motorInvertRight = preferences.getBool("motorInvR", false);
+        motorInvertLeftForward = preferences.getBool("motorInvLF", false);
+        motorInvertLeftBackward = preferences.getBool("motorInvLB", false);
+        motorInvertRightForward = preferences.getBool("motorInvRF", false);
+        motorInvertRightBackward = preferences.getBool("motorInvRB", false);
+        
         DEBUG_PRINTLN("  Загружены сохраненные настройки:");
         DEBUG_PRINT("    SSID: '"); DEBUG_PRINT(ssid); DEBUG_PRINTLN("'");
         DEBUG_PRINT("    Password length: "); DEBUG_PRINTLN(password.length());
         DEBUG_PRINT("    Device name: '"); DEBUG_PRINT(deviceName); DEBUG_PRINTLN("'");
         DEBUG_PRINT("    Mode: "); DEBUG_PRINTLN(mode == WiFiMode::CLIENT ? "CLIENT" : "AP");
+        DEBUG_PRINT("    Motor swap L/R: "); DEBUG_PRINTLN(motorSwapLeftRight ? "YES" : "NO");
+        DEBUG_PRINT("    Motor invert L: "); DEBUG_PRINTLN(motorInvertLeft ? "YES" : "NO");
+        DEBUG_PRINT("    Motor invert R: "); DEBUG_PRINTLN(motorInvertRight ? "YES" : "NO");
+        DEBUG_PRINT("    Motor invert L Fwd: "); DEBUG_PRINTLN(motorInvertLeftForward ? "YES" : "NO");
+        DEBUG_PRINT("    Motor invert L Back: "); DEBUG_PRINTLN(motorInvertLeftBackward ? "YES" : "NO");
+        DEBUG_PRINT("    Motor invert R Fwd: "); DEBUG_PRINTLN(motorInvertRightForward ? "YES" : "NO");
+        DEBUG_PRINT("    Motor invert R Back: "); DEBUG_PRINTLN(motorInvertRightBackward ? "YES" : "NO");
         
         // ВАЖНО: Если SSID пустой - это значит старые битые настройки, сбрасываем!
         if (ssid.length() == 0) {
@@ -94,12 +126,47 @@ void WiFiSettings::setMode(WiFiMode value) {
     mode = value;
 }
 
+void WiFiSettings::setMotorSwapLeftRight(bool value) {
+    motorSwapLeftRight = value;
+}
+
+void WiFiSettings::setMotorInvertLeft(bool value) {
+    motorInvertLeft = value;
+}
+
+void WiFiSettings::setMotorInvertRight(bool value) {
+    motorInvertRight = value;
+}
+
+void WiFiSettings::setMotorInvertLeftForward(bool value) {
+    motorInvertLeftForward = value;
+}
+
+void WiFiSettings::setMotorInvertLeftBackward(bool value) {
+    motorInvertLeftBackward = value;
+}
+
+void WiFiSettings::setMotorInvertRightForward(bool value) {
+    motorInvertRightForward = value;
+}
+
+void WiFiSettings::setMotorInvertRightBackward(bool value) {
+    motorInvertRightBackward = value;
+}
+
 bool WiFiSettings::save() {
     DEBUG_PRINTLN("WiFiSettings::save() - начало сохранения");
     DEBUG_PRINT("  SSID: '"); DEBUG_PRINT(ssid); DEBUG_PRINTLN("'");
     DEBUG_PRINT("  Password length: "); DEBUG_PRINTLN(password.length());
     DEBUG_PRINT("  Device name: '"); DEBUG_PRINT(deviceName); DEBUG_PRINTLN("'");
     DEBUG_PRINT("  Mode: "); DEBUG_PRINTLN(static_cast<uint8_t>(mode));
+    DEBUG_PRINT("  Motor swap L/R: "); DEBUG_PRINTLN(motorSwapLeftRight ? "YES" : "NO");
+    DEBUG_PRINT("  Motor invert L: "); DEBUG_PRINTLN(motorInvertLeft ? "YES" : "NO");
+    DEBUG_PRINT("  Motor invert R: "); DEBUG_PRINTLN(motorInvertRight ? "YES" : "NO");
+    DEBUG_PRINT("  Motor invert L Fwd: "); DEBUG_PRINTLN(motorInvertLeftForward ? "YES" : "NO");
+    DEBUG_PRINT("  Motor invert L Back: "); DEBUG_PRINTLN(motorInvertLeftBackward ? "YES" : "NO");
+    DEBUG_PRINT("  Motor invert R Fwd: "); DEBUG_PRINTLN(motorInvertRightForward ? "YES" : "NO");
+    DEBUG_PRINT("  Motor invert R Back: "); DEBUG_PRINTLN(motorInvertRightBackward ? "YES" : "NO");
     
     // Сохраняем все настройки и проверяем результат каждой операции
     size_t w1 = preferences.putBool("initialized", true);
@@ -108,11 +175,27 @@ bool WiFiSettings::save() {
     size_t w4 = preferences.putString("deviceName", deviceName);
     size_t w5 = preferences.putUChar("mode", static_cast<uint8_t>(mode));
     
+    // Сохраняем настройки моторов
+    size_t w6 = preferences.putBool("motorSwap", motorSwapLeftRight);
+    size_t w7 = preferences.putBool("motorInvL", motorInvertLeft);
+    size_t w8 = preferences.putBool("motorInvR", motorInvertRight);
+    size_t w9 = preferences.putBool("motorInvLF", motorInvertLeftForward);
+    size_t w10 = preferences.putBool("motorInvLB", motorInvertLeftBackward);
+    size_t w11 = preferences.putBool("motorInvRF", motorInvertRightForward);
+    size_t w12 = preferences.putBool("motorInvRB", motorInvertRightBackward);
+    
     DEBUG_PRINT("  Записано байт - initialized: "); DEBUG_PRINTLN(w1);
     DEBUG_PRINT("  Записано байт - ssid: "); DEBUG_PRINTLN(w2);
     DEBUG_PRINT("  Записано байт - password: "); DEBUG_PRINTLN(w3);
     DEBUG_PRINT("  Записано байт - deviceName: "); DEBUG_PRINTLN(w4);
     DEBUG_PRINT("  Записано байт - mode: "); DEBUG_PRINTLN(w5);
+    DEBUG_PRINT("  Записано байт - motorSwap: "); DEBUG_PRINTLN(w6);
+    DEBUG_PRINT("  Записано байт - motorInvL: "); DEBUG_PRINTLN(w7);
+    DEBUG_PRINT("  Записано байт - motorInvR: "); DEBUG_PRINTLN(w8);
+    DEBUG_PRINT("  Записано байт - motorInvLF: "); DEBUG_PRINTLN(w9);
+    DEBUG_PRINT("  Записано байт - motorInvLB: "); DEBUG_PRINTLN(w10);
+    DEBUG_PRINT("  Записано байт - motorInvRF: "); DEBUG_PRINTLN(w11);
+    DEBUG_PRINT("  Записано байт - motorInvRB: "); DEBUG_PRINTLN(w12);
     
     // Принудительно сохраняем изменения (commit)
     bool committed = preferences.putBool("_commit", true);
