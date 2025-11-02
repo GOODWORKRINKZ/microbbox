@@ -86,7 +86,7 @@ docker-compose --version
 
 ```bash
 # На вашем компьютере, в директории проекта
-cd nginx-proxy
+cd infrastructure/vr-proxy
 
 # Копирование на Raspberry Pi (замените IP адрес)
 scp -r . pi@192.168.1.50:~/microbbox-proxy/

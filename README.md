@@ -262,14 +262,14 @@ pio run --target upload
 
 **Быстрый старт:**
 ```bash
-cd nginx-proxy
+cd infrastructure/vr-proxy
 sudo ./scripts/add-device.sh
 sudo ./scripts/obtain-certificate.sh robot1.example.com
 ```
 
-📖 **Полная документация:** [nginx-proxy/README.md](nginx-proxy/README.md)  
-🚀 **Быстрый старт:** [nginx-proxy/QUICKSTART.md](nginx-proxy/QUICKSTART.md)  
-🔧 **Настройка роутера:** [nginx-proxy/KEENETIC_SETUP.md](nginx-proxy/KEENETIC_SETUP.md)
+📖 **Полная документация:** [infrastructure/vr-proxy/README.md](infrastructure/vr-proxy/README.md)  
+🚀 **Быстрый старт:** [infrastructure/vr-proxy/QUICKSTART.md](infrastructure/vr-proxy/QUICKSTART.md)  
+🔧 **Настройка роутера:** [infrastructure/vr-proxy/KEENETIC_SETUP.md](infrastructure/vr-proxy/KEENETIC_SETUP.md)
 
 #### Вариант 2: HTTPS на ESP32 (Не рекомендуется)
 

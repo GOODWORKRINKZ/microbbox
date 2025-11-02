@@ -35,7 +35,7 @@ docker --version
 # На Raspberry Pi
 cd ~
 git clone https://github.com/GOODWORKRINKZ/microbbox.git
-cd microbbox/nginx-proxy
+cd microbbox/infrastructure/vr-proxy
 
 # Создание директорий
 mkdir -p certbot/{conf,www,logs} nginx/logs
@@ -84,7 +84,7 @@ exit
 
 ```bash
 # На Raspberry Pi
-cd ~/microbbox/nginx-proxy
+cd ~/microbbox/infrastructure/vr-proxy
 sudo ./scripts/add-device.sh
 
 # Ответьте на вопросы:
@@ -120,7 +120,7 @@ curl ifconfig.me
 
 ```bash
 # На Raspberry Pi
-cd ~/microbbox/nginx-proxy
+cd ~/microbbox/infrastructure/vr-proxy
 sudo ./scripts/obtain-certificate.sh robot1.example.com admin@example.com
 
 # Повторите для каждого устройства

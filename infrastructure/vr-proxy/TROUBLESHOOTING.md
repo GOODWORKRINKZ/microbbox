@@ -532,5 +532,5 @@ wrk -t2 -c10 -d30s https://robot1.example.com/
 5. **Проверка здоровья системы:**
    ```bash
    # Создайте cron job для периодической проверки
-   */5 * * * * /home/pi/microbbox/nginx-proxy/scripts/status.sh > /tmp/status.log 2>&1
+   */5 * * * * /home/pi/microbbox/infrastructure/vr-proxy/scripts/status.sh > /tmp/status.log 2>&1
    ```

@@ -41,7 +41,7 @@ ESP32 не может эффективно обрабатывать SSL из-з�
 curl -fsSL https://get.docker.com | sh
 
 # 2. Клонирование и запуск
-cd nginx-proxy
+cd infrastructure/vr-proxy
 docker-compose up -d
 
 # 3. Добавление устройства

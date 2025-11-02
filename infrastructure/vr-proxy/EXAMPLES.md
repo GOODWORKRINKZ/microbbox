@@ -14,7 +14,7 @@
 
 ```bash
 # 1. Запуск nginx и certbot
-cd ~/microbbox/nginx-proxy
+cd ~/microbbox/infrastructure/vr-proxy
 docker-compose up -d
 
 # 2. Резервирование IP на роутере для ESP32
@@ -497,7 +497,7 @@ apt install docker.io docker-compose git -y
 
 # 2. Клонирование репозитория
 git clone https://github.com/GOODWORKRINKZ/microbbox.git
-cd microbbox/nginx-proxy
+cd microbbox/infrastructure/vr-proxy
 
 # 3. Настройка firewall
 ufw allow 22/tcp   # SSH

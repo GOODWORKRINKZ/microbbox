@@ -315,7 +315,7 @@ sudo ./scripts/obtain-certificate.sh "*.example.com" admin@example.com
 sudo nano /etc/logrotate.d/microbbox-nginx
 
 # Добавьте:
-/home/pi/microbbox/nginx-proxy/nginx/logs/*.log {
+/home/pi/microbbox/infrastructure/vr-proxy/nginx/logs/*.log {
     daily
     rotate 7
     compress
