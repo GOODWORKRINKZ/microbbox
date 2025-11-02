@@ -803,6 +803,162 @@ void MicroBoxRobot::initWebServer() {
         }
     );
     
+    // Получение настроек моторов
+    server->on("/api/motor/config", HTTP_GET, [this](AsyncWebServerRequest *request) {
+        String json = "{";
+        if (wifiSettings) {
+            json += "\"motorSwapLeftRight\":" + String(wifiSettings->getMotorSwapLeftRight() ? "true" : "false") + ",";
+            json += "\"motorInvertLeft\":" + String(wifiSettings->getMotorInvertLeft() ? "true" : "false") + ",";
+            json += "\"motorInvertRight\":" + String(wifiSettings->getMotorInvertRight() ? "true" : "false");
+        }
+        json += "}";
+        request->send(200, "application/json", json);
+    });
+    
+    // Сохранение настроек моторов
+    server->on("/api/motor/config", HTTP_POST,
+        [this](AsyncWebServerRequest *request) {
+            // Ответ будет отправлен в onBody
+        },
+        NULL,
+        [this](AsyncWebServerRequest *request, uint8_t *data, size_t len, size_t index, size_t total) {
+            static String motorConfigBody = "";
+            
+            // Добавляем полученный фрагмент
+            for (size_t i = 0; i < len; i++) {
+                motorConfigBody += (char)data[i];
+            }
+            
+            // Если это последний фрагмент
+            if (index + len == total) {
+                DEBUG_PRINT("Получена конфигурация моторов: ");
+                DEBUG_PRINTLN(motorConfigBody);
+                
+                if (wifiSettings) {
+                    // Парсим булевые значения
+                    if (motorConfigBody.indexOf("\"motorSwapLeftRight\":true") >= 0) {
+                        wifiSettings->setMotorSwapLeftRight(true);
+                    } else if (motorConfigBody.indexOf("\"motorSwapLeftRight\":false") >= 0) {
+                        wifiSettings->setMotorSwapLeftRight(false);
+                    }
+                    
+                    if (motorConfigBody.indexOf("\"motorInvertLeft\":true") >= 0) {
+                        wifiSettings->setMotorInvertLeft(true);
+                    } else if (motorConfigBody.indexOf("\"motorInvertLeft\":false") >= 0) {
+                        wifiSettings->setMotorInvertLeft(false);
+                    }
+                    
+                    if (motorConfigBody.indexOf("\"motorInvertRight\":true") >= 0) {
+                        wifiSettings->setMotorInvertRight(true);
+                    } else if (motorConfigBody.indexOf("\"motorInvertRight\":false") >= 0) {
+                        wifiSettings->setMotorInvertRight(false);
+                    }
+                    
+                    // Сохраняем настройки
+                    if (wifiSettings->save()) {
+                        request->send(200, "application/json", "{\"status\":\"ok\",\"message\":\"Настройки моторов сохранены\"}");
+                    } else {
+                        request->send(500, "application/json", "{\"status\":\"error\",\"message\":\"Ошибка сохранения настроек\"}");
+                    }
+                } else {
+                    request->send(500, "application/json", "{\"status\":\"error\",\"message\":\"WiFiSettings не инициализирован\"}");
+                }
+                
+                motorConfigBody = "";
+            }
+        }
+    );
+    
+    // Тест моторов - включает конкретный мотор на короткое время
+    server->on("/api/motor/test", HTTP_POST,
+        [this](AsyncWebServerRequest *request) {
+            // Ответ будет отправлен в onBody
+        },
+        NULL,
+        [this](AsyncWebServerRequest *request, uint8_t *data, size_t len, size_t index, size_t total) {
+            static String motorTestBody = "";
+            
+            // Добавляем полученный фрагмент
+            for (size_t i = 0; i < len; i++) {
+                motorTestBody += (char)data[i];
+            }
+            
+            // Если это последний фрагмент
+            if (index + len == total) {
+                DEBUG_PRINT("Тест мотора: ");
+                DEBUG_PRINTLN(motorTestBody);
+                
+                // Определяем какой мотор и направление тестировать
+                // Формат: {"motor": "left|right", "direction": "forward|backward"}
+                String motor = "";
+                String direction = "";
+                
+                int motorPos = motorTestBody.indexOf("\"motor\":\"");
+                if (motorPos >= 0) {
+                    int start = motorPos + 9;
+                    int end = motorTestBody.indexOf("\"", start);
+                    if (end > start) {
+                        motor = motorTestBody.substring(start, end);
+                    }
+                }
+                
+                int dirPos = motorTestBody.indexOf("\"direction\":\"");
+                if (dirPos >= 0) {
+                    int start = dirPos + 13;
+                    int end = motorTestBody.indexOf("\"", start);
+                    if (end > start) {
+                        direction = motorTestBody.substring(start, end);
+                    }
+                }
+                
+                // Выполняем тест
+                int speed = 50; // 50% мощности для теста
+                if (direction == "backward") {
+                    speed = -speed;
+                }
+                
+                if (motor == "left") {
+                    // Временно отключаем применение настроек для прямого теста
+                    // Тестируем напрямую левый мотор
+                    int leftPWM = map(abs(speed), 0, 100, 0, 8191);
+                    if (speed > 0) {
+                        ledcWrite(MOTOR_PWM_CHANNEL_LF, leftPWM);
+                        ledcWrite(MOTOR_PWM_CHANNEL_LR, 0);
+                    } else {
+                        ledcWrite(MOTOR_PWM_CHANNEL_LF, 0);
+                        ledcWrite(MOTOR_PWM_CHANNEL_LR, leftPWM);
+                    }
+                    // Останавливаем через 1 секунду
+                    delay(1000);
+                    ledcWrite(MOTOR_PWM_CHANNEL_LF, 0);
+                    ledcWrite(MOTOR_PWM_CHANNEL_LR, 0);
+                    
+                    request->send(200, "application/json", "{\"status\":\"ok\",\"message\":\"Левый мотор протестирован: " + direction + "\"}");
+                } else if (motor == "right") {
+                    // Тестируем напрямую правый мотор
+                    int rightPWM = map(abs(speed), 0, 100, 0, 8191);
+                    if (speed > 0) {
+                        ledcWrite(MOTOR_PWM_CHANNEL_RR, rightPWM);
+                        ledcWrite(MOTOR_PWM_CHANNEL_RF, 0);
+                    } else {
+                        ledcWrite(MOTOR_PWM_CHANNEL_RR, 0);
+                        ledcWrite(MOTOR_PWM_CHANNEL_RF, rightPWM);
+                    }
+                    // Останавливаем через 1 секунду
+                    delay(1000);
+                    ledcWrite(MOTOR_PWM_CHANNEL_RR, 0);
+                    ledcWrite(MOTOR_PWM_CHANNEL_RF, 0);
+                    
+                    request->send(200, "application/json", "{\"status\":\"ok\",\"message\":\"Правый мотор протестирован: " + direction + "\"}");
+                } else {
+                    request->send(400, "application/json", "{\"status\":\"error\",\"message\":\"Неверный параметр motor\"}");
+                }
+                
+                motorTestBody = "";
+            }
+        }
+    );
+    
     // VR Debug логирование - POST JSON с диагностической информацией
     // ПРИМЕЧАНИЕ: Статическая переменная vrLogBody может вызвать проблемы при одновременных запросах.
     // Для production использования рекомендуется добавить мьютекс или request-specific storage.
@@ -964,6 +1120,26 @@ void MicroBoxRobot::setMotorSpeed(int leftSpeed, int rightSpeed) {
     currentLeftSpeed = leftSpeed;
     currentRightSpeed = rightSpeed;
     
+    // Применяем настройки моторов
+    if (wifiSettings) {
+        // Меняем местами левый и правый если нужно
+        if (wifiSettings->getMotorSwapLeftRight()) {
+            int temp = leftSpeed;
+            leftSpeed = rightSpeed;
+            rightSpeed = temp;
+        }
+        
+        // Применяем инверсию для левого мотора
+        if (wifiSettings->getMotorInvertLeft()) {
+            leftSpeed = -leftSpeed;
+        }
+        
+        // Применяем инверсию для правого мотора
+        if (wifiSettings->getMotorInvertRight()) {
+            rightSpeed = -rightSpeed;
+        }
+    }
+    
     // Преобразование в PWM значения (0-8191 для 13-битного разрешения)
     int leftPWM = map(abs(leftSpeed), 0, 100, 0, 8191);
     int rightPWM = map(abs(rightSpeed), 0, 100, 0, 8191);
@@ -992,7 +1168,7 @@ void MicroBoxRobot::setMotorSpeed(int leftSpeed, int rightSpeed) {
         ledcWrite(MOTOR_PWM_CHANNEL_RF, 0);
     }
     
-    DEBUG_PRINTF("Моторы: левый=%d, правый=%d\n", leftSpeed, rightSpeed);
+    DEBUG_PRINTF("Моторы: левый=%d, правый=%d\n", currentLeftSpeed, currentRightSpeed);
 }
 
 void MicroBoxRobot::moveForward(int speed) {

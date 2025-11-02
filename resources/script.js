@@ -1737,6 +1737,33 @@ class MicroBoxController {
             dontOfferCheckbox.addEventListener('change', (e) => this.saveUpdateSettings());
         }
         
+        // Обработчики настройки моторов
+        const saveMotorConfigBtn = document.getElementById('saveMotorConfig');
+        if (saveMotorConfigBtn) {
+            saveMotorConfigBtn.addEventListener('click', () => this.saveMotorConfig());
+        }
+        
+        // Кнопки тестирования моторов
+        const testLeftForwardBtn = document.getElementById('testLeftForward');
+        if (testLeftForwardBtn) {
+            testLeftForwardBtn.addEventListener('click', () => this.testMotor('left', 'forward'));
+        }
+        
+        const testLeftBackwardBtn = document.getElementById('testLeftBackward');
+        if (testLeftBackwardBtn) {
+            testLeftBackwardBtn.addEventListener('click', () => this.testMotor('left', 'backward'));
+        }
+        
+        const testRightForwardBtn = document.getElementById('testRightForward');
+        if (testRightForwardBtn) {
+            testRightForwardBtn.addEventListener('click', () => this.testMotor('right', 'forward'));
+        }
+        
+        const testRightBackwardBtn = document.getElementById('testRightBackward');
+        if (testRightBackwardBtn) {
+            testRightBackwardBtn.addEventListener('click', () => this.testMotor('right', 'backward'));
+        }
+        
         // Help modal
         const helpModal = document.getElementById('helpModal');
         const helpCloseBtn = helpModal?.querySelector('.help-close');
@@ -1821,6 +1848,9 @@ class MicroBoxController {
             
             // Загрузить статус WiFi
             this.loadWiFiStatus();
+            
+            // Загрузить настройки моторов
+            this.loadMotorConfig();
             
             // Загрузить информацию о версии и настройках обновлений
             this.loadUpdateInfo();
@@ -2611,6 +2641,93 @@ class MicroBoxController {
             }, 30000);
         } catch (error) {
             console.error('Ошибка перезагрузки:', error);
+        }
+    }
+    
+    async loadMotorConfig() {
+        try {
+            const response = await fetch('/api/motor/config');
+            if (response.ok) {
+                const config = await response.json();
+                
+                // Устанавливаем значения в UI
+                document.getElementById('motorSwapLeftRight').checked = config.motorSwapLeftRight || false;
+                document.getElementById('motorInvertLeft').checked = config.motorInvertLeft || false;
+                document.getElementById('motorInvertRight').checked = config.motorInvertRight || false;
+                
+                console.log('Настройки моторов загружены:', config);
+            }
+        } catch (error) {
+            console.error('Ошибка загрузки настроек моторов:', error);
+        }
+    }
+    
+    async saveMotorConfig() {
+        const config = {
+            motorSwapLeftRight: document.getElementById('motorSwapLeftRight').checked,
+            motorInvertLeft: document.getElementById('motorInvertLeft').checked,
+            motorInvertRight: document.getElementById('motorInvertRight').checked
+        };
+        
+        try {
+            const response = await fetch('/api/motor/config', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(config)
+            });
+            
+            if (response.ok) {
+                const result = await response.json();
+                alert('Настройки моторов сохранены! ' + result.message);
+                console.log('Настройки моторов сохранены:', config);
+            } else {
+                alert('Ошибка сохранения настроек моторов');
+            }
+        } catch (error) {
+            console.error('Ошибка сохранения настроек моторов:', error);
+            alert('Ошибка сохранения настроек моторов');
+        }
+    }
+    
+    async testMotor(motor, direction) {
+        const testData = {
+            motor: motor,
+            direction: direction
+        };
+        
+        try {
+            // Отключаем кнопку на время теста
+            const buttonId = `test${motor.charAt(0).toUpperCase() + motor.slice(1)}${direction.charAt(0).toUpperCase() + direction.slice(1)}`;
+            const button = document.getElementById(buttonId);
+            if (button) {
+                button.disabled = true;
+                button.textContent = 'Тест...';
+            }
+            
+            const response = await fetch('/api/motor/test', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(testData)
+            });
+            
+            if (response.ok) {
+                const result = await response.json();
+                console.log('Тест мотора:', result.message);
+            }
+            
+            // Возвращаем кнопку в исходное состояние
+            if (button) {
+                setTimeout(() => {
+                    button.disabled = false;
+                    const arrow = direction === 'forward' ? '⬆️' : '⬇️';
+                    const motorName = motor === 'left' ? 'Левое' : 'Правое';
+                    const dirName = direction === 'forward' ? 'вперед' : 'назад';
+                    button.textContent = `${arrow} ${motorName} ${dirName}`;
+                }, 1200);
+            }
+        } catch (error) {
+            console.error('Ошибка теста мотора:', error);
+            alert('Ошибка теста мотора');
         }
     }
 }
