@@ -405,12 +405,12 @@ bool MicroBoxRobot::initCamera() {
     
     // Настройки качества в зависимости от доступной памяти
     if (psramFound()) {
-        config.frame_size = FRAMESIZE_UXGA;
+        config.frame_size = FRAMESIZE_QVGA;
         config.jpeg_quality = 10;
         config.fb_count = 2;
         DEBUG_PRINTLN("PSRAM найдена, использую высокое качество");
     } else {
-        config.frame_size = FRAMESIZE_SVGA;
+        config.frame_size = FRAMESIZE_QVGA;
         config.jpeg_quality = 12;
         config.fb_count = 1;
         DEBUG_PRINTLN("PSRAM не найдена, использую стандартное качество");

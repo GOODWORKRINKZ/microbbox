@@ -193,7 +193,8 @@ class MicroBoxController {
             lastSendTime: 0,         // Время последней отправки
             sendInterval: 150,       // Интервал отправки (мс) - получим с сервера
             commandTimeout: 250,     // Таймаут на сервере (мс) - получим с сервера
-            isSending: false         // Флаг: выполняется ли отправка прямо сейчас
+            isSending: false,        // Флаг: выполняется ли отправка прямо сейчас
+            fetchTimeout: 200        // Таймаут HTTP запроса (мс)
         };
         
         this.init();
@@ -854,6 +855,10 @@ class MicroBoxController {
     }
 
     async sendCommand(command, data = {}) {
+        // Создаём AbortController для таймаута
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), this.commandController.fetchTimeout);
+        
         try {
             const response = await fetch('/command', {
                 method: 'POST',
@@ -863,8 +868,11 @@ class MicroBoxController {
                 body: JSON.stringify({
                     command: command,
                     ...data
-                })
+                }),
+                signal: controller.signal
             });
+            
+            clearTimeout(timeoutId);
             
             if (response.ok) {
                 this.updateConnectionStatus(true);
@@ -874,8 +882,15 @@ class MicroBoxController {
                 console.error('Ошибка команды:', response.statusText);
             }
         } catch (error) {
+            clearTimeout(timeoutId);
+            
+            if (error.name === 'AbortError') {
+                console.warn(`Команда превысила таймаут ${this.commandController.fetchTimeout}мс`);
+            } else {
+                console.error('Ошибка соединения:', error);
+            }
+            
             this.updateConnectionStatus(false);
-            console.error('Ошибка соединения:', error);
         }
     }
 
