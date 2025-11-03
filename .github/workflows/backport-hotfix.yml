@@ -1,0 +1,292 @@
+name: Backport Hotfix
+
+# Ручной workflow для backport hotfix'ов в support ветки
+# Использование:
+#   1. Actions → Backport Hotfix
+#   2. Укажите commit SHA
+#   3. Выберите target version
+#   4. Run workflow
+
+on:
+  workflow_dispatch:
+    inputs:
+      commit_sha:
+        description: 'Commit SHA для backport (полный или короткий)'
+        required: true
+        type: string
+      target_version:
+        description: 'Целевая версия для backport'
+        required: true
+        type: choice
+        options:
+          - '0.0.x'
+          - '0.1.x'
+          - '0.2.x'
+          - '1.0.x'
+      pr_title:
+        description: 'Заголовок PR (опционально)'
+        required: false
+        type: string
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  backport:
+    name: Backport to ${{ inputs.target_version }}
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout Repository
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+        ref: support/${{ inputs.target_version }}
+        
+    - name: Configure Git
+      run: |
+        git config user.name "github-actions[bot]"
+        git config user.email "github-actions[bot]@users.noreply.github.com"
+        
+    - name: Validate Commit
+      id: validate
+      run: |
+        COMMIT="${{ inputs.commit_sha }}"
+        
+        # Проверяем что коммит существует
+        if ! git cat-file -e ${COMMIT}^{commit} 2>/dev/null; then
+          echo "❌ Коммит ${COMMIT} не найден"
+          exit 1
+        fi
+        
+        # Получаем полный SHA
+        FULL_SHA=$(git rev-parse ${COMMIT})
+        echo "full_sha=${FULL_SHA}" >> $GITHUB_OUTPUT
+        
+        # Получаем информацию о коммите
+        COMMIT_MSG=$(git log -1 --pretty=%B ${FULL_SHA})
+        COMMIT_AUTHOR=$(git log -1 --pretty=%an ${FULL_SHA})
+        COMMIT_DATE=$(git log -1 --pretty=%ad --date=short ${FULL_SHA})
+        
+        echo "message<<EOF" >> $GITHUB_OUTPUT
+        echo "${COMMIT_MSG}" >> $GITHUB_OUTPUT
+        echo "EOF" >> $GITHUB_OUTPUT
+        
+        echo "author=${COMMIT_AUTHOR}" >> $GITHUB_OUTPUT
+        echo "date=${COMMIT_DATE}" >> $GITHUB_OUTPUT
+        
+        echo "✅ Коммит валиден: ${FULL_SHA}"
+        echo "📝 Сообщение: ${COMMIT_MSG}"
+        echo "👤 Автор: ${COMMIT_AUTHOR}"
+        
+    - name: Create Backport Branch
+      id: branch
+      run: |
+        TARGET_VERSION="${{ inputs.target_version }}"
+        COMMIT_SHORT="${{ steps.validate.outputs.full_sha }}"
+        COMMIT_SHORT="${COMMIT_SHORT:0:7}"
+        
+        BRANCH_NAME="backport/${TARGET_VERSION}/${COMMIT_SHORT}"
+        
+        echo "branch_name=${BRANCH_NAME}" >> $GITHUB_OUTPUT
+        
+        git checkout -b ${BRANCH_NAME}
+        
+        echo "✅ Создана ветка: ${BRANCH_NAME}"
+        
+    - name: Cherry-pick Commit
+      id: cherrypick
+      continue-on-error: true
+      run: |
+        COMMIT="${{ steps.validate.outputs.full_sha }}"
+        
+        echo "🍒 Cherry-picking ${COMMIT}..."
+        
+        if git cherry-pick ${COMMIT}; then
+          echo "success=true" >> $GITHUB_OUTPUT
+          echo "✅ Cherry-pick успешен"
+        else
+          echo "success=false" >> $GITHUB_OUTPUT
+          echo "❌ Cherry-pick завершился с конфликтами"
+          
+          # Сохраняем список конфликтующих файлов
+          git status --short | grep '^UU' > conflicts.txt || true
+          
+          # Прерываем cherry-pick
+          git cherry-pick --abort
+        fi
+        
+    - name: Push Branch (if successful)
+      if: steps.cherrypick.outputs.success == 'true'
+      run: |
+        BRANCH="${{ steps.branch.outputs.branch_name }}"
+        
+        git push origin ${BRANCH}
+        
+        echo "✅ Ветка ${BRANCH} запушена"
+        
+    - name: Create Pull Request (if successful)
+      if: steps.cherrypick.outputs.success == 'true'
+      uses: actions/github-script@v7
+      with:
+        script: |
+          const targetVersion = '${{ inputs.target_version }}';
+          const commitSha = '${{ steps.validate.outputs.full_sha }}';
+          const commitShort = commitSha.substring(0, 7);
+          const commitMsg = `${{ steps.validate.outputs.message }}`;
+          const commitAuthor = '${{ steps.validate.outputs.author }}';
+          const commitDate = '${{ steps.validate.outputs.date }}';
+          const branchName = '${{ steps.branch.outputs.branch_name }}';
+          
+          const customTitle = '${{ inputs.pr_title }}';
+          const prTitle = customTitle || `[Backport ${targetVersion}] ${commitMsg.split('\n')[0]}`;
+          
+          const pr = await github.rest.pulls.create({
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            title: prTitle,
+            head: branchName,
+            base: `support/${targetVersion}`,
+            body: `# Backport to ${targetVersion}
+            
+## Original Commit
+
+- **SHA**: ${commitSha}
+- **Author**: ${commitAuthor}
+- **Date**: ${commitDate}
+- **Message**: 
+  \`\`\`
+  ${commitMsg}
+  \`\`\`
+
+## Changes
+
+This PR backports the fix from commit ${commitShort} to the \`support/${targetVersion}\` branch.
+
+### Cherry-pick Status
+
+✅ **Cherry-pick successful** - no conflicts detected
+
+## Testing
+
+- [ ] Build test passed
+- [ ] Manual testing completed
+- [ ] No regressions introduced
+
+## Related Issues
+
+<!-- Link any related issues here -->
+
+---
+
+**Auto-created by backport-hotfix workflow**
+Requested by: @${context.actor}`,
+            draft: false
+          });
+          
+          core.info(`✅ Created PR: #${pr.data.number}`);
+          core.setOutput('pr_number', pr.data.number);
+          
+    - name: Report Conflicts (if failed)
+      if: steps.cherrypick.outputs.success == 'false'
+      uses: actions/github-script@v7
+      with:
+        script: |
+          const targetVersion = '${{ inputs.target_version }}';
+          const commitSha = '${{ steps.validate.outputs.full_sha }}';
+          const commitMsg = `${{ steps.validate.outputs.message }}`;
+          
+          // Читаем список конфликтов
+          const fs = require('fs');
+          let conflicts = '';
+          try {
+            conflicts = fs.readFileSync('conflicts.txt', 'utf8');
+          } catch (e) {
+            conflicts = 'Could not determine conflicting files';
+          }
+          
+          const issue = await github.rest.issues.create({
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            title: `[Backport Failed] Cannot backport ${commitSha.substring(0, 7)} to ${targetVersion}`,
+            body: `# Backport Failed: Conflicts Detected
+            
+## Original Commit
+
+- **SHA**: ${commitSha}
+- **Target Version**: ${targetVersion}
+- **Message**: 
+  \`\`\`
+  ${commitMsg}
+  \`\`\`
+
+## Problem
+
+❌ Cherry-pick failed due to merge conflicts.
+
+### Conflicting Files
+
+\`\`\`
+${conflicts}
+\`\`\`
+
+## Resolution Steps
+
+Manual intervention required:
+
+1. Checkout support branch:
+   \`\`\`bash
+   git checkout support/${targetVersion}
+   git pull
+   \`\`\`
+
+2. Cherry-pick commit manually:
+   \`\`\`bash
+   git cherry-pick ${commitSha}
+   \`\`\`
+
+3. Resolve conflicts in the files listed above
+
+4. Complete cherry-pick:
+   \`\`\`bash
+   git add <resolved-files>
+   git cherry-pick --continue
+   \`\`\`
+
+5. Push and create PR:
+   \`\`\`bash
+   git push origin support/${targetVersion}
+   \`\`\`
+
+---
+
+**Auto-created by backport-hotfix workflow**
+Requested by: @${context.actor}`,
+            labels: ['backport', 'needs-manual-intervention', `version-${targetVersion}`]
+          });
+          
+          core.info(`✅ Created issue for manual backport: #${issue.data.number}`);
+          core.setFailed('Cherry-pick failed - manual intervention required');
+          
+    - name: Summary
+      if: always()
+      run: |
+        COMMIT="${{ steps.validate.outputs.full_sha }}"
+        TARGET="${{ inputs.target_version }}"
+        
+        echo "## 🍒 Backport Summary" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "**Commit**: \`${COMMIT:0:7}\`" >> $GITHUB_STEP_SUMMARY
+        echo "**Target Version**: ${TARGET}" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        
+        if [ "${{ steps.cherrypick.outputs.success }}" == "true" ]; then
+          echo "✅ **Status**: Cherry-pick successful" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Pull request created automatically." >> $GITHUB_STEP_SUMMARY
+        else
+          echo "❌ **Status**: Cherry-pick failed (conflicts)" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Issue created for manual resolution." >> $GITHUB_STEP_SUMMARY
+        fi

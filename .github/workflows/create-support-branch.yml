@@ -1,0 +1,158 @@
+name: Create Support Branch
+
+# Автоматически создает support/X.Y.x ветку при публикации релиза
+# Пример: релиз v0.1.0 → создается support/0.1.x
+
+on:
+  release:
+    types: [published]
+
+permissions:
+  contents: write
+  issues: write
+
+jobs:
+  create-support-branch:
+    name: Create Support Branch
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout Repository
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+        
+    - name: Extract Version
+      id: version
+      run: |
+        TAG_NAME="${{ github.event.release.tag_name }}"
+        # Убираем 'v' префикс если есть
+        VERSION=${TAG_NAME#v}
+        
+        # Извлекаем major.minor
+        MAJOR=$(echo $VERSION | cut -d. -f1)
+        MINOR=$(echo $VERSION | cut -d. -f2)
+        
+        SUPPORT_BRANCH="support/${MAJOR}.${MINOR}.x"
+        
+        echo "version=${VERSION}" >> $GITHUB_OUTPUT
+        echo "support_branch=${SUPPORT_BRANCH}" >> $GITHUB_OUTPUT
+        
+        echo "📦 Релиз: ${TAG_NAME}"
+        echo "🌿 Support ветка: ${SUPPORT_BRANCH}"
+        
+    - name: Check if Support Branch Exists
+      id: check
+      run: |
+        BRANCH="${{ steps.version.outputs.support_branch }}"
+        
+        # Проверяем локально
+        if git show-ref --verify --quiet refs/heads/${BRANCH}; then
+          echo "exists=true" >> $GITHUB_OUTPUT
+          echo "⚠️  Ветка ${BRANCH} уже существует локально"
+        # Проверяем remote
+        elif git ls-remote --heads origin ${BRANCH} | grep -q ${BRANCH}; then
+          echo "exists=true" >> $GITHUB_OUTPUT
+          echo "⚠️  Ветка ${BRANCH} уже существует на remote"
+        else
+          echo "exists=false" >> $GITHUB_OUTPUT
+          echo "✅ Ветка ${BRANCH} не существует - создаем"
+        fi
+        
+    - name: Create Support Branch
+      if: steps.check.outputs.exists == 'false'
+      run: |
+        BRANCH="${{ steps.version.outputs.support_branch }}"
+        TAG="${{ github.event.release.tag_name }}"
+        
+        # Создаем ветку от тега релиза
+        git checkout -b ${BRANCH} ${TAG}
+        git push origin ${BRANCH}
+        
+        echo "✅ Создана support ветка: ${BRANCH}"
+        
+    - name: Create Tracking Issue
+      if: steps.check.outputs.exists == 'false'
+      uses: actions/github-script@v7
+      with:
+        script: |
+          const version = '${{ steps.version.outputs.version }}';
+          const supportBranch = '${{ steps.version.outputs.support_branch }}';
+          const tagName = '${{ github.event.release.tag_name }}';
+          
+          // Вычисляем EOL дату (6 месяцев после релиза)
+          const releaseDate = new Date();
+          const eolDate = new Date(releaseDate);
+          eolDate.setMonth(eolDate.getMonth() + 6);
+          
+          const issue = await github.rest.issues.create({
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            title: `[Support] Version ${version} Support Tracking`,
+            body: `# Support Branch Created: ${supportBranch}
+            
+## Release Information
+
+- **Version**: ${version}
+- **Release Tag**: ${tagName}
+- **Release Date**: ${releaseDate.toISOString().split('T')[0]}
+- **EOL Date**: ${eolDate.toISOString().split('T')[0]} (6 months from release)
+- **Support Branch**: \`${supportBranch}\`
+- **Release URL**: ${context.payload.release.html_url}
+
+## Support Status
+
+- [x] Support branch created
+- [ ] Branch protection enabled
+- [ ] Documentation updated
+- [ ] First maintenance release planned
+
+## Maintenance Schedule
+
+| Task | Status | Target Date |
+|------|--------|-------------|
+| Branch created | ✅ Done | ${releaseDate.toISOString().split('T')[0]} |
+| First patch release | ⏳ Pending | TBD |
+| EOL notification | ⏳ Scheduled | ${new Date(eolDate.getTime() - 30*24*60*60*1000).toISOString().split('T')[0]} |
+| Version EOL | ⏳ Scheduled | ${eolDate.toISOString().split('T')[0]} |
+
+## Next Steps
+
+1. Enable branch protection rules for \`${supportBranch}\`
+2. Update \`SUPPORT_STATUS.md\` with new version
+3. Plan maintenance releases if needed
+4. Monitor for critical bugs requiring backport
+
+---
+
+This issue tracks the support lifecycle for version ${version}.
+It will be updated with maintenance releases and backported fixes.
+
+**Auto-created by create-support-branch workflow**`,
+            labels: ['support', 'tracking', `version-${version}`]
+          });
+          
+          core.info(`✅ Created tracking issue: #${issue.data.number}`);
+          
+    - name: Summary
+      run: |
+        VERSION="${{ steps.version.outputs.version }}"
+        BRANCH="${{ steps.version.outputs.support_branch }}"
+        TAG="${{ github.event.release.tag_name }}"
+        
+        echo "## ✅ Support Branch Management" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "**Release**: ${TAG}" >> $GITHUB_STEP_SUMMARY
+        echo "**Version**: ${VERSION}" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        
+        if [ "${{ steps.check.outputs.exists }}" == "true" ]; then
+          echo "⚠️  Support branch \`${BRANCH}\` already exists" >> $GITHUB_STEP_SUMMARY
+        else
+          echo "✅ Created support branch: \`${BRANCH}\`" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Next Steps:" >> $GITHUB_STEP_SUMMARY
+          echo "- Branch protection will be configured automatically" >> $GITHUB_STEP_SUMMARY
+          echo "- Tracking issue created for this version" >> $GITHUB_STEP_SUMMARY
+          echo "- EOL scheduled for 6 months from now" >> $GITHUB_STEP_SUMMARY
+        fi
