@@ -30,6 +30,41 @@ jobs:
     runs-on: ubuntu-latest
     
     steps:
+    - name: Check Permissions
+      id: check_permissions
+      uses: actions/github-script@v7
+      continue-on-error: true
+      with:
+        script: |
+          try {
+            // Try to get branch protection (this also requires admin permissions)
+            await github.rest.repos.getBranchProtection({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              branch: 'main'
+            });
+            core.setOutput('has_permissions', 'true');
+            core.info('✅ Has administration permissions');
+          } catch (error) {
+            if (error.status === 403) {
+              core.setOutput('has_permissions', 'false');
+              core.warning('⚠️ Missing administration permissions');
+              core.warning('🔐 The default GITHUB_TOKEN cannot modify branch protection rules.');
+              core.warning('📖 To enable automatic branch protection setup:');
+              core.warning('   1. Create a Personal Access Token with admin:repo scope');
+              core.warning('   2. Add it as a repository secret (e.g., ADMIN_TOKEN)');
+              core.warning('   3. Update this workflow to use: github-token: ${{ secrets.ADMIN_TOKEN }}');
+              core.warning('');
+              core.warning('📝 Or configure branch protection manually via Settings → Branches');
+            } else if (error.status === 404) {
+              // Branch protection not set yet, but we might have permissions
+              core.setOutput('has_permissions', 'maybe');
+              core.info('ℹ️ Branch protection not configured yet');
+            } else {
+              throw error;
+            }
+          }
+    
     - name: Determine Branches
       id: branches
       run: |
@@ -53,68 +88,98 @@ jobs:
     - name: Configure Main Branch Protection
       if: contains(steps.branches.outputs.branches, 'main')
       uses: actions/github-script@v7
+      continue-on-error: true
       with:
         script: |
-          await github.rest.repos.updateBranchProtection({
-            owner: context.repo.owner,
-            repo: context.repo.repo,
-            branch: 'main',
-            required_status_checks: {
-              strict: true,
-              contexts: ['build-test', 'check']
-            },
-            enforce_admins: false,
-            required_pull_request_reviews: {
-              dismissal_restrictions: {},
-              dismiss_stale_reviews: true,
-              require_code_owner_reviews: false,
-              required_approving_review_count: 1,
-              require_last_push_approval: false
-            },
-            restrictions: null,
-            required_linear_history: false,
-            allow_force_pushes: false,
-            allow_deletions: false,
-            block_creations: false,
-            required_conversation_resolution: true,
-            lock_branch: false,
-            allow_fork_syncing: false
-          });
-          
-          core.info('✅ Branch protection configured for main');
+          try {
+            await github.rest.repos.updateBranchProtection({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              branch: 'main',
+              required_status_checks: {
+                strict: true,
+                contexts: ['build-test', 'check']
+              },
+              enforce_admins: false,
+              required_pull_request_reviews: {
+                dismissal_restrictions: {},
+                dismiss_stale_reviews: true,
+                require_code_owner_reviews: false,
+                required_approving_review_count: 1,
+                require_last_push_approval: false
+              },
+              restrictions: null,
+              required_linear_history: false,
+              allow_force_pushes: false,
+              allow_deletions: false,
+              block_creations: false,
+              required_conversation_resolution: true,
+              lock_branch: false,
+              allow_fork_syncing: false
+            });
+            
+            core.info('✅ Branch protection configured for main');
+          } catch (error) {
+            if (error.status === 403) {
+              core.warning('⚠️ Cannot configure branch protection: Missing administration permissions');
+              core.warning('📝 Please configure branch protection manually:');
+              core.warning('   1. Go to Settings → Branches');
+              core.warning('   2. Add rule for branch: main');
+              core.warning('   3. Enable: Require pull request reviews (1 approval)');
+              core.warning('   4. Enable: Require status checks (build-test, check)');
+              core.warning('   5. Enable: Dismiss stale reviews');
+              core.warning('   6. Enable: Require conversation resolution');
+            } else {
+              throw error;
+            }
+          }
           
     - name: Configure Develop Branch Protection
       if: contains(steps.branches.outputs.branches, 'develop')
       uses: actions/github-script@v7
+      continue-on-error: true
       with:
         script: |
-          await github.rest.repos.updateBranchProtection({
-            owner: context.repo.owner,
-            repo: context.repo.repo,
-            branch: 'develop',
-            required_status_checks: {
-              strict: true,
-              contexts: ['build-test', 'check']
-            },
-            enforce_admins: false,
-            required_pull_request_reviews: {
-              dismissal_restrictions: {},
-              dismiss_stale_reviews: false,
-              require_code_owner_reviews: false,
-              required_approving_review_count: 1,
-              require_last_push_approval: false
-            },
-            restrictions: null,
-            required_linear_history: false,
-            allow_force_pushes: false,
-            allow_deletions: false,
-            block_creations: false,
-            required_conversation_resolution: false,
-            lock_branch: false,
-            allow_fork_syncing: false
-          });
-          
-          core.info('✅ Branch protection configured for develop');
+          try {
+            await github.rest.repos.updateBranchProtection({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              branch: 'develop',
+              required_status_checks: {
+                strict: true,
+                contexts: ['build-test', 'check']
+              },
+              enforce_admins: false,
+              required_pull_request_reviews: {
+                dismissal_restrictions: {},
+                dismiss_stale_reviews: false,
+                require_code_owner_reviews: false,
+                required_approving_review_count: 1,
+                require_last_push_approval: false
+              },
+              restrictions: null,
+              required_linear_history: false,
+              allow_force_pushes: false,
+              allow_deletions: false,
+              block_creations: false,
+              required_conversation_resolution: false,
+              lock_branch: false,
+              allow_fork_syncing: false
+            });
+            
+            core.info('✅ Branch protection configured for develop');
+          } catch (error) {
+            if (error.status === 403) {
+              core.warning('⚠️ Cannot configure branch protection: Missing administration permissions');
+              core.warning('📝 Please configure branch protection manually:');
+              core.warning('   1. Go to Settings → Branches');
+              core.warning('   2. Add rule for branch: develop');
+              core.warning('   3. Enable: Require pull request reviews (1 approval)');
+              core.warning('   4. Enable: Require status checks (build-test, check)');
+            } else {
+              throw error;
+            }
+          }
           
     - name: List Support Branches
       if: contains(steps.branches.outputs.branches, 'support/')
@@ -140,10 +205,12 @@ jobs:
     - name: Configure Support Branches Protection
       if: contains(steps.branches.outputs.branches, 'support/')
       uses: actions/github-script@v7
+      continue-on-error: true
       with:
         script: |
           const supportBranches = ${{ steps.support_branches.outputs.result }};
           
+          let permissionError = false;
           for (const branch of supportBranches) {
             try {
               await github.rest.repos.updateBranchProtection({
@@ -174,20 +241,73 @@ jobs:
               
               core.info(`✅ Branch protection configured for ${branch}`);
             } catch (error) {
-              core.warning(`Failed to configure ${branch}: ${error.message}`);
+              if (error.status === 403) {
+                permissionError = true;
+                core.warning(`⚠️ Cannot configure ${branch}: Missing administration permissions`);
+              } else {
+                core.warning(`Failed to configure ${branch}: ${error.message}`);
+              }
             }
+          }
+          
+          if (permissionError) {
+            core.warning('📝 Please configure support branch protection manually:');
+            core.warning('   1. Go to Settings → Branches');
+            core.warning('   2. Add rule for branch pattern: support/*');
+            core.warning('   3. Enable: Require pull request reviews (1 approval)');
+            core.warning('   4. Enable: Require status checks (build-test)');
+            core.warning('   5. Enable: Dismiss stale reviews');
+            core.warning('   6. Enable: Require conversation resolution');
           }
           
     - name: Summary
       run: |
         echo "## 🛡️ Branch Protection Setup" >> $GITHUB_STEP_SUMMARY
         echo "" >> $GITHUB_STEP_SUMMARY
-        echo "**Configured branches**: ${{ steps.branches.outputs.branches }}" >> $GITHUB_STEP_SUMMARY
-        echo "" >> $GITHUB_STEP_SUMMARY
-        echo "### Protection Rules:" >> $GITHUB_STEP_SUMMARY
-        echo "- ✅ Require pull request reviews (1 approval)" >> $GITHUB_STEP_SUMMARY
-        echo "- ✅ Require status checks to pass" >> $GITHUB_STEP_SUMMARY
-        echo "- ✅ Dismiss stale reviews on new commits" >> $GITHUB_STEP_SUMMARY
-        echo "- ✅ Require conversation resolution" >> $GITHUB_STEP_SUMMARY
-        echo "- ❌ Force pushes disabled" >> $GITHUB_STEP_SUMMARY
-        echo "- ❌ Branch deletion disabled" >> $GITHUB_STEP_SUMMARY
+        
+        if [ "${{ steps.check_permissions.outputs.has_permissions }}" == "false" ]; then
+          echo "### ⚠️ Configuration Status: Permission Denied" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "The workflow cannot automatically configure branch protection due to missing permissions." >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### 📝 Manual Setup Required" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Please configure branch protection manually:" >> $GITHUB_STEP_SUMMARY
+          echo "1. Go to **Settings** → **Branches**" >> $GITHUB_STEP_SUMMARY
+          echo "2. Click **Add branch protection rule**" >> $GITHUB_STEP_SUMMARY
+          echo "3. For **main** branch:" >> $GITHUB_STEP_SUMMARY
+          echo "   - ✅ Require pull request reviews (1 approval)" >> $GITHUB_STEP_SUMMARY
+          echo "   - ✅ Require status checks: build-test, check" >> $GITHUB_STEP_SUMMARY
+          echo "   - ✅ Dismiss stale reviews on new commits" >> $GITHUB_STEP_SUMMARY
+          echo "   - ✅ Require conversation resolution" >> $GITHUB_STEP_SUMMARY
+          echo "4. For **develop** branch:" >> $GITHUB_STEP_SUMMARY
+          echo "   - ✅ Require pull request reviews (1 approval)" >> $GITHUB_STEP_SUMMARY
+          echo "   - ✅ Require status checks: build-test, check" >> $GITHUB_STEP_SUMMARY
+          echo "5. For **support/*** branches:" >> $GITHUB_STEP_SUMMARY
+          echo "   - ✅ Require pull request reviews (1 approval)" >> $GITHUB_STEP_SUMMARY
+          echo "   - ✅ Require status checks: build-test" >> $GITHUB_STEP_SUMMARY
+          echo "   - ✅ Dismiss stale reviews" >> $GITHUB_STEP_SUMMARY
+          echo "   - ✅ Require conversation resolution" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### 🔐 To Enable Automatic Setup" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Create a Personal Access Token with \`admin:repo\` scope and add it as a secret:" >> $GITHUB_STEP_SUMMARY
+          echo '```yaml' >> $GITHUB_STEP_SUMMARY
+          echo "- name: Configure Main Branch Protection" >> $GITHUB_STEP_SUMMARY
+          echo "  uses: actions/github-script@v7" >> $GITHUB_STEP_SUMMARY
+          echo "  with:" >> $GITHUB_STEP_SUMMARY
+          echo '    github-token: ${{ secrets.ADMIN_TOKEN }}' >> $GITHUB_STEP_SUMMARY
+          echo "    script: |" >> $GITHUB_STEP_SUMMARY
+          echo "      # ..." >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+        else
+          echo "**Target branches**: ${{ steps.branches.outputs.branches }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Protection Rules Applied:" >> $GITHUB_STEP_SUMMARY
+          echo "- ✅ Require pull request reviews (1 approval)" >> $GITHUB_STEP_SUMMARY
+          echo "- ✅ Require status checks to pass" >> $GITHUB_STEP_SUMMARY
+          echo "- ✅ Dismiss stale reviews on new commits" >> $GITHUB_STEP_SUMMARY
+          echo "- ✅ Require conversation resolution" >> $GITHUB_STEP_SUMMARY
+          echo "- ❌ Force pushes disabled" >> $GITHUB_STEP_SUMMARY
+          echo "- ❌ Branch deletion disabled" >> $GITHUB_STEP_SUMMARY
+        fi
