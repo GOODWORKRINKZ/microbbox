@@ -167,6 +167,42 @@ bool BaseRobot::initWebServer() {
         handleRoot(request);
     });
     
+    // Регистрация обработчиков статических ресурсов
+#ifdef USE_EMBEDDED_RESOURCES
+    server_->on("/styles.css", HTTP_GET, [](AsyncWebServerRequest* request) {
+        AsyncWebServerResponse *response = request->beginResponse_P(200, "text/css; charset=utf-8", stylesCss, stylesCss_len);
+        response->addHeader("Cache-Control", "no-cache, no-store, must-revalidate");
+        response->addHeader("Pragma", "no-cache");
+        response->addHeader("Expires", "0");
+        request->send(response);
+    });
+    
+    server_->on("/script.js", HTTP_GET, [](AsyncWebServerRequest* request) {
+        AsyncWebServerResponse *response = request->beginResponse_P(200, "application/javascript; charset=utf-8", scriptJs, scriptJs_len);
+        response->addHeader("Cache-Control", "no-cache, no-store, must-revalidate");
+        response->addHeader("Pragma", "no-cache");
+        response->addHeader("Expires", "0");
+        request->send(response);
+    });
+#else
+    // Fallback: загрузка из SPIFFS
+    server_->on("/styles.css", HTTP_GET, [](AsyncWebServerRequest* request) {
+        if (SPIFFS.exists("/styles.css")) {
+            request->send(SPIFFS, "/styles.css", "text/css; charset=utf-8");
+        } else {
+            request->send(404, "text/plain", "styles.css not found");
+        }
+    });
+    
+    server_->on("/script.js", HTTP_GET, [](AsyncWebServerRequest* request) {
+        if (SPIFFS.exists("/script.js")) {
+            request->send(SPIFFS, "/script.js", "application/javascript; charset=utf-8");
+        } else {
+            request->send(404, "text/plain", "script.js not found");
+        }
+    });
+#endif
+    
     // Регистрация обработчиков прошивки
     firmwareUpdate_->init(server_);
     
