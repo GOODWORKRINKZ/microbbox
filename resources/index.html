@@ -101,11 +101,9 @@
 
                 <div class="control-section">
                     <h3>Дополнительно</h3>
-                    <button id="pcSettingsBtn" class="feature-btn">⚙️ Настройки</button>
                     <button id="flashlightBtn" class="feature-btn">💡 Фонарик</button>
                     <button id="hornBtn" class="feature-btn">🔊 Сигнал</button>
                     <button id="updateBtn" class="feature-btn update-btn">🔄 Обновление</button>
-                    <button id="helpBtn" class="feature-btn">❓ Справка</button>
                 </div>
             </div>
         </div>
@@ -299,6 +297,36 @@
                                 <p>Текущая версия: <strong id="currentVersion">Загрузка...</strong></p>
                                 <p id="releaseName"></p>
                             </div>
+                            
+                            <!-- Выбор типа робота -->
+                            <div id="robotTypeSelection" class="robot-type-selection hidden">
+                                <h4>⚙️ Выберите тип устройства для обновления</h4>
+                                <p class="info-text">Доступны разные прошивки для разных типов роботов:</p>
+                                <div class="robot-type-options">
+                                    <label class="robot-type-option">
+                                        <input type="radio" name="robotType" value="classic">
+                                        <div class="robot-type-card">
+                                            <h5>🚗 МикроБокс Классик</h5>
+                                            <p>Полнофункциональный управляемый робот с камерой и веб-интерфейсом</p>
+                                        </div>
+                                    </label>
+                                    <label class="robot-type-option">
+                                        <input type="radio" name="robotType" value="liner">
+                                        <div class="robot-type-card">
+                                            <h5>🛤️ МикроБокс Лайнер</h5>
+                                            <p>Автономный робот следующий по линии с PID-контроллером</p>
+                                        </div>
+                                    </label>
+                                    <label class="robot-type-option">
+                                        <input type="radio" name="robotType" value="brain">
+                                        <div class="robot-type-card">
+                                            <h5>🎮 МикроБокс Брейн</h5>
+                                            <p>Модуль управления для других роботов (PWM/PPM/SBUS)</p>
+                                        </div>
+                                    </label>
+                                </div>
+                            </div>
+                            
                             <div class="update-actions">
                                 <button id="checkUpdatesBtn" class="btn-secondary">🔍 Проверить обновления</button>
                                 <label class="update-checkbox">

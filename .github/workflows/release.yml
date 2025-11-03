@@ -73,9 +73,36 @@ jobs:
         echo "prev_tag=${PREV_TAG}" >> $GITHUB_OUTPUT
         echo "Previous tag: ${PREV_TAG}"
         
+    - name: Detect Branch Type
+      id: branch_type
+      run: |
+        CURRENT_BRANCH=$(git rev-parse --abbrev-ref HEAD)
+        VERSION="${{ steps.version.outputs.version }}"
+        
+        # Проверяем, это support ветка или нет
+        if [[ "$CURRENT_BRANCH" == support/* ]]; then
+          echo "type=support" >> $GITHUB_OUTPUT
+          echo "is_patch=true" >> $GITHUB_OUTPUT
+          
+          # Извлекаем base version (X.Y) из support/X.Y.x
+          BASE_VERSION=$(echo "$CURRENT_BRANCH" | sed 's/support\/\([0-9]*\.[0-9]*\)\.x/\1/')
+          echo "base_version=${BASE_VERSION}" >> $GITHUB_OUTPUT
+          
+          echo "🔧 Hotfix релиз из ${CURRENT_BRANCH}"
+          echo "📦 Base версия: ${BASE_VERSION}"
+        else
+          echo "type=main" >> $GITHUB_OUTPUT
+          echo "is_patch=false" >> $GITHUB_OUTPUT
+          echo "🚀 Стабильный релиз из ${CURRENT_BRANCH}"
+        fi
+        
     - name: Generate Epic Release Name
       id: epic_name
       run: |
+        VERSION="${{ steps.version.outputs.version }}"
+        IS_PATCH="${{ steps.branch_type.outputs.is_patch }}"
+        BASE_VERSION="${{ steps.branch_type.outputs.base_version }}"
+        
         # Массивы старославянских прилагательных и героев
         ADJECTIVES=(
           "Yarostniy:Яростный"
@@ -123,25 +150,75 @@ jobs:
           "Buslay:Буслай"
         )
         
-        # Используем версию как seed для детерминированной генерации
-        VERSION="${{ steps.version.outputs.version }}"
-        SEED=$(echo -n "$VERSION" | md5sum | cut -c1-8)
-        SEED_DEC=$((16#$SEED))
+        # Эпичные древнеславянские суффиксы для hotfix релизов
+        HOTFIX_SUFFIXES_EN=(
+          "Skoraya Zastava"      # Скорая Застава - быстрая защита границ
+          "Kriepkiy Shchit"      # Крепкий Щит - надежная оборона
+          "Ognennoye Kopyo"      # Огненное Копьё - пронзает проблему
+          "Miechenosiec"         # Меченосец - воин-исправитель
+          "Velesova Mudrost"     # Велесова Мудрость - божественное решение
+        )
         
-        # Выбираем прилагательное и героя по seed
-        ADJ_INDEX=$(($SEED_DEC % ${#ADJECTIVES[@]}))
-        HERO_INDEX=$((($SEED_DEC / ${#ADJECTIVES[@]}) % ${#HEROES[@]}))
+        HOTFIX_SUFFIXES_RU=(
+          "Скорая Застава"
+          "Крепкий Щит"
+          "Огненное Копьё"
+          "Меченосец"
+          "Велесова Мудрость"
+        )
         
-        ADJ_PAIR="${ADJECTIVES[$ADJ_INDEX]}"
-        HERO_PAIR="${HEROES[$HERO_INDEX]}"
-        
-        ADJ_EN=$(echo $ADJ_PAIR | cut -d: -f1)
-        ADJ_RU=$(echo $ADJ_PAIR | cut -d: -f2)
-        HERO_EN=$(echo $HERO_PAIR | cut -d: -f1)
-        HERO_RU=$(echo $HERO_PAIR | cut -d: -f2)
-        
-        EPIC_NAME_EN="${ADJ_EN} ${HERO_EN}"
-        EPIC_NAME_RU="${ADJ_RU} ${HERO_RU}"
+        if [ "$IS_PATCH" == "true" ]; then
+          # Для hotfix используем base version для генерации имени
+          SEED=$(echo -n "${BASE_VERSION}" | md5sum | cut -c1-8)
+          SEED_DEC=$((16#$SEED))
+          
+          # Генерируем базовое эпическое имя от base version
+          ADJ_INDEX=$(($SEED_DEC % ${#ADJECTIVES[@]}))
+          HERO_INDEX=$((($SEED_DEC / ${#ADJECTIVES[@]}) % ${#HEROES[@]}))
+          
+          ADJ_PAIR="${ADJECTIVES[$ADJ_INDEX]}"
+          HERO_PAIR="${HEROES[$HERO_INDEX]}"
+          
+          ADJ_EN=$(echo $ADJ_PAIR | cut -d: -f1)
+          ADJ_RU=$(echo $ADJ_PAIR | cut -d: -f2)
+          HERO_EN=$(echo $HERO_PAIR | cut -d: -f1)
+          HERO_RU=$(echo $HERO_PAIR | cut -d: -f2)
+          
+          BASE_EPIC_EN="${ADJ_EN} ${HERO_EN}"
+          BASE_EPIC_RU="${ADJ_RU} ${HERO_RU}"
+          
+          # Выбираем суффикс по патч-номеру
+          PATCH_NUM=$(echo "$VERSION" | cut -d. -f3)
+          SUFFIX_INDEX=$((($PATCH_NUM - 1) % ${#HOTFIX_SUFFIXES_EN[@]}))
+          
+          SUFFIX_EN="${HOTFIX_SUFFIXES_EN[$SUFFIX_INDEX]}"
+          SUFFIX_RU="${HOTFIX_SUFFIXES_RU[$SUFFIX_INDEX]}"
+          
+          EPIC_NAME_EN="${BASE_EPIC_EN}: ${SUFFIX_EN}"
+          EPIC_NAME_RU="${BASE_EPIC_RU}: ${SUFFIX_RU}"
+          
+          echo "🔧 Hotfix релиз: базируется на ${BASE_VERSION}"
+        else
+          # Для major/minor релизов - новое уникальное имя
+          SEED=$(echo -n "$VERSION" | md5sum | cut -c1-8)
+          SEED_DEC=$((16#$SEED))
+          
+          ADJ_INDEX=$(($SEED_DEC % ${#ADJECTIVES[@]}))
+          HERO_INDEX=$((($SEED_DEC / ${#ADJECTIVES[@]}) % ${#HEROES[@]}))
+          
+          ADJ_PAIR="${ADJECTIVES[$ADJ_INDEX]}"
+          HERO_PAIR="${HEROES[$HERO_INDEX]}"
+          
+          ADJ_EN=$(echo $ADJ_PAIR | cut -d: -f1)
+          ADJ_RU=$(echo $ADJ_PAIR | cut -d: -f2)
+          HERO_EN=$(echo $HERO_PAIR | cut -d: -f1)
+          HERO_RU=$(echo $HERO_PAIR | cut -d: -f2)
+          
+          EPIC_NAME_EN="${ADJ_EN} ${HERO_EN}"
+          EPIC_NAME_RU="${ADJ_RU} ${HERO_RU}"
+          
+          echo "🚀 Стабильный релиз: новое эпическое имя"
+        fi
         
         echo "epic_name_en=${EPIC_NAME_EN}" >> $GITHUB_OUTPUT
         echo "epic_name_ru=${EPIC_NAME_RU}" >> $GITHUB_OUTPUT

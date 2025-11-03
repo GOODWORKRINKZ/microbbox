@@ -1,5 +1,5 @@
 #include "WiFiSettings.h"
-#include "config.h"
+#include "hardware_config.h"
 #include <WiFi.h>
 
 WiFiSettings::WiFiSettings() : 
