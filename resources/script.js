@@ -277,9 +277,11 @@ class DeviceDetector {
 // ═══════════════════════════════════════════════════════════════
 
 class BaseRobotUI {
+    // Статические константы класса
+    static ROBOT_TYPES = ['classic', 'liner', 'brain']; // Доступные типы роботов
+    
     constructor() {
         this.GITHUB_REPO = 'GOODWORKRINKZ/microbbox';
-        this.ROBOT_TYPES = ['classic', 'liner', 'brain']; // Доступные типы роботов
         this.robotType = 'unknown';
         this.deviceType = DeviceDetector.detect();
         this.isConnected = false;
@@ -846,7 +848,9 @@ class BaseRobotUI {
         const name = asset.name.toLowerCase();
         
         // Проверяем что это .bin файл (но не .sha256)
-        if (!name.endsWith('.bin') || name.includes('.sha256')) return false;
+        if (!name.endsWith('.bin') || name.includes('.sha256')) {
+            return false;
+        }
         
         // Если указан тип робота, проверяем соответствие
         if (robotType) {
@@ -864,7 +868,7 @@ class BaseRobotUI {
         const availableTypes = [];
         
         // Проходим по всем возможным типам и проверяем, есть ли соответствующий файл
-        for (const type of this.ROBOT_TYPES) {
+        for (const type of BaseRobotUI.ROBOT_TYPES) {
             const found = assets.some(asset => this.isValidFirmwareAsset(asset, type));
             
             if (found) {
