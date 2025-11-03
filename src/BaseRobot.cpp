@@ -4,6 +4,10 @@
 #include <ESPmDNS.h>
 #include <esp_camera.h>
 
+#ifdef USE_EMBEDDED_RESOURCES
+#include "embedded_resources.h"
+#endif
+
 BaseRobot::BaseRobot() :
     initialized_(false),
     cameraInitialized_(false),
@@ -369,15 +373,23 @@ bool BaseRobot::connectWiFiDHCP(const char* ssid, const char* password) {
 
 void BaseRobot::handleRoot(AsyncWebServerRequest* request) {
 #ifdef USE_EMBEDDED_RESOURCES
-    // Отправка встроенных ресурсов (index.html)
-    request->send_P(200, "text/html; charset=UTF-8", INDEX_HTML_CONTENT, INDEX_HTML_SIZE);
+    // Отправка встроенных ресурсов (из embedded_resources.h)
+    AsyncWebServerResponse *response = request->beginResponse_P(200, "text/html; charset=UTF-8", indexHtml, indexHtml_len);
+    response->addHeader("Cache-Control", "no-cache");
+    request->send(response);
 #else
-    // Простая заглушка для тестирования
-    String html = "<!DOCTYPE html><html><head><meta charset='UTF-8'><title>МикРоББокс</title></head><body>";
-    html += "<h1>МикРоББокс " + getRobotTypeString() + "</h1>";
-    html += "<p>Веб-интерфейс будет доступен после добавления ресурсов.</p>";
-    html += "<p>IP: " + WiFi.localIP().toString() + "</p>";
-    html += "</body></html>";
-    request->send(200, "text/html; charset=UTF-8", html);
+    // Fallback: отправка из SPIFFS или заглушка
+    if (SPIFFS.exists("/index.html")) {
+        request->send(SPIFFS, "/index.html", "text/html; charset=UTF-8");
+    } else {
+        // Заглушка если ресурсы не встроены и файл не найден
+        String html = "<!DOCTYPE html><html><head><meta charset='UTF-8'><title>МикРоББокс</title></head><body>";
+        html += "<h1>МикРоББокс " + getRobotTypeString() + "</h1>";
+        html += "<p>Веб-интерфейс недоступен. Пересоберите проект с USE_EMBEDDED_RESOURCES или загрузите файлы в SPIFFS.</p>";
+        html += "<p>IP: " + WiFi.localIP().toString() + "</p>";
+        html += "<p><a href='/update'>Обновление прошивки</a></p>";
+        html += "</body></html>";
+        request->send(200, "text/html; charset=UTF-8", html);
+    }
 #endif
 }
