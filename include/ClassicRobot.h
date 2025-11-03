@@ -3,6 +3,7 @@
 
 #include "BaseRobot.h"
 #include "target_config.h"
+#include "hardware_config.h"
 
 #ifdef TARGET_CLASSIC
 
