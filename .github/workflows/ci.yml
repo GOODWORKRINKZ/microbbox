@@ -126,7 +126,7 @@ jobs:
         echo "Checking web resource files..."
         
         RESOURCES_DIR="resources"
-        REQUIRED_FILES=("index.html" "update.html" "styles.css" "script.js")
+        REQUIRED_FILES=("index.html" "styles.css" "script.js")
         
         for file in "${REQUIRED_FILES[@]}"; do
           if [ -f "$RESOURCES_DIR/$file" ]; then

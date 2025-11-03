@@ -60,3 +60,6 @@ example2/
 __pycache__/
 *.pyc
 *.pyo
+
+# embedded_resources.h
+embedded_resources.h
