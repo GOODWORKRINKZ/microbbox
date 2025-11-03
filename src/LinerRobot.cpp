@@ -92,11 +92,6 @@ void LinerRobot::shutdownSpecificComponents() {
 void LinerRobot::setupWebHandlers(AsyncWebServer* server) {
     DEBUG_PRINTLN("Настройка веб-обработчиков для Liner робота");
     
-    // Главная страница
-    server->on("/", HTTP_GET, [this](AsyncWebServerRequest* request) {
-        handleRoot(request);
-    });
-    
     // Команды управления
     server->on("/cmd", HTTP_GET, [this](AsyncWebServerRequest* request) {
         handleCommand(request);
@@ -111,11 +106,6 @@ void LinerRobot::setupWebHandlers(AsyncWebServer* server) {
     server->on("/api/robot-type", HTTP_GET, [this](AsyncWebServerRequest* request) {
         String json = "{\"type\":\"liner\",\"name\":\"MicroBox Liner\"}";
         request->send(200, "application/json", json);
-    });
-    
-    // 404
-    server->onNotFound([](AsyncWebServerRequest* request) {
-        request->send(404, "text/plain", "Not Found");
     });
 }
 
@@ -338,17 +328,6 @@ void LinerRobot::updateStatusLED() {
     }
     pixels_->show();
 #endif
-}
-
-void LinerRobot::handleRoot(AsyncWebServerRequest* request) {
-    String html = "<html><head><title>MicroBox Liner</title></head><body>";
-    html += "<h1>MicroBox Liner</h1>";
-    html += "<p>Режим: " + String(currentMode_ == Mode::AUTONOMOUS ? "Автономный" : "Ручной") + "</p>";
-    html += "<button onclick=\"fetch('/cmd?mode=manual')\">Ручной режим</button> ";
-    html += "<button onclick=\"fetch('/cmd?mode=auto')\">Автономный режим</button>";
-    html += "</body></html>";
-    
-    request->send(200, "text/html; charset=UTF-8", html);
 }
 
 void LinerRobot::handleCommand(AsyncWebServerRequest* request) {

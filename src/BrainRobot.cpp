@@ -50,11 +50,6 @@ void BrainRobot::shutdownSpecificComponents() {
 void BrainRobot::setupWebHandlers(AsyncWebServer* server) {
     DEBUG_PRINTLN("Настройка веб-обработчиков для Brain робота");
     
-    // Главная страница
-    server->on("/", HTTP_GET, [this](AsyncWebServerRequest* request) {
-        handleRoot(request);
-    });
-    
     // Команды управления
     server->on("/cmd", HTTP_GET, [this](AsyncWebServerRequest* request) {
         handleCommand(request);
@@ -69,11 +64,6 @@ void BrainRobot::setupWebHandlers(AsyncWebServer* server) {
     server->on("/api/robot-type", HTTP_GET, [this](AsyncWebServerRequest* request) {
         String json = "{\"type\":\"brain\",\"name\":\"MicroBox Brain\"}";
         request->send(200, "application/json", json);
-    });
-    
-    // 404
-    server->onNotFound([](AsyncWebServerRequest* request) {
-        request->send(404, "text/plain", "Not Found");
     });
 }
 
@@ -215,27 +205,6 @@ void BrainRobot::sendTBSOutput(int channels[], int count) {
     // Требуется реализация CRSF протокола
     DEBUG_PRINTLN("TBS выход: функция доступна в будущих версиях");
 #endif
-}
-
-void BrainRobot::handleRoot(AsyncWebServerRequest* request) {
-    String html = "<html><head><title>MicroBox Brain</title></head><body>";
-    html += "<h1>MicroBox Brain</h1>";
-    html += "<p>Модуль управления другими роботами</p>";
-    html += "<p>Протокол: ";
-    switch (currentProtocol_) {
-        case OutputProtocol::PWM: html += "PWM"; break;
-        case OutputProtocol::PPM: html += "PPM"; break;
-        case OutputProtocol::SBUS: html += "SBUS"; break;
-        case OutputProtocol::TBS: html += "TBS Crossfire"; break;
-    }
-    html += "</p>";
-    html += "<button onclick=\"fetch('/protocol?type=pwm')\">PWM</button> ";
-    html += "<button onclick=\"fetch('/protocol?type=ppm')\">PPM</button> ";
-    html += "<button onclick=\"fetch('/protocol?type=sbus')\">SBUS</button> ";
-    html += "<button onclick=\"fetch('/protocol?type=tbs')\">TBS</button>";
-    html += "</body></html>";
-    
-    request->send(200, "text/html; charset=UTF-8", html);
 }
 
 void BrainRobot::handleCommand(AsyncWebServerRequest* request) {

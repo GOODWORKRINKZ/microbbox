@@ -53,7 +53,6 @@ private:
     void updateStatusLED();
     
     // Веб-обработчики
-    void handleRoot(AsyncWebServerRequest* request);
     void handleCommand(AsyncWebServerRequest* request);
     void handleStatus(AsyncWebServerRequest* request);
     

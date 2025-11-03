@@ -48,7 +48,6 @@ private:
     void sendTBSOutput(int channels[], int count);
     
     // Веб-обработчики
-    void handleRoot(AsyncWebServerRequest* request);
     void handleCommand(AsyncWebServerRequest* request);
     void handleProtocol(AsyncWebServerRequest* request);
     
