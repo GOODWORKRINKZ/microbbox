@@ -179,69 +179,6 @@ void FirmwareUpdate::registerUpdateHandlers(AsyncWebServer* server) {
             this->handleDownloadAndInstall(request);
         });
     
-    // API для проверки необходимости выбора типа робота (миграция с 0.0.1)
-    server->on("/api/update/needs-robot-type", HTTP_GET, [](AsyncWebServerRequest *request) {
-        bool needs = FirmwareUpdate::needsRobotTypeSelection();
-        String response = "{\"needsSelection\":" + String(needs ? "true" : "false") + "}";
-        AsyncWebServerResponse *resp = request->beginResponse(200, "application/json", response);
-        resp->addHeader("Access-Control-Allow-Origin", "*");
-        request->send(resp);
-    });
-    
-    // API для получения доступных типов роботов
-    server->on("/api/update/robot-types", HTTP_GET, [](AsyncWebServerRequest *request) {
-        String response = "{\"types\":[";
-        response += "{\"id\":\"classic\",\"name\":\"МикроБокс Классик\",\"description\":\"Полнофункциональный управляемый робот\"},";
-        response += "{\"id\":\"liner\",\"name\":\"МикроБокс Лайнер\",\"description\":\"Автономный робот следующий по линии\"},";
-        response += "{\"id\":\"brain\",\"name\":\"МикроБокс Брейн\",\"description\":\"Модуль управления для других роботов\"}";
-        response += "]}";
-        AsyncWebServerResponse *resp = request->beginResponse(200, "application/json", response);
-        resp->addHeader("Access-Control-Allow-Origin", "*");
-        request->send(resp);
-    });
-    
-    // API для сохранения выбранного типа робота
-    server->on("/api/update/set-robot-type", HTTP_POST,
-        [](AsyncWebServerRequest *request) {},
-        NULL,
-        [](AsyncWebServerRequest *request, uint8_t *data, size_t len, size_t index, size_t total) {
-            static String body = "";
-            for (size_t i = 0; i < len; i++) {
-                body += (char)data[i];
-            }
-            
-            if (index + len == total) {
-                // Извлекаем тип робота из JSON
-                int typePos = body.indexOf("\"type\"");
-                if (typePos >= 0) {
-                    int colonPos = body.indexOf(":", typePos);
-                    if (colonPos >= 0) {
-                        int quoteStart = body.indexOf("\"", colonPos);
-                        int quoteEnd = body.indexOf("\"", quoteStart + 1);
-                        if (quoteStart >= 0 && quoteEnd >= 0) {
-                            String typeStr = body.substring(quoteStart + 1, quoteEnd);
-                            RobotType type = stringToRobotType(typeStr);
-                            
-                            if (type != RobotType::UNKNOWN) {
-                                FirmwareUpdate::setUserSelectedRobotType(type);
-                                String response = "{\"status\":\"ok\",\"type\":\"" + typeStr + "\"}";
-                                request->send(200, "application/json", response);
-                            } else {
-                                request->send(400, "application/json", "{\"status\":\"error\",\"message\":\"Invalid robot type\"}");
-                            }
-                        } else {
-                            request->send(400, "application/json", "{\"status\":\"error\",\"message\":\"Invalid JSON format\"}");
-                        }
-                    } else {
-                        request->send(400, "application/json", "{\"status\":\"error\",\"message\":\"Invalid JSON format\"}");
-                    }
-                } else {
-                    request->send(400, "application/json", "{\"status\":\"error\",\"message\":\"Missing type field\"}");
-                }
-                body = "";
-            }
-        });
-    
     DEBUG_PRINTLN("Обработчики обновлений зарегистрированы");
 }
 
@@ -327,24 +264,17 @@ void FirmwareUpdate::handleUpdateStatus(AsyncWebServerRequest *request) {
 }
 
 void FirmwareUpdate::handleCheckUpdates(AsyncWebServerRequest *request) {
-    // Проверяем, нужен ли выбор типа робота перед проверкой обновлений
-    bool needsTypeSelection = needsRobotTypeSelection();
+    ReleaseInfo releaseInfo;
+    bool hasUpdate = checkForUpdates(releaseInfo);
     
     String json = "{";
-    json += "\"needsRobotTypeSelection\":" + String(needsTypeSelection ? "true" : "false");
-    
-    if (!needsTypeSelection) {
-        ReleaseInfo releaseInfo;
-        bool hasUpdate = checkForUpdates(releaseInfo);
-        
-        json += ",\"hasUpdate\":" + String(hasUpdate ? "true" : "false");
-        if (hasUpdate) {
-            json += ",\"version\":\"" + releaseInfo.version + "\"";
-            json += ",\"releaseName\":\"" + releaseInfo.releaseName + "\"";
-            json += ",\"releaseNotes\":\"" + releaseInfo.releaseNotes + "\"";
-            json += ",\"downloadUrl\":\"" + releaseInfo.downloadUrl + "\"";
-            json += ",\"publishedAt\":\"" + releaseInfo.publishedAt + "\"";
-        }
+    json += "\"hasUpdate\":" + String(hasUpdate ? "true" : "false") + ",";
+    if (hasUpdate) {
+        json += "\"version\":\"" + releaseInfo.version + "\",";
+        json += "\"releaseName\":\"" + releaseInfo.releaseName + "\",";
+        json += "\"releaseNotes\":\"" + releaseInfo.releaseNotes + "\",";
+        json += "\"downloadUrl\":\"" + releaseInfo.downloadUrl + "\",";
+        json += "\"publishedAt\":\"" + releaseInfo.publishedAt + "\"";
     }
     json += "}";
     
@@ -433,17 +363,10 @@ bool FirmwareUpdate::parseGitHubRelease(const String& json, ReleaseInfo& release
     releaseInfo.releaseName = extractJsonValue(json, "name");
     releaseInfo.releaseNotes = extractJsonValue(json, "body");
     releaseInfo.publishedAt = extractJsonValue(json, "published_at");
-    
-    // Определяем тип робота: либо из конфигурации компиляции, либо из выбора пользователя
-    RobotType targetRobotType = robotType_;
-    if (hasUserSelectedRobotType()) {
-        targetRobotType = getUserSelectedRobotType();
-        DEBUG_PRINTF("Используется выбранный пользователем тип: %s\n", robotTypeToString(targetRobotType));
-    }
-    releaseInfo.robotType = targetRobotType;
+    releaseInfo.robotType = robotType_;
     
     // Получаем строковое представление типа робота (lowercase)
-    String robotTypeStr = robotTypeToLowerString(targetRobotType);
+    String robotTypeStr = robotTypeToLowerString(robotType_);
     
     // Ищем URL для скачивания .bin файла для нашего типа робота
     // Формат имени: microbox-{type}-{version}-release.bin
@@ -842,52 +765,4 @@ void FirmwareUpdate::clearOTAPending() {
     
     prefs.end();
     DEBUG_PRINTLN("OTA pending flag and URL cleared");
-}
-
-// ═══════════════════════════════════════════════════════════════
-// МЕТОДЫ ДЛЯ МИГРАЦИИ С ВЕРСИИ 0.0.1 НА 0.1
-// ═══════════════════════════════════════════════════════════════
-
-bool FirmwareUpdate::hasUserSelectedRobotType() {
-    Preferences prefs;
-    if (!prefs.begin("robotType", true)) {  // Read-only
-        return false;
-    }
-    bool hasType = prefs.isKey("selected");
-    prefs.end();
-    return hasType;
-}
-
-RobotType FirmwareUpdate::getUserSelectedRobotType() {
-    Preferences prefs;
-    if (!prefs.begin("robotType", true)) {  // Read-only
-        return RobotType::UNKNOWN;
-    }
-    int typeInt = prefs.getInt("selected", 0);
-    prefs.end();
-    return intToRobotType(typeInt);
-}
-
-void FirmwareUpdate::setUserSelectedRobotType(RobotType type) {
-    Preferences prefs;
-    if (!prefs.begin("robotType", false)) {  // Read-write
-        DEBUG_PRINTLN("ОШИБКА: Не удалось открыть preferences для сохранения типа робота");
-        return;
-    }
-    prefs.putInt("selected", robotTypeToInt(type));
-    prefs.end();
-    DEBUG_PRINTF("Выбран тип робота: %s\n", robotTypeToString(type));
-}
-
-bool FirmwareUpdate::needsRobotTypeSelection() {
-    // Проверяем текущую версию
-    String currentVersion = GIT_VERSION;
-    
-    // Если версия 0.0.X и нет сохраненного типа робота - нужен выбор
-    if (currentVersion.startsWith("v0.0.") || currentVersion.startsWith("0.0.")) {
-        return !hasUserSelectedRobotType();
-    }
-    
-    // Для версий 0.1+ тип определяется на этапе компиляции
-    return false;
 }

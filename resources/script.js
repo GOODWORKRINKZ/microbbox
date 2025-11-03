@@ -693,7 +693,7 @@ class BaseRobotUI {
     }
     
     // ═══════════════════════════════════════════════════════════════
-    // МЕТОДЫ ОБНОВЛЕНИЯ ПРОШИВКИ
+    // МЕТОДЫ ОБНОВЛЕНИЯ ПРОШИВКИ (ТОЛЬКО КЛИЕНТ)
     // ═══════════════════════════════════════════════════════════════
     
     async loadUpdateInfo() {
@@ -706,6 +706,9 @@ class BaseRobotUI {
                 const releaseNameEl = document.getElementById('releaseName');
                 if (versionEl) versionEl.textContent = data.version;
                 if (releaseNameEl) releaseNameEl.textContent = data.releaseName;
+                
+                // Показываем выбор типа робота только для старых версий
+                this.checkIfNeedsRobotTypeSelection(data.version);
             }
             
             // Загружаем настройки
@@ -717,72 +720,43 @@ class BaseRobotUI {
                 if (autoUpdateCheck) autoUpdateCheck.checked = settings.autoUpdate;
                 if (dontOfferCheck) dontOfferCheck.checked = settings.dontOffer;
             }
-            
-            // Проверяем, нужен ли выбор типа робота
-            await this.checkRobotTypeSelection();
         } catch (error) {
             Logger.error('Ошибка загрузки информации об обновлениях:', error);
         }
     }
     
-    async checkRobotTypeSelection() {
-        try {
-            const response = await fetch('/api/update/needs-robot-type');
-            if (response.ok) {
-                const data = await response.json();
-                const selectionDiv = document.getElementById('robotTypeSelection');
-                const updateActions = document.querySelector('.update-actions');
-                const updateAvailable = document.getElementById('updateAvailable');
-                
-                if (data.needsSelection) {
-                    // Показываем выбор типа робота
-                    if (selectionDiv) selectionDiv.classList.remove('hidden');
-                    if (updateActions) updateActions.style.display = 'none';
-                    if (updateAvailable) updateAvailable.classList.add('hidden');
-                } else {
-                    // Скрываем выбор типа робота
-                    if (selectionDiv) selectionDiv.classList.add('hidden');
-                    if (updateActions) updateActions.style.display = 'block';
-                }
+    checkIfNeedsRobotTypeSelection(version) {
+        // Показываем выбор типа только для версий 0.0.X
+        const needsSelection = version && (version.startsWith('v0.0.') || version.startsWith('0.0.'));
+        const selectionDiv = document.getElementById('robotTypeSelection');
+        
+        if (needsSelection && selectionDiv) {
+            selectionDiv.classList.remove('hidden');
+            // Загружаем сохраненный выбор из localStorage
+            const savedType = localStorage.getItem('selectedRobotType');
+            if (savedType) {
+                const radio = document.querySelector(`input[name="robotType"][value="${savedType}"]`);
+                if (radio) radio.checked = true;
+                const confirmBtn = document.getElementById('confirmRobotTypeBtn');
+                if (confirmBtn) confirmBtn.disabled = false;
             }
-        } catch (error) {
-            Logger.error('Ошибка проверки необходимости выбора типа робота:', error);
+        } else if (selectionDiv) {
+            selectionDiv.classList.add('hidden');
         }
     }
     
-    async confirmRobotType() {
+    confirmRobotType() {
         const selectedRadio = document.querySelector('input[name="robotType"]:checked');
         if (!selectedRadio) return;
         
         const robotType = selectedRadio.value;
         
-        try {
-            const response = await fetch('/api/update/set-robot-type', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ type: robotType })
-            });
-            
-            if (response.ok) {
-                Logger.info('Тип робота выбран:', robotType);
-                
-                // Скрываем выбор типа, показываем кнопки обновления
-                const selectionDiv = document.getElementById('robotTypeSelection');
-                const updateActions = document.querySelector('.update-actions');
-                
-                if (selectionDiv) selectionDiv.classList.add('hidden');
-                if (updateActions) updateActions.style.display = 'block';
-                
-                // Показываем уведомление
-                alert(`Выбран тип устройства: ${this.getRobotTypeName(robotType)}.\nТеперь можно проверить обновления.`);
-            } else {
-                Logger.error('Ошибка сохранения типа робота');
-                alert('Ошибка сохранения типа устройства');
-            }
-        } catch (error) {
-            Logger.error('Ошибка при подтверждении типа робота:', error);
-            alert('Ошибка подключения к устройству');
-        }
+        // Сохраняем выбор в localStorage (только клиентская сторона)
+        localStorage.setItem('selectedRobotType', robotType);
+        this.selectedRobotType = robotType;
+        
+        Logger.info('Тип робота выбран:', robotType);
+        alert(`Выбран тип устройства: ${this.getRobotTypeName(robotType)}.\nТеперь можно проверить обновления.`);
     }
     
     getRobotTypeName(type) {
@@ -798,6 +772,20 @@ class BaseRobotUI {
         const checkBtn = document.getElementById('checkUpdatesBtn');
         if (checkBtn) checkBtn.disabled = true;
         
+        // Проверяем, выбран ли тип робота (для старых версий)
+        const currentVersion = document.getElementById('currentVersion')?.textContent || '';
+        const needsSelection = currentVersion && (currentVersion.startsWith('v0.0.') || currentVersion.startsWith('0.0.'));
+        
+        if (needsSelection) {
+            const savedType = localStorage.getItem('selectedRobotType');
+            if (!savedType) {
+                alert('Сначала выберите тип устройства');
+                if (checkBtn) checkBtn.disabled = false;
+                return;
+            }
+            this.selectedRobotType = savedType;
+        }
+        
         try {
             const response = await fetch('/api/update/check');
             if (!response.ok) {
@@ -806,13 +794,6 @@ class BaseRobotUI {
             }
             
             const data = await response.json();
-            
-            if (data.needsRobotTypeSelection) {
-                alert('Сначала выберите тип устройства');
-                await this.checkRobotTypeSelection();
-                return;
-            }
-            
             const updateAvailableDiv = document.getElementById('updateAvailable');
             
             if (data.hasUpdate) {
@@ -820,10 +801,21 @@ class BaseRobotUI {
                 document.getElementById('newReleaseName').textContent = data.releaseName;
                 document.getElementById('releaseNotes').textContent = data.releaseNotes;
                 
+                // Модифицируем URL если выбран тип робота
+                let downloadUrl = data.downloadUrl;
+                if (this.selectedRobotType && needsSelection) {
+                    // Заменяем URL на специфичный для типа робота
+                    // Пример: microbox-classic-v0.1.0-release.bin
+                    const version = data.version;
+                    downloadUrl = downloadUrl.replace(/microbox-.*?-release\.bin/, 
+                        `microbox-${this.selectedRobotType}-${version}-release.bin`);
+                    Logger.info(`Используется URL для типа ${this.selectedRobotType}: ${downloadUrl}`);
+                }
+                
                 if (updateAvailableDiv) updateAvailableDiv.classList.remove('hidden');
                 
-                // Сохраняем URL для скачивания
-                this.updateDownloadUrl = data.downloadUrl;
+                // Сохраняем модифицированный URL для скачивания
+                this.updateDownloadUrl = downloadUrl;
             } else {
                 if (updateAvailableDiv) updateAvailableDiv.classList.add('hidden');
                 alert('У вас установлена последняя версия');
