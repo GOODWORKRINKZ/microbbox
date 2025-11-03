@@ -279,6 +279,7 @@ class DeviceDetector {
 class BaseRobotUI {
     constructor() {
         this.GITHUB_REPO = 'GOODWORKRINKZ/microbbox';
+        this.ROBOT_TYPES = ['classic', 'liner', 'brain']; // Доступные типы роботов
         this.robotType = 'unknown';
         this.deviceType = DeviceDetector.detect();
         this.isConnected = false;
@@ -862,11 +863,10 @@ class BaseRobotUI {
         // Проверяем все assets и находим реально доступные типы роботов
         if (!assets || !Array.isArray(assets)) return [];
         
-        const types = ['classic', 'liner', 'brain'];
         const availableTypes = [];
         
         // Проходим по всем возможным типам и проверяем, есть ли соответствующий файл
-        for (const type of types) {
+        for (const type of this.ROBOT_TYPES) {
             const found = assets.some(asset => this.isValidFirmwareAsset(asset, type));
             
             if (found) {
@@ -875,26 +875,6 @@ class BaseRobotUI {
         }
         
         return availableTypes;
-    }
-    
-    extractAvailableTypes(url) {
-        // Определяем какие типы доступны по имени файла
-        // Поддерживаем оба варианта:
-        // - microbox-classic-v0.1.0-release.bin (с суффиксом -release)
-        // - microbox-classic-v0.1.0.bin (без суффикса)
-        const types = ['classic', 'liner', 'brain'];
-        
-        // Проверяем есть ли в URL конкретный тип
-        for (const type of types) {
-            if (url.includes(`-${type}-`) || url.includes(`microbox-${type}`)) {
-                // Нашли конкретный тип, значит есть разные типы
-                // Возвращаем все три для выбора
-                return types;
-            }
-        }
-        
-        // Если паттерн не найден, это универсальный файл
-        return [];
     }
     
     // Функция сравнения версий (Single Responsibility - только сравнение версий)
