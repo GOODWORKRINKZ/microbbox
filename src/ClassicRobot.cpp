@@ -96,6 +96,47 @@ void ClassicRobot::setupWebHandlers(AsyncWebServer* server) {
         String json = "{\"type\":\"classic\",\"name\":\"MicroBox Classic\"}";
         request->send(200, "application/json", json);
     });
+    
+    // Фонарик (камера LED)
+    server->on("/flashlight", HTTP_GET, [](AsyncWebServerRequest* request) {
+        // TODO: Реализовать управление камерой LED если поддерживается
+        request->send(501, "text/plain", "Not Implemented");
+    });
+    
+    // Звуковой сигнал
+    server->on("/horn", HTTP_GET, [this](AsyncWebServerRequest* request) {
+#ifdef FEATURE_BUZZER
+        playTone(1000, 200); // 1kHz, 200ms
+        request->send(200, "text/plain", "OK");
+#else
+        request->send(501, "text/plain", "Not Implemented");
+#endif
+    });
+    
+    // WiFi настройки - текущие
+    server->on("/api/wifi/current", HTTP_GET, [this](AsyncWebServerRequest* request) {
+        String json = "{";
+        json += "\"mode\":\"" + String(WiFi.getMode() == WIFI_AP ? "AP" : "CLIENT") + "\",";
+        json += "\"ssid\":\"" + WiFi.SSID() + "\"";
+        json += "}";
+        request->send(200, "application/json", json);
+    });
+    
+    // WiFi настройки - сохранение
+    server->on("/api/wifi/save", HTTP_POST, [](AsyncWebServerRequest* request) {
+        // TODO: Реализовать сохранение WiFi настроек в EEPROM/NVS
+        request->send(501, "text/plain", "Not Implemented - TODO");
+    });
+    
+    // Перезагрузка устройства
+    server->on("/api/restart", HTTP_POST, [](AsyncWebServerRequest* request) {
+        request->send(200, "text/plain", "Rebooting...");
+        // Асинхронная перезагрузка через 100ms после отправки ответа
+        request->onDisconnect([]() {
+            delay(100);
+            ESP.restart();
+        });
+    });
 }
 
 bool ClassicRobot::initMotors() {
