@@ -47,13 +47,16 @@
 #endif
 
 #ifdef FEATURE_BUZZER
-    #define BUZZER_PIN 16           // Бузер на пин 16
+    // ВРЕМЕННО ОТКЛЮЧЕНО через комментирование FEATURE_BUZZER в target_config.h
+    // Причина: конфликт пина 16 с камерой ESP32CAM
+    // TODO: Переназначить бузер на другой безопасный пин когда потребуется
+    #define BUZZER_PIN 16           // Бузер на пин 16 (ВНИМАНИЕ: конфликтует с камерой!)
     #define BUZZER_CHANNEL 6        // PWM канал для бузера
     #define BUZZER_RESOLUTION 8     // 8-битное разрешение
 #endif
 
 #ifdef FEATURE_BUTTON
-    #define BUTTON_PIN 16           // Кнопка на пин 16 (для Liner)
+    #define BUTTON_PIN 4            // Кнопка на пин 4 (GPIO4, безопасный пин)
     #define BUTTON_DEBOUNCE_MS 50   // Время антидребезга
 #endif
 

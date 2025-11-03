@@ -43,7 +43,7 @@
     #define FEATURE_WEBSERVER           // Веб-интерфейс
     #define FEATURE_OTA_UPDATE          // OTA обновления
     #define FEATURE_NEOPIXEL            // Светодиоды
-    #define FEATURE_BUZZER              // Звуковые эффекты
+    // #define FEATURE_BUZZER              // Звуковые эффекты (ОТКЛЮЧЕНО: конфликт пинов)
     #define FEATURE_REMOTE_CONTROL      // Управление с телефона/компьютера
 #endif
 
