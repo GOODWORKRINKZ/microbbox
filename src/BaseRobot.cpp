@@ -217,6 +217,13 @@ bool BaseRobot::initWebServer() {
         if (request->hasParam("t") && request->hasParam("s")) {
             int throttle = request->getParam("t")->value().toInt();
             int steering = request->getParam("s")->value().toInt();
+            
+            // Debug logging
+            Serial.print("CMD: t=");
+            Serial.print(throttle);
+            Serial.print(" s=");
+            Serial.println(steering);
+            
             motorController_->setMotorPWM(throttle, steering);
             request->send(200, "text/plain", "OK");
         } else {
