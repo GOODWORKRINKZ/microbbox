@@ -361,6 +361,7 @@ class BaseRobotUI {
         const pcControls = document.getElementById('pcControls');
         const mobileControls = document.getElementById('mobileControls');
         const vrControls = document.getElementById('vrControls');
+        const mobilePanel = document.querySelector('.mobile-panel');
         
         // Скрываем все
         [pcControls, mobileControls, vrControls].forEach(el => {
@@ -371,6 +372,8 @@ class BaseRobotUI {
         switch (this.deviceType) {
             case 'desktop':
                 if (pcControls) pcControls.classList.remove('hidden');
+                // Показываем мобильную панель с кнопками для десктопа тоже
+                if (mobilePanel) mobilePanel.classList.remove('hidden');
                 break;
             case 'mobile':
                 if (mobileControls) mobileControls.classList.remove('hidden');
@@ -443,12 +446,13 @@ class BaseRobotUI {
     
     setupCommonButtons() {
         // Кнопки, которые есть у всех типов роботов
-        const settingsBtn = document.getElementById('settingsBtn') || document.getElementById('pcSettingsBtn') || document.getElementById('mobileSettings');
+        // Используем универсальные мобильные кнопки для всех устройств
+        const settingsBtn = document.getElementById('mobileSettings');
         if (settingsBtn) {
             settingsBtn.addEventListener('click', () => this.openSettings());
         }
         
-        const helpBtn = document.getElementById('helpBtn') || document.getElementById('mobileHelp');
+        const helpBtn = document.getElementById('mobileHelp');
         if (helpBtn) {
             helpBtn.addEventListener('click', () => this.openHelp());
         }
