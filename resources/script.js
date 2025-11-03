@@ -761,11 +761,22 @@ class BaseRobotUI {
             const releaseNotes = releaseData.body || 'Нет описания';
             
             // Находим .bin файл для загрузки
+            // Поддерживаем оба варианта: с суффиксом -release и без него
             let downloadUrl = '';
             if (releaseData.assets && Array.isArray(releaseData.assets) && releaseData.assets.length > 0) {
-                const binAsset = releaseData.assets.find(asset => 
+                // Сначала ищем файл с суффиксом -release.bin
+                let binAsset = releaseData.assets.find(asset => 
                     asset && asset.name && asset.name.endsWith('-release.bin') && asset.browser_download_url
                 );
+                
+                // Если не нашли, ищем файл просто с .bin (но не .sha256)
+                if (!binAsset) {
+                    binAsset = releaseData.assets.find(asset => 
+                        asset && asset.name && asset.name.endsWith('.bin') && 
+                        !asset.name.endsWith('.sha256') && asset.browser_download_url
+                    );
+                }
+                
                 if (binAsset && binAsset.browser_download_url) {
                     downloadUrl = binAsset.browser_download_url;
                 }
@@ -848,7 +859,9 @@ class BaseRobotUI {
     
     extractAvailableTypes(url) {
         // Определяем какие типы доступны по имени файла
-        // Для v0.1+ будут файлы типа: microbox-classic-v0.1.0-release.bin
+        // Поддерживаем оба варианта:
+        // - microbox-classic-v0.1.0-release.bin (с суффиксом -release)
+        // - microbox-classic-v0.1.0.bin (без суффикса)
         const types = ['classic', 'liner', 'brain'];
         
         // Проверяем есть ли в URL конкретный тип
@@ -914,12 +927,17 @@ class BaseRobotUI {
     }
     
     constructDownloadUrl(robotType) {
-        // Формируем URL: microbox-{type}-{version}-release.bin
+        // Формируем URL: microbox-{type}-{version}-release.bin или microbox-{type}-{version}.bin
+        // в зависимости от того, какой формат используется в базовом URL
         if (!this.baseUpdateUrl || !this.updateVersion) return this.baseUpdateUrl;
+        
+        // Определяем, используется ли суффикс -release в базовом URL
+        const hasReleaseSuffix = this.baseUpdateUrl.includes('-release.bin');
         
         // Заменяем имя файла в URL
         const urlParts = this.baseUpdateUrl.split('/');
-        urlParts[urlParts.length - 1] = `microbox-${robotType}-${this.updateVersion}-release.bin`;
+        const suffix = hasReleaseSuffix ? '-release.bin' : '.bin';
+        urlParts[urlParts.length - 1] = `microbox-${robotType}-${this.updateVersion}${suffix}`;
         
         return urlParts.join('/');
     }
