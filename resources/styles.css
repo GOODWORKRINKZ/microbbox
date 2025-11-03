@@ -392,6 +392,7 @@ body {
 }
 
 .mobile-panel {
+    display: flex;
     bottom: 5px;
     gap: 8px;
     padding: 5px;
@@ -399,6 +400,7 @@ body {
     top: unset;
     right: 80px;
     position: absolute;
+    z-index: 10;
 }
 
 .panel-btn {
