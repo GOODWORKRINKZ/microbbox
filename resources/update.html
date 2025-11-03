@@ -87,6 +87,102 @@
             border-radius: 8px;
             margin: 20px 0;
         }
+        
+        /* Адаптация для горизонтальной (альбомной) ориентации на мобильных устройствах */
+        @media (max-height: 600px) and (orientation: landscape), 
+               (max-width: 768px) and (max-height: 500px) and (orientation: landscape) {
+            body {
+                padding: 10px;
+                overflow-y: auto;
+            }
+            
+            .container {
+                max-width: 90%;
+                padding: 15px;
+                margin: 10px auto;
+                max-height: none;
+                overflow-y: auto;
+            }
+            
+            h1 {
+                font-size: 1.3em;
+                margin: 5px 0;
+            }
+            
+            h2 {
+                font-size: 1.1em;
+                margin: 5px 0;
+            }
+            
+            .info, .warning {
+                padding: 10px;
+                margin: 10px 0;
+                font-size: 0.85em;
+            }
+            
+            .info br, .warning br {
+                display: none;
+            }
+            
+            .info strong, .warning strong {
+                display: block;
+                margin-bottom: 5px;
+            }
+            
+            .upload-form {
+                margin: 15px 0;
+            }
+            
+            input[type="file"] {
+                padding: 8px;
+                margin: 8px 0;
+                font-size: 0.9em;
+            }
+            
+            input[type="submit"] {
+                padding: 10px 20px;
+                font-size: 0.95em;
+            }
+            
+            .progress {
+                margin: 10px 0;
+            }
+            
+            .status {
+                margin: 10px 0;
+                font-size: 1em;
+            }
+        }
+        
+        /* Для очень низких экранов - еще более компактный вид */
+        @media (max-height: 400px) and (orientation: landscape) {
+            .container {
+                padding: 10px;
+            }
+            
+            h1 {
+                font-size: 1.1em;
+            }
+            
+            h2 {
+                font-size: 1em;
+            }
+            
+            .info, .warning {
+                padding: 8px;
+                margin: 8px 0;
+                font-size: 0.8em;
+            }
+            
+            input[type="file"] {
+                padding: 6px;
+                margin: 6px 0;
+            }
+            
+            input[type="submit"] {
+                padding: 8px 16px;
+            }
+        }
     </style>
 </head>
 <body>
