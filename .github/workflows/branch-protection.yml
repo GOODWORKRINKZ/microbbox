@@ -51,7 +51,7 @@ jobs:
               core.warning('⚠️ Missing administration permissions');
               core.warning('🔐 The default GITHUB_TOKEN cannot modify branch protection rules.');
               core.warning('📖 To enable automatic branch protection setup:');
-              core.warning('   1. Create a Personal Access Token with admin:repo scope');
+              core.warning('   1. Create a Personal Access Token with repo scope (full control)');
               core.warning('   2. Add it as a repository secret (e.g., ADMIN_TOKEN)');
               core.warning('   3. Update this workflow to use: github-token: ${{ secrets.ADMIN_TOKEN }}');
               core.warning('');
@@ -291,7 +291,7 @@ jobs:
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "### 🔐 To Enable Automatic Setup" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "Create a Personal Access Token with \`admin:repo\` scope and add it as a secret:" >> $GITHUB_STEP_SUMMARY
+          echo "Create a Personal Access Token with \`repo\` scope (full control) and add it as a secret:" >> $GITHUB_STEP_SUMMARY
           echo '```yaml' >> $GITHUB_STEP_SUMMARY
           echo "- name: Configure Main Branch Protection" >> $GITHUB_STEP_SUMMARY
           echo "  uses: actions/github-script@v7" >> $GITHUB_STEP_SUMMARY
