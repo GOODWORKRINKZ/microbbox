@@ -203,6 +203,32 @@ bool BaseRobot::initWebServer() {
     });
 #endif
     
+    // API endpoint: конфигурация
+    server_->on("/api/config", HTTP_GET, [this](AsyncWebServerRequest* request) {
+        String json = "{";
+        json += "\"version\":\"" + String(GIT_VERSION) + "\",";
+        json += "\"robotType\":\"" + String(robotTypeToLowerString(getRobotType())) + "\"";
+        json += "}";
+        request->send(200, "application/json", json);
+    });
+    
+    // Move command - motor control
+    server_->on("/move", HTTP_GET, [this](AsyncWebServerRequest* request) {
+        if (request->hasParam("t") && request->hasParam("s")) {
+            int throttle = request->getParam("t")->value().toInt();
+            int steering = request->getParam("s")->value().toInt();
+            motorController_->move(throttle, steering);
+            request->send(200, "text/plain", "OK");
+        } else {
+            request->send(400, "text/plain", "Missing parameters");
+        }
+    });
+    
+    // Favicon
+    server_->on("/favicon.ico", HTTP_GET, [](AsyncWebServerRequest* request) {
+        request->send(404);
+    });
+    
     // Регистрация обработчиков прошивки
     firmwareUpdate_->init(server_);
     
