@@ -1,0 +1,13 @@
+# Не коммитить сертификаты и логи
+certbot/conf/*
+certbot/www/*
+certbot/logs/*
+nginx/logs/*
+
+# Кроме примеров
+!nginx/conf.d/*.example
+
+# Временные файлы
+*.tmp
+*.swp
+*.bak
