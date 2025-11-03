@@ -1,6 +1,8 @@
 #include "MX1508MotorController.h"
 #include <Arduino.h>
 
+#ifdef FEATURE_MOTORS
+
 MX1508MotorController::MX1508MotorController() :
     initialized_(false),
     currentLeftSpeed_(0),
@@ -194,3 +196,5 @@ int MX1508MotorController::constrainSpeed(int speed) const {
 bool MX1508MotorController::wasWatchdogTriggered() const {
     return watchdogTriggered_;
 }
+
+#endif // FEATURE_MOTORS

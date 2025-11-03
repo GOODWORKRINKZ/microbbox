@@ -146,13 +146,13 @@ void BrainRobot::updateOutputs() {
                          channelValues_[2], channelValues_[3]);
             break;
         case OutputProtocol::PPM:
-            sendPPMOutput(channelValues_, PPM_CHANNELS);
+            sendPPMOutput(const_cast<int*>(channelValues_), PPM_CHANNELS);
             break;
         case OutputProtocol::SBUS:
-            sendSBUSOutput(channelValues_, 16);
+            sendSBUSOutput(const_cast<int*>(channelValues_), 16);
             break;
         case OutputProtocol::TBS:
-            sendTBSOutput(channelValues_, 8);
+            sendTBSOutput(const_cast<int*>(channelValues_), 8);
             break;
     }
 }
