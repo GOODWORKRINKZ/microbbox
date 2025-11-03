@@ -213,12 +213,13 @@ bool BaseRobot::initCamera() {
     config.pin_pclk = PCLK_GPIO_NUM;
     config.pin_vsync = VSYNC_GPIO_NUM;
     config.pin_href = HREF_GPIO_NUM;
-    config.pin_sscb_sda = SIOD_GPIO_NUM;
-    config.pin_sscb_scl = SIOC_GPIO_NUM;
+    config.pin_sccb_sda = SIOD_GPIO_NUM;  // Исправлено: sccb (две 'c')
+    config.pin_sccb_scl = SIOC_GPIO_NUM;  // Исправлено: sccb (две 'c')
     config.pin_pwdn = PWDN_GPIO_NUM;
     config.pin_reset = RESET_GPIO_NUM;
     config.xclk_freq_hz = 20000000;
     config.pixel_format = PIXFORMAT_JPEG;
+    config.grab_mode = CAMERA_GRAB_LATEST;  // Всегда брать последний кадр
     
     // Параметры для разных типов роботов
 #ifdef TARGET_LINER
@@ -226,16 +227,23 @@ bool BaseRobot::initCamera() {
     config.frame_size = FRAMESIZE_96X96;
     config.pixel_format = PIXFORMAT_GRAYSCALE;
     config.jpeg_quality = 12;
+    config.fb_count = 1;  // Один буфер достаточно для ЧБ
+    config.fb_location = CAMERA_FB_IN_PSRAM;
+    DEBUG_PRINTLN("Настройка камеры для Liner: 96x96 ЧБ");
 #else
-    // Для остальных - стандартное
+    // Для остальных - стандартное разрешение с учетом PSRAM
     if (psramFound()) {
-        config.frame_size = FRAMESIZE_UXGA;
+        config.frame_size = FRAMESIZE_QVGA;  // Стабильное разрешение 320x240
         config.jpeg_quality = 10;
         config.fb_count = 2;
+        config.fb_location = CAMERA_FB_IN_PSRAM;
+        DEBUG_PRINTLN("PSRAM найдена, использую двойную буферизацию");
     } else {
-        config.frame_size = FRAMESIZE_SVGA;
+        config.frame_size = FRAMESIZE_QVGA;
         config.jpeg_quality = 12;
         config.fb_count = 1;
+        config.fb_location = CAMERA_FB_IN_DRAM;
+        DEBUG_PRINTLN("PSRAM не найдена, использую одиночный буфер");
     }
 #endif
     
