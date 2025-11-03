@@ -100,7 +100,6 @@ def process_resources(resource_dir, output_file):
     """Обработка всех ресурсов."""
     resources = {
         "index.html": "indexHtml",
-        "update.html": "updateHtml",
         "styles.css": "stylesCss",
         "script.js": "scriptJs",
         "favicon.ico": "faviconIco"

@@ -95,7 +95,7 @@ jobs:
       - name: Upload to Release
         uses: actions/upload-release-asset@v1
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.ADMIN_TOKEN }}
         with:
           upload_url: ${{ github.event.release.upload_url }}
           asset_path: ./microbox-${{ matrix.type }}-${{ github.event.release.tag_name }}-release.bin
