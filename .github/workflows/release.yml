@@ -228,16 +228,12 @@ jobs:
     - name: Build All Robot Types - Release
       run: |
         echo "🔨 Building all robot types (release)..."
-        pio run --environment classic-release
-        pio run --environment liner-release
-        pio run --environment brain-release
+        pio run --environment classic-release --environment liner-release --environment brain-release
         
     - name: Build All Robot Types - Debug
       run: |
         echo "🔨 Building all robot types (debug)..."
-        pio run --environment classic-debug
-        pio run --environment liner-debug
-        pio run --environment brain-debug
+        pio run --environment classic-debug --environment liner-debug --environment brain-debug
         
     - name: Prepare Release Files
       run: |
