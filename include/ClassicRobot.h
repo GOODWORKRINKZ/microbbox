@@ -38,7 +38,6 @@ private:
     void updateEffects();
     
     // Веб-обработчики
-    void handleRoot(AsyncWebServerRequest* request);
     void handleCommand(AsyncWebServerRequest* request);
     
 #ifdef FEATURE_NEOPIXEL

@@ -86,11 +86,6 @@ void ClassicRobot::shutdownSpecificComponents() {
 void ClassicRobot::setupWebHandlers(AsyncWebServer* server) {
     DEBUG_PRINTLN("Настройка веб-обработчиков для Classic робота");
     
-    // Главная страница
-    server->on("/", HTTP_GET, [this](AsyncWebServerRequest* request) {
-        handleRoot(request);
-    });
-    
     // Команды управления
     server->on("/cmd", HTTP_GET, [this](AsyncWebServerRequest* request) {
         handleCommand(request);
@@ -100,11 +95,6 @@ void ClassicRobot::setupWebHandlers(AsyncWebServer* server) {
     server->on("/api/robot-type", HTTP_GET, [this](AsyncWebServerRequest* request) {
         String json = "{\"type\":\"classic\",\"name\":\"MicroBox Classic\"}";
         request->send(200, "application/json", json);
-    });
-    
-    // Обработчик 404
-    server->onNotFound([](AsyncWebServerRequest* request) {
-        request->send(404, "text/plain", "Not Found");
     });
 }
 
@@ -195,15 +185,6 @@ void ClassicRobot::updateEffects() {
             playMovementAnimation();
             break;
     }
-#endif
-}
-
-void ClassicRobot::handleRoot(AsyncWebServerRequest* request) {
-#ifdef USE_EMBEDDED_RESOURCES
-    // Отправка встроенных ресурсов
-    request->send_P(200, "text/html; charset=UTF-8", INDEX_HTML_CONTENT, INDEX_HTML_SIZE);
-#else
-    request->send(200, "text/html; charset=UTF-8", "<h1>MicroBox Classic</h1><p>Web interface coming soon...</p>");
 #endif
 }
 

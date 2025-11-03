@@ -158,11 +158,21 @@ bool BaseRobot::initWebServer() {
     
     server_ = new AsyncWebServer(WIFI_PORT);
     
+    // Регистрация общего обработчика главной страницы
+    server_->on("/", HTTP_GET, [this](AsyncWebServerRequest* request) {
+        handleRoot(request);
+    });
+    
     // Регистрация обработчиков прошивки
     firmwareUpdate_->init(server_);
     
     // Настройка специфичных обработчиков наследником
     setupWebHandlers(server_);
+    
+    // Обработчик 404
+    server_->onNotFound([](AsyncWebServerRequest* request) {
+        request->send(404, "text/plain", "Not Found");
+    });
     
     // Запуск сервера
     server_->begin();
@@ -355,4 +365,19 @@ bool BaseRobot::connectWiFiDHCP(const char* ssid, const char* password) {
         DEBUG_PRINTLN("Не удалось подключиться к WiFi");
         return false;
     }
+}
+
+void BaseRobot::handleRoot(AsyncWebServerRequest* request) {
+#ifdef USE_EMBEDDED_RESOURCES
+    // Отправка встроенных ресурсов (index.html)
+    request->send_P(200, "text/html; charset=UTF-8", INDEX_HTML_CONTENT, INDEX_HTML_SIZE);
+#else
+    // Простая заглушка для тестирования
+    String html = "<!DOCTYPE html><html><head><meta charset='UTF-8'><title>МикРоББокс</title></head><body>";
+    html += "<h1>МикРоББокс " + getRobotTypeString() + "</h1>";
+    html += "<p>Веб-интерфейс будет доступен после добавления ресурсов.</p>";
+    html += "<p>IP: " + WiFi.localIP().toString() + "</p>";
+    html += "</body></html>";
+    request->send(200, "text/html; charset=UTF-8", html);
+#endif
 }

@@ -45,6 +45,9 @@ protected:
     bool connectToSavedWiFi();
     bool connectWiFiDHCP(const char* ssid, const char* password);
     
+    // Общий обработчик главной страницы
+    void handleRoot(AsyncWebServerRequest* request);
+    
     // Общие поля
     bool initialized_;
     bool cameraInitialized_;
