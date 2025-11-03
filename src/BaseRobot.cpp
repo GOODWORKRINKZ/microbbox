@@ -236,7 +236,9 @@ bool BaseRobot::initWebServer() {
 #ifdef USE_EMBEDDED_RESOURCES
     server_->on("/favicon.ico", HTTP_GET, [](AsyncWebServerRequest* request) {
         AsyncWebServerResponse *response = request->beginResponse_P(200, "image/x-icon", faviconIco, faviconIco_len);
-        response->addHeader("Cache-Control", "public, max-age=31536000");
+        response->addHeader("Cache-Control", "no-cache, no-store, must-revalidate");
+        response->addHeader("Pragma", "no-cache");
+        response->addHeader("Expires", "0");
         request->send(response);
     });
 #else
