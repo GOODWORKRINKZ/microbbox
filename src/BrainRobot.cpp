@@ -65,6 +65,12 @@ void BrainRobot::setupWebHandlers(AsyncWebServer* server) {
         handleProtocol(request);
     });
     
+    // API: Тип робота
+    server->on("/api/robot-type", HTTP_GET, [this](AsyncWebServerRequest* request) {
+        String json = "{\"type\":\"brain\",\"name\":\"MicroBox Brain\"}";
+        request->send(200, "application/json", json);
+    });
+    
     // 404
     server->onNotFound([](AsyncWebServerRequest* request) {
         request->send(404, "text/plain", "Not Found");

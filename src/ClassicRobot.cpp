@@ -96,6 +96,12 @@ void ClassicRobot::setupWebHandlers(AsyncWebServer* server) {
         handleCommand(request);
     });
     
+    // API: Тип робота
+    server->on("/api/robot-type", HTTP_GET, [this](AsyncWebServerRequest* request) {
+        String json = "{\"type\":\"classic\",\"name\":\"MicroBox Classic\"}";
+        request->send(200, "application/json", json);
+    });
+    
     // Обработчик 404
     server->onNotFound([](AsyncWebServerRequest* request) {
         request->send(404, "text/plain", "Not Found");
