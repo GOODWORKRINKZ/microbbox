@@ -1,5 +1,5 @@
 // ═══════════════════════════════════════════════════════════════
-// МикРоББокс 2.0 - Клиентский код с SOLID, DRY, KISS принципами
+// МикРоББокс 0.1 - Клиентский код с SOLID, DRY, KISS принципами
 // ═══════════════════════════════════════════════════════════════
 // Архитектура:
 // - Logger: Логирование (Single Responsibility)
@@ -1084,7 +1084,7 @@ class RobotUIFactory {
 // ═══════════════════════════════════════════════════════════════
 
 document.addEventListener('DOMContentLoaded', async () => {
-    Logger.info('МикРоББокс 2.0 загружается...');
+    Logger.info('МикРоББокс 0.1 загружается...');
     
     // Создаем нужный UI через фабрику
     window.robotUI = await RobotUIFactory.createFromServer();
@@ -1092,7 +1092,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Инициализируем
     await window.robotUI.init();
     
-    Logger.info('МикРоББокс 2.0 готов!');
+    Logger.info('МикРоББокс 0.1 готов!');
 });
 
 // Предотвращение случайного закрытия

@@ -83,7 +83,7 @@
 
 // Версия проекта
 #ifndef GIT_VERSION
-#define GIT_VERSION "v2.0.0-dev"
+#define GIT_VERSION "v0.1.0-dev"
 #endif
 
 #ifndef PROJECT_NAME
