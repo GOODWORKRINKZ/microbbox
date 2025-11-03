@@ -151,10 +151,11 @@ const Logger = {
 
 class CommandController {
     constructor() {
-        this.targetThrottle = 1500;
-        this.targetSteering = 1500;
-        this.lastSentThrottle = 1500;
-        this.lastSentSteering = 1500;
+        this.STOP_COMMAND_VALUE = 1500;  // Центральное положение PWM (остановка)
+        this.targetThrottle = this.STOP_COMMAND_VALUE;
+        this.targetSteering = this.STOP_COMMAND_VALUE;
+        this.lastSentThrottle = this.STOP_COMMAND_VALUE;
+        this.lastSentSteering = this.STOP_COMMAND_VALUE;
         this.lastSendTime = 0;
         this.sendInterval = 250;
         this.commandTimeout = 500;
@@ -196,8 +197,10 @@ class CommandController {
         const now = Date.now();
         
         // Определяем команду остановки и предыдущее движение
-        const isStopCommand = (this.targetThrottle === 1500 && this.targetSteering === 1500);
-        const wasMoving = (this.lastSentThrottle !== 1500 || this.lastSentSteering !== 1500);
+        const isStopCommand = (this.targetThrottle === this.STOP_COMMAND_VALUE && 
+                               this.targetSteering === this.STOP_COMMAND_VALUE);
+        const wasMoving = (this.lastSentThrottle !== this.STOP_COMMAND_VALUE || 
+                          this.lastSentSteering !== this.STOP_COMMAND_VALUE);
         
         // Проверяем нужно ли отправлять команду
         const shouldSend = (
@@ -238,7 +241,7 @@ class CommandController {
     }
     
     stop() {
-        this.setTarget(1500, 1500);
+        this.setTarget(this.STOP_COMMAND_VALUE, this.STOP_COMMAND_VALUE);
     }
 }
 
