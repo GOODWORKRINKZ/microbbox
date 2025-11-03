@@ -20,7 +20,9 @@ on:
       - 'support/**'
 
 permissions:
-  administration: write
+  contents: write
+  pull-requests: write
+  issues: write
 
 jobs:
   setup-protection:

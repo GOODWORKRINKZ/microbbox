@@ -137,53 +137,44 @@ jobs:
             }
             
             // Создаем напоминание
+            const reminderDate = new Date(new Date(v.eolDate).getTime() - 30*24*60*60*1000).toISOString().split('T')[0];
+            
+            const issueBody = `# Version ${v.version} Approaching End-of-Life\n\n` +
+              `## Schedule\n\n` +
+              `- **First Release**: ${v.firstRelease} (${v.releaseDate})\n` +
+              `- **EOL Date**: ${v.eolDate}\n` +
+              `- **Days Until EOL**: ${v.daysUntilEOL}\n` +
+              `- **Support Branch**: \`${v.branch}\`\n\n` +
+              `## Status\n\n` +
+              `⚠️  This version is approaching end-of-life. Please plan migration to a newer version.\n\n` +
+              `## Action Items\n\n` +
+              `- [ ] Review open issues for this version\n` +
+              `- [ ] Plan migration path for users\n` +
+              `- [ ] Update documentation with EOL notice\n` +
+              `- [ ] Announce EOL to users\n` +
+              `- [ ] Prepare final maintenance release (if needed)\n\n` +
+              `## Migration Path\n\n` +
+              `Users should migrate to:\n` +
+              `- **Recommended**: Latest stable version\n` +
+              `- **Alternative**: Next minor version (if available)\n\n` +
+              `## Timeline\n\n` +
+              `| Date | Milestone |\n` +
+              `|------|-----------|` + `\n` +
+              `| ${v.releaseDate} | First release |\n` +
+              `| ${reminderDate} | EOL reminder (today) |\n` +
+              `| ${v.eolDate} | **End of Life** |\n\n` +
+              `After EOL:\n` +
+              `- No new features\n` +
+              `- Security fixes only (at maintainer discretion)\n` +
+              `- Support branch may be archived\n\n` +
+              `---\n\n` +
+              `**Auto-created by version-support-check workflow**`;
+            
             const issue = await github.rest.issues.create({
               owner: context.repo.owner,
               repo: context.repo.repo,
               title: `[EOL Reminder] Version ${v.version} reaching EOL in ${v.daysUntilEOL} days`,
-              body: `# Version ${v.version} Approaching End-of-Life
-              
-## Schedule
-
-- **First Release**: ${v.firstRelease} (${v.releaseDate})
-- **EOL Date**: ${v.eolDate}
-- **Days Until EOL**: ${v.daysUntilEOL}
-- **Support Branch**: \`${v.branch}\`
-
-## Status
-
-⚠️  This version is approaching end-of-life. Please plan migration to a newer version.
-
-## Action Items
-
-- [ ] Review open issues for this version
-- [ ] Plan migration path for users
-- [ ] Update documentation with EOL notice
-- [ ] Announce EOL to users
-- [ ] Prepare final maintenance release (if needed)
-
-## Migration Path
-
-Users should migrate to:
-- **Recommended**: Latest stable version
-- **Alternative**: Next minor version (if available)
-
-## Timeline
-
-| Date | Milestone |
-|------|-----------|
-| ${v.releaseDate} | First release |
-| ${new Date(new Date(v.eolDate).getTime() - 30*24*60*60*1000).toISOString().split('T')[0]} | EOL reminder (today) |
-| ${v.eolDate} | **End of Life** |
-
-After EOL:
-- No new features
-- Security fixes only (at maintainer discretion)
-- Support branch may be archived
-
----
-
-**Auto-created by version-support-check workflow**`,
+              body: issueBody,
               labels: ['eol-reminder', 'support', `version-${v.version}`]
             });
             
