@@ -159,10 +159,14 @@ void ClassicRobot::updateMotors() {
     static int lastAppliedThrottle = 1500;
     static int lastAppliedSteering = 1500;
     
-    // Если watchdog остановил моторы, нужно применить команду заново даже если значения не изменились
-    bool forceUpdate = motorController_->wasWatchdogTriggered();
+    // Если watchdog остановил моторы, сбрасываем целевые значения в нейтральное положение
+    // чтобы предотвратить повторное применение старых команд движения
+    if (motorController_->wasWatchdogTriggered()) {
+        targetThrottlePWM_ = 1500;
+        targetSteeringPWM_ = 1500;
+    }
     
-    if (forceUpdate || targetThrottlePWM_ != lastAppliedThrottle || targetSteeringPWM_ != lastAppliedSteering) {
+    if (targetThrottlePWM_ != lastAppliedThrottle || targetSteeringPWM_ != lastAppliedSteering) {
         motorController_->setMotorPWM(targetThrottlePWM_, targetSteeringPWM_);
         lastAppliedThrottle = targetThrottlePWM_;
         lastAppliedSteering = targetSteeringPWM_;
