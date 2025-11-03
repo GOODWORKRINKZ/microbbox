@@ -766,18 +766,10 @@ class BaseRobotUI {
             // Берем первый доступный файл как базовый URL (для определения формата)
             let downloadUrl = '';
             if (releaseData.assets && Array.isArray(releaseData.assets) && releaseData.assets.length > 0) {
-                // Сначала ищем файл с суффиксом -release.bin
-                let binAsset = releaseData.assets.find(asset => 
-                    asset && asset.name && asset.name.endsWith('-release.bin') && asset.browser_download_url
+                // Ищем любой валидный файл прошивки для определения формата
+                const binAsset = releaseData.assets.find(asset => 
+                    this.isValidFirmwareAsset(asset) && asset.browser_download_url
                 );
-                
-                // Если не нашли, ищем файл просто с .bin (но не .sha256)
-                if (!binAsset) {
-                    binAsset = releaseData.assets.find(asset => 
-                        asset && asset.name && asset.name.endsWith('.bin') && 
-                        !asset.name.endsWith('.sha256') && asset.browser_download_url
-                    );
-                }
                 
                 if (binAsset && binAsset.browser_download_url) {
                     downloadUrl = binAsset.browser_download_url;
@@ -848,6 +840,23 @@ class BaseRobotUI {
         }
     }
     
+    // Вспомогательная функция для проверки, является ли asset валидным файлом прошивки
+    isValidFirmwareAsset(asset, robotType = null) {
+        if (!asset || !asset.name) return false;
+        
+        const name = asset.name.toLowerCase();
+        
+        // Проверяем что это .bin файл (но не .sha256)
+        if (!name.endsWith('.bin') || name.endsWith('.sha256')) return false;
+        
+        // Если указан тип робота, проверяем соответствие
+        if (robotType) {
+            return name.includes(`microbox-${robotType}`);
+        }
+        
+        // Если тип не указан, просто проверяем что это microbox файл
+        return name.startsWith('microbox-');
+    }
     
     extractAvailableTypesFromAssets(assets) {
         // Проверяем все assets и находим реально доступные типы роботов
@@ -858,14 +867,7 @@ class BaseRobotUI {
         
         // Проходим по всем возможным типам и проверяем, есть ли соответствующий файл
         for (const type of types) {
-            const found = assets.some(asset => {
-                if (!asset || !asset.name) return false;
-                const name = asset.name.toLowerCase();
-                // Проверяем паттерны: microbox-classic-vX.X.X.bin или microbox-classic-vX.X.X-release.bin
-                return (name.includes(`microbox-${type}`) && 
-                        (name.endsWith('.bin') || name.endsWith('-release.bin')) &&
-                        !name.endsWith('.sha256'));
-            });
+            const found = assets.some(asset => this.isValidFirmwareAsset(asset, type));
             
             if (found) {
                 availableTypes.push(type);
