@@ -2137,6 +2137,9 @@ body {
         padding: 10px;
         overflow-y: auto;
         overflow-x: hidden;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
     }
     
     .firmware-glitch-text {
@@ -2144,13 +2147,17 @@ body {
         margin-bottom: 10px;
     }
     
+    /* Контейнер для горизонтального расположения блоков */
     .firmware-release-info {
-        max-width: 85vw;
-        max-height: 25vh;
+        display: inline-block;
+        width: 48%;
+        max-width: 48%;
+        max-height: 30vh;
         padding: 10px;
-        margin: 10px auto;
+        margin: 5px 1%;
         font-size: 0.85em;
         overflow-y: auto;
+        vertical-align: top;
     }
     
     .firmware-release-info h3 {
@@ -2166,10 +2173,13 @@ body {
     }
     
     .firmware-warnings {
-        max-width: 85vw;
+        display: inline-block;
+        width: 48%;
+        max-width: 48%;
         padding: 10px;
-        margin: 10px auto;
+        margin: 5px 1%;
         font-size: 0.85em;
+        vertical-align: top;
     }
     
     .firmware-warnings ul {
@@ -2190,8 +2200,8 @@ body {
     }
     
     .firmware-progress {
-        width: 85vw;
-        max-width: 450px;
+        width: 95vw;
+        max-width: 600px;
         height: 20px;
         margin: 10px auto;
     }
