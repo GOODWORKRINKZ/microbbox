@@ -157,10 +157,9 @@ class CommandController {
         this.lastSentThrottle = this.STOP_COMMAND_VALUE;
         this.lastSentSteering = this.STOP_COMMAND_VALUE;
         this.lastSendTime = 0;
-        this.sendInterval = 300;  // 60% от commandTimeout (500ms)
-        this.commandTimeout = 500;
+        this.sendInterval = 250;
         this.isSending = false;
-        this.fetchTimeout = 250;
+        this.fetchTimeout = 200;
     }
     
     async loadConfig() {
@@ -170,17 +169,10 @@ class CommandController {
             if (!response.ok) {
                 Logger.warn('Не удалось загрузить конфиг, используем значения по умолчанию');
                 return;
-            }
+            }            
+            const config = await response.json();           
             
-            const config = await response.json();
-            
-            if (config.motorCommandTimeout) {
-                this.commandTimeout = config.motorCommandTimeout;
-            }
-            
-            this.sendInterval = Math.floor(this.commandTimeout * 0.6);
-            
-            Logger.info(`Конфигурация загружена: timeout=${this.commandTimeout}ms, interval=${this.sendInterval}ms`);
+            Logger.info(`Конфигурация загружена: interval=${this.sendInterval}ms`);
         } catch (error) {
             Logger.error('Ошибка загрузки конфигурации:', error);
         }
