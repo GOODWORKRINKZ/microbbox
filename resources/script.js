@@ -820,7 +820,7 @@ class ClassicRobotUI extends BaseRobotUI {
                 deltaY = Math.sin(angle) * maxDistance;
             }
             
-            knob.style.transform = `translate(${deltaX}px, ${deltaY}px)`;
+            knob.style.transform = `translate(calc(-50% + ${deltaX}px), calc(-50% + ${deltaY}px))`;
             
             const percentX = (deltaX / maxDistance) * 100;
             const percentY = (-deltaY / maxDistance) * 100;
@@ -838,7 +838,7 @@ class ClassicRobotUI extends BaseRobotUI {
             isDragging = false;
             touchId = null;
             
-            knob.style.transform = 'translate(0, 0)';
+            knob.style.transform = 'translate(-50%, -50%)';
             
             if (side === 'left') {
                 this.leftJoystick = { x: 0, y: 0, active: false };
