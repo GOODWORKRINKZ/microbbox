@@ -1,0 +1,266 @@
+name: Version Support Check
+
+# Ежедневная проверка статуса версий и EOL дат
+# Создает напоминания и обновляет документацию
+
+on:
+  schedule:
+    - cron: '0 9 * * *'  # Каждый день в 9:00 UTC
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  issues: write
+
+jobs:
+  check-versions:
+    name: Check Version Support Status
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout Repository
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+        
+    - name: Get All Support Branches
+      id: branches
+      uses: actions/github-script@v7
+      with:
+        script: |
+          const { data: branches } = await github.rest.repos.listBranches({
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            per_page: 100
+          });
+          
+          const supportBranches = branches
+            .filter(b => b.name.startsWith('support/'))
+            .map(b => b.name);
+          
+          core.info(`Found ${supportBranches.length} support branches:`);
+          supportBranches.forEach(b => core.info(`  - ${b}`));
+          
+          return supportBranches;
+          
+    - name: Calculate EOL Dates
+      id: eol
+      uses: actions/github-script@v7
+      with:
+        script: |
+          const supportBranches = ${{ steps.branches.outputs.result }};
+          const versions = [];
+          
+          for (const branch of supportBranches) {
+            // Извлекаем версию из имени ветки (support/X.Y.x → X.Y)
+            const match = branch.match(/support\/(\d+)\.(\d+)\.x/);
+            if (!match) continue;
+            
+            const [, major, minor] = match;
+            const version = `${major}.${minor}`;
+            
+            // Ищем первый релиз этой версии
+            const { data: releases } = await github.rest.repos.listReleases({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              per_page: 100
+            });
+            
+            const versionReleases = releases.filter(r => 
+              r.tag_name.startsWith(`v${version}.`)
+            );
+            
+            if (versionReleases.length === 0) {
+              core.warning(`No releases found for ${version}`);
+              continue;
+            }
+            
+            // Берем самый ранний релиз
+            const firstRelease = versionReleases[versionReleases.length - 1];
+            const releaseDate = new Date(firstRelease.published_at);
+            
+            // EOL через 6 месяцев после первого релиза
+            const eolDate = new Date(releaseDate);
+            eolDate.setMonth(eolDate.getMonth() + 6);
+            
+            // Дата напоминания (за 30 дней до EOL)
+            const reminderDate = new Date(eolDate);
+            reminderDate.setDate(reminderDate.getDate() - 30);
+            
+            const now = new Date();
+            const daysUntilEOL = Math.floor((eolDate - now) / (1000 * 60 * 60 * 24));
+            
+            let status;
+            if (now > eolDate) {
+              status = 'EOL';
+            } else if (now > reminderDate) {
+              status = 'Approaching EOL';
+            } else {
+              status = 'Active';
+            }
+            
+            versions.push({
+              version,
+              branch,
+              releaseDate: releaseDate.toISOString().split('T')[0],
+              eolDate: eolDate.toISOString().split('T')[0],
+              daysUntilEOL,
+              status,
+              firstRelease: firstRelease.tag_name
+            });
+            
+            core.info(`${version}: ${status} (EOL in ${daysUntilEOL} days)`);
+          }
+          
+          return versions;
+          
+    - name: Create EOL Reminder Issues
+      uses: actions/github-script@v7
+      with:
+        script: |
+          const versions = ${{ steps.eol.outputs.result }};
+          
+          for (const v of versions) {
+            if (v.status !== 'Approaching EOL') continue;
+            
+            // Проверяем, не создан ли уже issue
+            const { data: issues } = await github.rest.issues.listForRepo({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              state: 'open',
+              labels: `eol-reminder,version-${v.version}`
+            });
+            
+            if (issues.length > 0) {
+              core.info(`Reminder already exists for ${v.version}`);
+              continue;
+            }
+            
+            // Создаем напоминание
+            const issue = await github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: `[EOL Reminder] Version ${v.version} reaching EOL in ${v.daysUntilEOL} days`,
+              body: `# Version ${v.version} Approaching End-of-Life
+              
+## Schedule
+
+- **First Release**: ${v.firstRelease} (${v.releaseDate})
+- **EOL Date**: ${v.eolDate}
+- **Days Until EOL**: ${v.daysUntilEOL}
+- **Support Branch**: \`${v.branch}\`
+
+## Status
+
+⚠️  This version is approaching end-of-life. Please plan migration to a newer version.
+
+## Action Items
+
+- [ ] Review open issues for this version
+- [ ] Plan migration path for users
+- [ ] Update documentation with EOL notice
+- [ ] Announce EOL to users
+- [ ] Prepare final maintenance release (if needed)
+
+## Migration Path
+
+Users should migrate to:
+- **Recommended**: Latest stable version
+- **Alternative**: Next minor version (if available)
+
+## Timeline
+
+| Date | Milestone |
+|------|-----------|
+| ${v.releaseDate} | First release |
+| ${new Date(new Date(v.eolDate).getTime() - 30*24*60*60*1000).toISOString().split('T')[0]} | EOL reminder (today) |
+| ${v.eolDate} | **End of Life** |
+
+After EOL:
+- No new features
+- Security fixes only (at maintainer discretion)
+- Support branch may be archived
+
+---
+
+**Auto-created by version-support-check workflow**`,
+              labels: ['eol-reminder', 'support', `version-${v.version}`]
+            });
+            
+            core.info(`✅ Created EOL reminder issue #${issue.data.number} for ${v.version}`);
+          }
+          
+    - name: Update SUPPORT_STATUS.md
+      run: |
+        cat > SUPPORT_STATUS.md << 'EOF'
+        # Version Support Status
+        
+        Last updated: $(date -u +'%Y-%m-%d %H:%M UTC')
+        
+        ## Active Versions
+        
+        | Version | Branch | First Release | EOL Date | Days Until EOL | Status |
+        |---------|--------|---------------|----------|----------------|--------|
+        EOF
+        
+        # Добавляем данные из JSON
+        echo '${{ steps.eol.outputs.result }}' | jq -r '.[] | 
+          "| \(.version) | `\(.branch)` | \(.releaseDate) | \(.eolDate) | \(.daysUntilEOL) | \(.status) |"' >> SUPPORT_STATUS.md
+        
+        cat >> SUPPORT_STATUS.md << 'EOF'
+        
+        ## Support Policy
+        
+        - **Active Support**: Full support including features and bug fixes
+        - **Approaching EOL**: Security and critical fixes only (last 30 days)
+        - **EOL**: No support, users should migrate
+        
+        ## Version Lifecycle
+        
+        Each version receives support for **6 months** from its initial release.
+        
+        ### Timeline
+        
+        1. **Release** - Version X.Y.0 released
+        2. **Active Support** - First 5 months (features + fixes)
+        3. **Approaching EOL** - Last 30 days (critical fixes only)
+        4. **End of Life** - Support ends
+        
+        ### EOL Notifications
+        
+        - **30 days before EOL**: Reminder issue created
+        - **At EOL**: Branch archived, documentation updated
+        
+        ## Migration Guide
+        
+        When your version reaches EOL:
+        
+        1. Review [CHANGELOG](CHANGELOG_0.1.md) for breaking changes
+        2. Test new version in development environment
+        3. Follow migration guide for your version
+        4. Update to latest stable version
+        
+        ## Questions?
+        
+        Open an issue with label `support` if you have questions about version support.
+        EOF
+        
+    - name: Commit Status Update
+      run: |
+        git config user.name "github-actions[bot]"
+        git config user.email "github-actions[bot]@users.noreply.github.com"
+        
+        if git diff --quiet SUPPORT_STATUS.md; then
+          echo "No changes to SUPPORT_STATUS.md"
+        else
+          git add SUPPORT_STATUS.md
+          git commit -m "docs: update version support status [skip ci]"
+          git push
+          echo "✅ Updated SUPPORT_STATUS.md"
+        fi
+        
+    - name: Summary
+      run: |
+        echo "## 📊 Version Support Status" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "$(cat SUPPORT_STATUS.md)" >> $GITHUB_STEP_SUMMARY
