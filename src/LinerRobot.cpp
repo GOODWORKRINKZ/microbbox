@@ -164,14 +164,29 @@ void LinerRobot::updateButton() {
     }
     lastButtonCheck_ = now;
     
-    bool buttonState = digitalRead(BUTTON_PIN) == LOW; // LOW = нажата (pull-up)
+    // Читаем состояние кнопки
+    // HIGH = не нажата (подтянута к VCC через pull-up)
+    // LOW = нажата (замкнута на GND)
+    bool buttonState = digitalRead(BUTTON_PIN) == LOW;
+    
+    // Обнаруживаем переход из HIGH в LOW (нажатие)
+    // Игнорируем если кнопка была LOW при старте (LED на пине)
+    static bool firstRead = true;
+    static bool initialState = HIGH;
+    
+    if (firstRead) {
+        initialState = !buttonState; // Инвертируем, чтобы игнорировать LED
+        firstRead = false;
+        buttonPressed_ = buttonState;
+        return; // Пропускаем первое чтение
+    }
     
     if (buttonState && !buttonPressed_) {
-        // Кнопка нажата
+        // Кнопка нажата (переход HIGH->LOW)
         buttonPressed_ = true;
         onButtonPressed();
     } else if (!buttonState && buttonPressed_) {
-        // Кнопка отпущена
+        // Кнопка отпущена (переход LOW->HIGH)
         buttonPressed_ = false;
     }
 #endif
