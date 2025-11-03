@@ -225,15 +225,19 @@ jobs:
         
         echo "🎭 Эпическое название релиза: ${EPIC_NAME_RU} (${EPIC_NAME_EN})"
         
-    - name: Build Release Firmware
+    - name: Build All Robot Types - Release
       run: |
-        echo "🔨 Building release firmware..."
-        pio run --environment release
+        echo "🔨 Building all robot types (release)..."
+        pio run --environment classic-release
+        pio run --environment liner-release
+        pio run --environment brain-release
         
-    - name: Build Debug Firmware
+    - name: Build All Robot Types - Debug
       run: |
-        echo "🔨 Building debug firmware..."
-        pio run --environment debug
+        echo "🔨 Building all robot types (debug)..."
+        pio run --environment classic-debug
+        pio run --environment liner-debug
+        pio run --environment brain-debug
         
     - name: Prepare Release Files
       run: |
@@ -241,26 +245,36 @@ jobs:
         
         # Check for built firmware files
         echo "Checking for firmware files..."
-        ls -la .pio/build/release/ || echo "Release build directory not found!"
-        ls -la .pio/build/debug/ || echo "Debug build directory not found!"
         
-        if [ ! -f ".pio/build/release/firmware.bin" ]; then
-          echo "ERROR: Release firmware.bin not found!"
-          exit 1
-        fi
+        # Array of robot types and environments
+        ROBOT_TYPES=("classic" "liner" "brain")
+        BUILD_MODES=("release" "debug")
         
-        if [ ! -f ".pio/build/debug/firmware.bin" ]; then
-          echo "ERROR: Debug firmware.bin not found!"
-          exit 1
-        fi
+        # Check all builds exist
+        for robot in "${ROBOT_TYPES[@]}"; do
+          for mode in "${BUILD_MODES[@]}"; do
+            BUILD_DIR=".pio/build/${robot}-${mode}"
+            if [ ! -f "${BUILD_DIR}/firmware.bin" ]; then
+              echo "ERROR: ${BUILD_DIR}/firmware.bin not found!"
+              exit 1
+            fi
+            echo "✅ Found: ${BUILD_DIR}/firmware.bin"
+          done
+        done
         
-        # Copy and rename firmware files
-        cp .pio/build/release/firmware.bin microbox-${VERSION}-release.bin
-        cp .pio/build/debug/firmware.bin microbox-${VERSION}-debug.bin
-        
-        # Создаем контрольные суммы
-        sha256sum microbox-${VERSION}-release.bin > microbox-${VERSION}-release.bin.sha256
-        sha256sum microbox-${VERSION}-debug.bin > microbox-${VERSION}-debug.bin.sha256
+        # Copy and rename firmware files for all robot types
+        for robot in "${ROBOT_TYPES[@]}"; do
+          for mode in "${BUILD_MODES[@]}"; do
+            BUILD_DIR=".pio/build/${robot}-${mode}"
+            OUTPUT_NAME="microbox-${robot}-${VERSION}-${mode}.bin"
+            
+            cp "${BUILD_DIR}/firmware.bin" "${OUTPUT_NAME}"
+            echo "📦 Created: ${OUTPUT_NAME}"
+            
+            # Создаем контрольную сумму
+            sha256sum "${OUTPUT_NAME}" > "${OUTPUT_NAME}.sha256"
+          done
+        done
         
         # Информация о размерах
         echo "## 📦 Собранные файлы:" > build-info.txt
@@ -337,8 +351,27 @@ jobs:
         
         ## 📦 Файлы прошивки
         
-        - **microbox-$VERSION-release.bin** - Оптимизированная прошивка для продакшена
-        - **microbox-$VERSION-debug.bin** - Отладочная версия с расширенным логированием
+        В этом релизе доступны прошивки для **трех типов роботов**:
+        
+        ### 🚗 МикроБокс Классик (Classic)
+        Полнофункциональный управляемый робот с веб-интерфейсом, видеостримом и эффектами.
+        
+        - **microbox-classic-$VERSION-release.bin** - Оптимизированная версия
+        - **microbox-classic-$VERSION-debug.bin** - Отладочная версия с логами
+        
+        ### 🛤️ МикроБокс Лайнер (Liner)
+        Автономный робот следующий по линии с PID-контроллером.
+        
+        - **microbox-liner-$VERSION-release.bin** - Оптимизированная версия
+        - **microbox-liner-$VERSION-debug.bin** - Отладочная версия с логами
+        
+        ### 🎮 МикроБокс Брейн (Brain)
+        Модуль управления для других роботов с трансляцией протоколов (PWM/PPM/SBUS/TBS).
+        
+        - **microbox-brain-$VERSION-release.bin** - Оптимизированная версия
+        - **microbox-brain-$VERSION-debug.bin** - Отладочная версия с логами
+        
+        > 💡 **Какой тип выбрать?** Для обычного управляемого робота используйте **Classic**. Для автономного следования по линии - **Liner**. Для подключения к другим роботам - **Brain**.
         
         ## 🚀 Как установить
         
@@ -351,7 +384,7 @@ jobs:
            - `http://192.168.4.1` (в режиме точки доступа)
            - или `http://{6mac}.microbbox.local` (где {6mac} - последние 6 символов MAC, например: a1b2c3.microbbox.local)
         3. Нажмите кнопку **🔄 Обновление**
-        4. Выберите скачанный файл `.bin`
+        4. Выберите нужный файл `.bin` для вашего типа робота (classic/liner/brain)
         5. Дождитесь завершения обновления
         
         > **Совет**: В веб-интерфейсе доступна настройка WiFi для подключения к вашей домашней сети!
@@ -364,8 +397,9 @@ jobs:
         
         # Подключите ESP32CAM к компьютеру через USB-UART
         # Замените COM3 на ваш порт (для Linux/Mac: /dev/ttyUSB0)
+        # Замените ROBOT_TYPE на нужный тип: classic, liner или brain
         esptool.py --chip esp32 --port COM3 --baud 921600 \
-          write_flash -z 0x10000 microbox-$VERSION-release.bin
+          write_flash -z 0x10000 microbox-ROBOT_TYPE-$VERSION-release.bin
         ```
         
         ### Метод 3: Через PlatformIO
@@ -378,8 +412,15 @@ jobs:
         # Переключитесь на нужную версию
         git checkout $VERSION
         
-        # Соберите и загрузите
-        pio run --environment release --target upload
+        # Соберите и загрузите нужный тип робота:
+        # Classic (управляемый)
+        pio run --environment classic-release --target upload
+        
+        # Liner (следование по линии)
+        # pio run --environment liner-release --target upload
+        
+        # Brain (модуль управления)
+        # pio run --environment brain-release --target upload
         ```
         
         ## ✨ Возможности
@@ -420,14 +461,20 @@ jobs:
         
         ## 📝 Проверка целостности
         
-        Перед установкой проверьте контрольные суммы:
+        Перед установкой проверьте контрольные суммы для выбранного типа робота:
         
         ```bash
-        # Для release версии
-        sha256sum -c microbox-$VERSION-release.bin.sha256
+        # МикроБокс Классик
+        sha256sum -c microbox-classic-$VERSION-release.bin.sha256
+        sha256sum -c microbox-classic-$VERSION-debug.bin.sha256
         
-        # Для debug версии
-        sha256sum -c microbox-$VERSION-debug.bin.sha256
+        # МикроБокс Лайнер
+        sha256sum -c microbox-liner-$VERSION-release.bin.sha256
+        sha256sum -c microbox-liner-$VERSION-debug.bin.sha256
+        
+        # МикроБокс Брейн
+        sha256sum -c microbox-brain-$VERSION-release.bin.sha256
+        sha256sum -c microbox-brain-$VERSION-debug.bin.sha256
         ```
         
         ## 🐛 Известные проблемы
