@@ -19,7 +19,7 @@ public:
     ClassicRobot();
     virtual ~ClassicRobot();
     
-    const char* getRobotType() const override { return "Classic"; }
+    RobotType getRobotType() const override { return RobotType::CLASSIC; }
     
 protected:
     bool initSpecificComponents() override;

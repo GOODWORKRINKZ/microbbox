@@ -19,7 +19,7 @@ public:
     LinerRobot();
     virtual ~LinerRobot();
     
-    const char* getRobotType() const override { return "Liner"; }
+    RobotType getRobotType() const override { return RobotType::LINER; }
     
 protected:
     bool initSpecificComponents() override;

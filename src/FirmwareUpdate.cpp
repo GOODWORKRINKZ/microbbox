@@ -351,10 +351,13 @@ bool FirmwareUpdate::parseGitHubRelease(const String& json, ReleaseInfo& release
     releaseInfo.publishedAt = extractJsonValue(json, "published_at");
     releaseInfo.robotType = robotType_;
     
+    // Получаем строковое представление типа робота (lowercase)
+    String robotTypeStr = robotTypeToLowerString(robotType_);
+    
     // Ищем URL для скачивания .bin файла для нашего типа робота
     // Формат имени: microbox-{type}-{version}-release.bin
     // Примеры: microbox-classic-v0.1.0-release.bin, microbox-liner-v0.1.0-release.bin
-    String targetFilename = "microbox-" + robotType_ + "-" + releaseInfo.version + "-release.bin";
+    String targetFilename = "microbox-" + robotTypeStr + "-" + releaseInfo.version + "-release.bin";
     
     int assetsPos = json.indexOf("\"assets\":");
     if (assetsPos >= 0) {
@@ -374,9 +377,9 @@ bool FirmwareUpdate::parseGitHubRelease(const String& json, ReleaseInfo& release
             
             // Проверяем, содержит ли URL наш тип робота
             if (url.indexOf(targetFilename) >= 0 || 
-                (url.endsWith("-release.bin") && url.indexOf(robotType_) >= 0)) {
+                (url.endsWith("-release.bin") && url.indexOf(robotTypeStr) >= 0)) {
                 releaseInfo.downloadUrl = url;
-                DEBUG_PRINTF("Найден бинарник для %s: %s\n", robotType_.c_str(), url.c_str());
+                DEBUG_PRINTF("Найден бинарник для %s: %s\n", robotTypeStr.c_str(), url.c_str());
                 break;
             }
             

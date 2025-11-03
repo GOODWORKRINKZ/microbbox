@@ -9,6 +9,7 @@
 #include <HTTPClient.h>
 #include <Preferences.h>
 #include "target_config.h"
+#include "RobotType.h"
 
 // Структура для информации о релизе
 struct ReleaseInfo {
@@ -18,7 +19,7 @@ struct ReleaseInfo {
     String downloadUrl;
     String publishedAt;
     bool isNewer;
-    String robotType;  // classic, liner, brain
+    RobotType robotType;  // Тип робота как enum
 };
 
 class FirmwareUpdate {
@@ -32,8 +33,8 @@ public:
     void shutdown();
     
     // Установка типа робота (для правильного выбора прошивки)
-    void setRobotType(const String& type) { robotType_ = type; }
-    String getRobotType() const { return robotType_; }
+    void setRobotType(RobotType type) { robotType_ = type; }
+    RobotType getRobotType() const { return robotType_; }
 
     // Проверка обновлений
     bool checkForUpdates(ReleaseInfo& releaseInfo);
@@ -97,8 +98,8 @@ private:
     bool shouldReboot;
     unsigned long rebootScheduledTime;
     
-    // Тип робота
-    String robotType_;
+    // Тип робота (enum)
+    RobotType robotType_;
     
     // Preferences для настроек
     Preferences preferences;

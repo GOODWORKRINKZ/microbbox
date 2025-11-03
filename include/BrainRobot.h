@@ -17,7 +17,7 @@ public:
     BrainRobot();
     virtual ~BrainRobot();
     
-    const char* getRobotType() const override { return "Brain"; }
+    RobotType getRobotType() const override { return RobotType::BRAIN; }
     
 protected:
     bool initSpecificComponents() override;

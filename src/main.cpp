@@ -102,7 +102,7 @@ void setup() {
     
     Serial.println("═══════════════════════════════════════");
     Serial.print("  ");
-    Serial.print(robot->getRobotType());
+    Serial.print(robot->getRobotTypeString());
     Serial.println(" робот готов к работе!");
     Serial.print("  IP адрес: ");
     Serial.println(robot->getIP());
