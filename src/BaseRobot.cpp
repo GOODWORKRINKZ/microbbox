@@ -233,9 +233,23 @@ bool BaseRobot::initWebServer() {
     });
     
     // Favicon
+#ifdef USE_EMBEDDED_RESOURCES
     server_->on("/favicon.ico", HTTP_GET, [](AsyncWebServerRequest* request) {
-        request->send(404);
+        AsyncWebServerResponse *response = request->beginResponse_P(200, "image/x-icon", faviconIco, faviconIco_len);
+        response->addHeader("Cache-Control", "no-cache, no-store, must-revalidate");
+        response->addHeader("Pragma", "no-cache");
+        response->addHeader("Expires", "0");
+        request->send(response);
     });
+#else
+    server_->on("/favicon.ico", HTTP_GET, [](AsyncWebServerRequest* request) {
+        if (SPIFFS.exists("/favicon.ico")) {
+            request->send(SPIFFS, "/favicon.ico", "image/x-icon");
+        } else {
+            request->send(404);
+        }
+    });
+#endif
     
     // Регистрация обработчиков прошивки
     firmwareUpdate_->init(server_);
