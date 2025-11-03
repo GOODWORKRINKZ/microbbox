@@ -135,6 +135,8 @@ void MX1508MotorController::stop() {
     
     currentLeftSpeed_ = 0;
     currentRightSpeed_ = 0;
+    // Reset lastCommandTime_ to prevent watchdog from firing repeatedly.
+    // Watchdog will only fire again after new commands arrive and another timeout occurs.
     lastCommandTime_ = 0;
 }
 
