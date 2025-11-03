@@ -68,6 +68,7 @@ void MX1508MotorController::update() {
             DEBUG_PRINTLN("Motor watchdog: остановка моторов");
             watchdogTriggered_ = true;  // Устанавливаем флаг срабатывания watchdog
             stop();
+            // Не сбрасываем флаг здесь - он будет сброшен при следующей команде
         }
     }
 }
@@ -121,6 +122,11 @@ void MX1508MotorController::stop() {
     if (!initialized_) {
         return;
     }
+    
+    // Note: We deliberately do NOT clear watchdogTriggered_ flag here.
+    // If watchdog triggered before this stop(), the flag should remain set
+    // so that the next motor command will be forced to apply.
+    // The flag is only cleared when a new motor command is received via setSpeed().
     
     ledcWrite(MOTOR_PWM_CHANNEL_LF, 0);
     ledcWrite(MOTOR_PWM_CHANNEL_LR, 0);
