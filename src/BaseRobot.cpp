@@ -217,7 +217,7 @@ bool BaseRobot::initWebServer() {
         if (request->hasParam("t") && request->hasParam("s")) {
             int throttle = request->getParam("t")->value().toInt();
             int steering = request->getParam("s")->value().toInt();
-            motorController_->move(throttle, steering);
+            motorController_->setMotorPWM(throttle, steering);
             request->send(200, "text/plain", "OK");
         } else {
             request->send(400, "text/plain", "Missing parameters");
