@@ -805,18 +805,16 @@ class BaseRobotUI {
                 if (availableTypes.length > 0) {
                     // Показываем выбор типа робота пользователю
                     this.showRobotTypeSelection(availableTypes);
-                    if (downloadBtn) {
-                        downloadBtn.textContent = '⬇️ Скачать обновление';
-                        downloadBtn.disabled = false;
-                    }
                 } else {
                     // Универсальный бинарник или файлы не найдены - скрываем выбор
                     if (selectionDiv) selectionDiv.classList.add('hidden');
                     this.updateDownloadUrl = downloadUrl;
-                    if (downloadBtn) {
-                        downloadBtn.textContent = '⬇️ Скачать обновление';
-                        downloadBtn.disabled = false;
-                    }
+                }
+                
+                // Включаем кнопку загрузки
+                if (downloadBtn) {
+                    downloadBtn.textContent = '⬇️ Скачать обновление';
+                    downloadBtn.disabled = false;
                 }
                 
                 if (updateAvailableDiv) updateAvailableDiv.classList.remove('hidden');
@@ -848,7 +846,7 @@ class BaseRobotUI {
         const name = asset.name.toLowerCase();
         
         // Проверяем что это .bin файл (но не .sha256)
-        if (!name.endsWith('.bin') || name.endsWith('.sha256')) return false;
+        if (!name.endsWith('.bin') || name.includes('.sha256')) return false;
         
         // Если указан тип робота, проверяем соответствие
         if (robotType) {
