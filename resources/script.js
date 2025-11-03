@@ -157,7 +157,7 @@ class CommandController {
         this.lastSentThrottle = this.STOP_COMMAND_VALUE;
         this.lastSentSteering = this.STOP_COMMAND_VALUE;
         this.lastSendTime = 0;
-        this.sendInterval = 250;
+        this.sendInterval = 300;  // 60% от commandTimeout (500ms)
         this.commandTimeout = 500;
         this.isSending = false;
         this.fetchTimeout = 250;
@@ -201,15 +201,21 @@ class CommandController {
                                this.targetSteering === this.STOP_COMMAND_VALUE);
         const wasMoving = (this.lastSentThrottle !== this.STOP_COMMAND_VALUE || 
                           this.lastSentSteering !== this.STOP_COMMAND_VALUE);
+        const isMoving = !isStopCommand;
+        
+        // Проверяем значительное изменение (>20 PWM)
+        const throttleChange = Math.abs(this.targetThrottle - this.lastSentThrottle);
+        const steeringChange = Math.abs(this.targetSteering - this.lastSentSteering);
+        const significantChange = (throttleChange > 20 || steeringChange > 20);
         
         // Проверяем нужно ли отправлять команду
         const shouldSend = (
             // Всегда отправляем команду остановки после движения (предотвращает залипание)
             (isStopCommand && wasMoving) ||
-            // Прошло достаточно времени с последней отправки
-            (now - this.lastSendTime >= this.sendInterval) ||
-            // Команда изменилась
-            (this.targetThrottle !== this.lastSentThrottle || this.targetSteering !== this.lastSentSteering)
+            // Моторы активны И прошел интервал (watchdog)
+            (isMoving && (now - this.lastSendTime >= this.sendInterval)) ||
+            // Значения изменились >20 PWM
+            significantChange
         );
         
         if (!shouldSend) return;
