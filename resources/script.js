@@ -819,6 +819,9 @@ class ClassicRobotUI extends BaseRobotUI {
         let isDragging = false;
         let touchId = null;
         
+        // Knob padding from edges - accounts for 50px knob diameter
+        const KNOB_EDGE_PADDING = 30;
+        
         const handleStart = (clientX, clientY, id = null) => {
             isDragging = true;
             touchId = id;
@@ -840,20 +843,20 @@ class ClassicRobotUI extends BaseRobotUI {
             if (side === 'left') {
                 // Horizontal slot - only X-axis movement allowed
                 deltaY = 0;
-                const maxDistance = rect.width / 2 - 30;
+                const maxDistance = rect.width / 2 - KNOB_EDGE_PADDING;
                 deltaX = Math.max(-maxDistance, Math.min(maxDistance, deltaX));
             } else {
                 // Vertical slot - only Y-axis movement allowed
                 deltaX = 0;
-                const maxDistance = rect.height / 2 - 30;
+                const maxDistance = rect.height / 2 - KNOB_EDGE_PADDING;
                 deltaY = Math.max(-maxDistance, Math.min(maxDistance, deltaY));
             }
             
             knob.style.transform = `translate(calc(-50% + ${deltaX}px), calc(-50% + ${deltaY}px))`;
             
             // Calculate percentages based on actual max distance for each axis
-            const maxDistanceX = side === 'left' ? (rect.width / 2 - 30) : 0;
-            const maxDistanceY = side === 'right' ? (rect.height / 2 - 30) : 0;
+            const maxDistanceX = side === 'left' ? (rect.width / 2 - KNOB_EDGE_PADDING) : 0;
+            const maxDistanceY = side === 'right' ? (rect.height / 2 - KNOB_EDGE_PADDING) : 0;
             
             const percentX = maxDistanceX > 0 ? (deltaX / maxDistanceX) * 100 : 0;
             const percentY = maxDistanceY > 0 ? (-deltaY / maxDistanceY) * 100 : 0;
