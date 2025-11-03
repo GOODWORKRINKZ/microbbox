@@ -230,10 +230,24 @@ jobs:
         echo "🔨 Building all robot types (release)..."
         pio run --environment classic-release --environment liner-release --environment brain-release
         
+        # Сохраняем release артефакты во временную директорию
+        # PlatformIO может удалить их при следующей сборке debug окружений
+        mkdir -p /tmp/release-artifacts
+        cp .pio/build/classic-release/firmware.bin /tmp/release-artifacts/classic-release-firmware.bin
+        cp .pio/build/liner-release/firmware.bin /tmp/release-artifacts/liner-release-firmware.bin
+        cp .pio/build/brain-release/firmware.bin /tmp/release-artifacts/brain-release-firmware.bin
+        echo "✅ Release artifacts saved to /tmp/release-artifacts"
+        
     - name: Build All Robot Types - Debug
       run: |
         echo "🔨 Building all robot types (debug)..."
         pio run --environment classic-debug --environment liner-debug --environment brain-debug
+        
+        # Восстанавливаем release артефакты после сборки debug окружений
+        cp /tmp/release-artifacts/classic-release-firmware.bin .pio/build/classic-release/firmware.bin
+        cp /tmp/release-artifacts/liner-release-firmware.bin .pio/build/liner-release/firmware.bin
+        cp /tmp/release-artifacts/brain-release-firmware.bin .pio/build/brain-release/firmware.bin
+        echo "✅ Release artifacts restored from /tmp/release-artifacts"
         
     - name: Prepare Release Files
       run: |
