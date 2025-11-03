@@ -364,7 +364,9 @@ class BaseRobotUI {
     setupCameraStream() {
         const streamImg = document.getElementById('cameraStream');
         if (streamImg) {
-            streamImg.src = '/stream';
+            // CameraServer работает на порту 81
+            const streamUrl = `${window.location.protocol}//${window.location.hostname}:81/stream`;
+            streamImg.src = streamUrl;
             streamImg.onerror = () => {
                 Logger.error('Ошибка загрузки видео потока');
             };
