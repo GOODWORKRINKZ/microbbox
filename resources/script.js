@@ -847,8 +847,9 @@ class BaseRobotUI {
         
         const name = asset.name.toLowerCase();
         
-        // Проверяем что это .bin файл (но не .sha256)
-        if (!name.endsWith('.bin') || name.includes('.sha256')) {
+        // Проверяем что это .bin файл (но не .bin.sha256)
+        // Файлы контрольных сумм имеют расширение .bin.sha256
+        if (!name.endsWith('.bin') || name.endsWith('.bin.sha256')) {
             return false;
         }
         
