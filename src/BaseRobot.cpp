@@ -307,7 +307,7 @@ bool BaseRobot::initCamera() {
     // Параметры для разных типов роботов
 #ifdef TARGET_LINER
     // Для линейного робота нужно низкое разрешение ЧБ
-    config.frame_size = FRAMESIZE_96X96;
+    config.frame_size = FRAMESIZE_QQVGA;
     config.pixel_format = PIXFORMAT_GRAYSCALE;
     config.jpeg_quality = 12;
     config.fb_count = 1;  // Один буфер достаточно для ЧБ
