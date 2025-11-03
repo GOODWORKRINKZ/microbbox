@@ -489,22 +489,6 @@ class BaseRobotUI {
             downloadBtn.addEventListener('click', () => this.downloadUpdate());
         }
         
-        // Выбор типа робота
-        const robotTypeRadios = document.querySelectorAll('input[name="robotType"]');
-        const confirmBtn = document.getElementById('confirmRobotTypeBtn');
-        
-        robotTypeRadios.forEach(radio => {
-            radio.addEventListener('change', () => {
-                if (confirmBtn) {
-                    confirmBtn.disabled = false;
-                }
-            });
-        });
-        
-        if (confirmBtn) {
-            confirmBtn.addEventListener('click', () => this.confirmRobotType());
-        }
-        
         // Чекбоксы настроек обновлений
         const autoUpdateCheck = document.getElementById('autoUpdate');
         const dontOfferCheck = document.getElementById('dontOfferUpdates');
@@ -706,9 +690,6 @@ class BaseRobotUI {
                 const releaseNameEl = document.getElementById('releaseName');
                 if (versionEl) versionEl.textContent = data.version;
                 if (releaseNameEl) releaseNameEl.textContent = data.releaseName;
-                
-                // Показываем выбор типа робота только для старых версий
-                this.checkIfNeedsRobotTypeSelection(data.version);
             }
             
             // Загружаем настройки
@@ -725,40 +706,6 @@ class BaseRobotUI {
         }
     }
     
-    checkIfNeedsRobotTypeSelection(version) {
-        // Показываем выбор типа только для версий 0.0.X
-        const needsSelection = version && (version.startsWith('v0.0.') || version.startsWith('0.0.'));
-        const selectionDiv = document.getElementById('robotTypeSelection');
-        
-        if (needsSelection && selectionDiv) {
-            selectionDiv.classList.remove('hidden');
-            // Загружаем сохраненный выбор из localStorage
-            const savedType = localStorage.getItem('selectedRobotType');
-            if (savedType) {
-                const radio = document.querySelector(`input[name="robotType"][value="${savedType}"]`);
-                if (radio) radio.checked = true;
-                const confirmBtn = document.getElementById('confirmRobotTypeBtn');
-                if (confirmBtn) confirmBtn.disabled = false;
-            }
-        } else if (selectionDiv) {
-            selectionDiv.classList.add('hidden');
-        }
-    }
-    
-    confirmRobotType() {
-        const selectedRadio = document.querySelector('input[name="robotType"]:checked');
-        if (!selectedRadio) return;
-        
-        const robotType = selectedRadio.value;
-        
-        // Сохраняем выбор в localStorage (только клиентская сторона)
-        localStorage.setItem('selectedRobotType', robotType);
-        this.selectedRobotType = robotType;
-        
-        Logger.info('Тип робота выбран:', robotType);
-        alert(`Выбран тип устройства: ${this.getRobotTypeName(robotType)}.\nТеперь можно проверить обновления.`);
-    }
-    
     getRobotTypeName(type) {
         const names = {
             'classic': 'МикроБокс Классик',
@@ -771,20 +718,6 @@ class BaseRobotUI {
     async checkForUpdates() {
         const checkBtn = document.getElementById('checkUpdatesBtn');
         if (checkBtn) checkBtn.disabled = true;
-        
-        // Проверяем, выбран ли тип робота (для старых версий)
-        const currentVersion = document.getElementById('currentVersion')?.textContent || '';
-        const needsSelection = currentVersion && (currentVersion.startsWith('v0.0.') || currentVersion.startsWith('0.0.'));
-        
-        if (needsSelection) {
-            const savedType = localStorage.getItem('selectedRobotType');
-            if (!savedType) {
-                alert('Сначала выберите тип устройства');
-                if (checkBtn) checkBtn.disabled = false;
-                return;
-            }
-            this.selectedRobotType = savedType;
-        }
         
         try {
             const response = await fetch('/api/update/check');
@@ -801,21 +734,42 @@ class BaseRobotUI {
                 document.getElementById('newReleaseName').textContent = data.releaseName;
                 document.getElementById('releaseNotes').textContent = data.releaseNotes;
                 
-                // Модифицируем URL если выбран тип робота
-                let downloadUrl = data.downloadUrl;
-                if (this.selectedRobotType && needsSelection) {
-                    // Заменяем URL на специфичный для типа робота
-                    // Пример: microbox-classic-v0.1.0-release.bin
-                    const version = data.version;
-                    downloadUrl = downloadUrl.replace(/microbox-.*?-release\.bin/, 
-                        `microbox-${this.selectedRobotType}-${version}-release.bin`);
-                    Logger.info(`Используется URL для типа ${this.selectedRobotType}: ${downloadUrl}`);
+                // Сохраняем базовый URL и версию
+                this.baseUpdateUrl = data.downloadUrl;
+                this.updateVersion = data.version;
+                
+                // Определяем доступные типы роботов из имени файла в URL
+                const availableTypes = this.extractAvailableTypes(data.downloadUrl);
+                
+                const selectionDiv = document.getElementById('robotTypeSelection');
+                const downloadBtn = document.getElementById('downloadUpdateBtn');
+                
+                if (availableTypes.length > 1) {
+                    // Есть несколько типов - показываем выбор
+                    this.showRobotTypeSelection(availableTypes);
+                    if (downloadBtn) {
+                        downloadBtn.textContent = '⬇️ Скачать обновление';
+                        downloadBtn.disabled = false;
+                    }
+                } else if (availableTypes.length === 1) {
+                    // Один тип - скрываем выбор
+                    if (selectionDiv) selectionDiv.classList.add('hidden');
+                    this.updateDownloadUrl = this.constructDownloadUrl(availableTypes[0]);
+                    if (downloadBtn) {
+                        downloadBtn.textContent = `⬇️ Скачать ${this.getRobotTypeName(availableTypes[0])}`;
+                        downloadBtn.disabled = false;
+                    }
+                } else {
+                    // Универсальный бинарник - скрываем выбор
+                    if (selectionDiv) selectionDiv.classList.add('hidden');
+                    this.updateDownloadUrl = data.downloadUrl;
+                    if (downloadBtn) {
+                        downloadBtn.textContent = '⬇️ Скачать обновление';
+                        downloadBtn.disabled = false;
+                    }
                 }
                 
                 if (updateAvailableDiv) updateAvailableDiv.classList.remove('hidden');
-                
-                // Сохраняем модифицированный URL для скачивания
-                this.updateDownloadUrl = downloadUrl;
             } else {
                 if (updateAvailableDiv) updateAvailableDiv.classList.add('hidden');
                 alert('У вас установлена последняя версия');
@@ -828,7 +782,73 @@ class BaseRobotUI {
         }
     }
     
+    extractAvailableTypes(url) {
+        // Определяем какие типы доступны по имени файла
+        // Для v0.1+ будут файлы типа: microbox-classic-v0.1.0-release.bin
+        const types = ['classic', 'liner', 'brain'];
+        
+        // Проверяем есть ли в URL конкретный тип
+        for (const type of types) {
+            if (url.includes(`-${type}-`) || url.includes(`microbox-${type}`)) {
+                // Нашли конкретный тип, значит есть разные типы
+                // Возвращаем все три для выбора
+                return types;
+            }
+        }
+        
+        // Если паттерн не найден, это универсальный файл
+        return [];
+    }
+    
+    showRobotTypeSelection(availableTypes) {
+        const selectionDiv = document.getElementById('robotTypeSelection');
+        if (!selectionDiv) return;
+        
+        // Показываем только доступные типы
+        const allRadios = document.querySelectorAll('input[name="robotType"]');
+        allRadios.forEach(radio => {
+            const optionDiv = radio.closest('.robot-type-option');
+            if (optionDiv) {
+                if (availableTypes.includes(radio.value)) {
+                    optionDiv.style.display = 'block';
+                } else {
+                    optionDiv.style.display = 'none';
+                }
+            }
+            // Снимаем выделение
+            radio.checked = false;
+        });
+        
+        selectionDiv.classList.remove('hidden');
+    }
+    
+    constructDownloadUrl(robotType) {
+        // Формируем URL: microbox-{type}-{version}-release.bin
+        if (!this.baseUpdateUrl || !this.updateVersion) return this.baseUpdateUrl;
+        
+        // Заменяем имя файла в URL
+        const urlParts = this.baseUpdateUrl.split('/');
+        urlParts[urlParts.length - 1] = `microbox-${robotType}-${this.updateVersion}-release.bin`;
+        
+        return urlParts.join('/');
+    }
+    
     async downloadUpdate() {
+        // Если есть выбор типа робота - сначала проверяем что выбрано
+        const selectionDiv = document.getElementById('robotTypeSelection');
+        if (selectionDiv && !selectionDiv.classList.contains('hidden')) {
+            const selectedRadio = document.querySelector('input[name="robotType"]:checked');
+            if (!selectedRadio) {
+                alert('Выберите тип устройства для обновления');
+                return;
+            }
+            
+            // Формируем URL для выбранного типа
+            const robotType = selectedRadio.value;
+            this.updateDownloadUrl = this.constructDownloadUrl(robotType);
+            Logger.info(`Выбран тип ${robotType}, URL: ${this.updateDownloadUrl}`);
+        }
+        
         if (!this.updateDownloadUrl) {
             alert('URL для скачивания не найден');
             return;
