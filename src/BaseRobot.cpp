@@ -224,7 +224,8 @@ bool BaseRobot::initWebServer() {
             Serial.print(" s=");
             Serial.println(steering);
             
-            motorController_->setMotorPWM(throttle, steering);
+            // Вызываем метод наследника для обработки команды
+            handleMotorCommand(throttle, steering);
             request->send(200, "text/plain", "OK");
         } else {
             request->send(400, "text/plain", "Missing parameters");

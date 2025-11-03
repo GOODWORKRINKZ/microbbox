@@ -21,6 +21,9 @@ public:
     
     RobotType getRobotType() const override { return RobotType::CLASSIC; }
     
+    // Обработка команд управления моторами
+    void handleMotorCommand(int throttlePWM, int steeringPWM) override;
+    
 protected:
     bool initSpecificComponents() override;
     void updateSpecificComponents() override;
