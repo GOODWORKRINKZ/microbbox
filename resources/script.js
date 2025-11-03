@@ -467,10 +467,45 @@ class BaseRobotUI {
         
         // Кнопки сохранения
         this.setupSaveButtons();
+        
+        // Настройка обработчиков обновления
+        this.setupUpdateHandlers();
     }
     
     setupSaveButtons() {
         // Переопределяется в наследниках
+    }
+    
+    setupUpdateHandlers() {
+        // Кнопка проверки обновлений
+        const checkBtn = document.getElementById('checkUpdatesBtn');
+        if (checkBtn) {
+            checkBtn.addEventListener('click', () => this.checkForUpdates());
+        }
+        
+        // Кнопка скачивания обновления
+        const downloadBtn = document.getElementById('downloadUpdateBtn');
+        if (downloadBtn) {
+            downloadBtn.addEventListener('click', () => this.downloadUpdate());
+        }
+        
+        // Чекбоксы настроек обновлений
+        const autoUpdateCheck = document.getElementById('autoUpdate');
+        const dontOfferCheck = document.getElementById('dontOfferUpdates');
+        
+        if (autoUpdateCheck) {
+            autoUpdateCheck.addEventListener('change', () => this.saveUpdateSettings());
+        }
+        
+        if (dontOfferCheck) {
+            dontOfferCheck.addEventListener('change', () => this.saveUpdateSettings());
+        }
+        
+        // Проверяем при открытии вкладки обновлений
+        const updatesTab = document.querySelector('[data-tab="updates"]');
+        if (updatesTab) {
+            updatesTab.addEventListener('click', () => this.loadUpdateInfo());
+        }
     }
     
     switchTab(tabName) {
@@ -640,7 +675,244 @@ class BaseRobotUI {
             Logger.debug('Не удалось проверить обновления:', error);
         }
     }
+    
+    // ═══════════════════════════════════════════════════════════════
+    // МЕТОДЫ ОБНОВЛЕНИЯ ПРОШИВКИ (ТОЛЬКО КЛИЕНТ)
+    // ═══════════════════════════════════════════════════════════════
+    
+    async loadUpdateInfo() {
+        try {
+            // Загружаем текущую версию
+            const currentResponse = await fetch('/api/update/current');
+            if (currentResponse.ok) {
+                const data = await currentResponse.json();
+                const versionEl = document.getElementById('currentVersion');
+                const releaseNameEl = document.getElementById('releaseName');
+                if (versionEl) versionEl.textContent = data.version;
+                if (releaseNameEl) releaseNameEl.textContent = data.releaseName;
+            }
+            
+            // Загружаем настройки
+            const settingsResponse = await fetch('/api/update/settings');
+            if (settingsResponse.ok) {
+                const settings = await settingsResponse.json();
+                const autoUpdateCheck = document.getElementById('autoUpdate');
+                const dontOfferCheck = document.getElementById('dontOfferUpdates');
+                if (autoUpdateCheck) autoUpdateCheck.checked = settings.autoUpdate;
+                if (dontOfferCheck) dontOfferCheck.checked = settings.dontOffer;
+            }
+        } catch (error) {
+            Logger.error('Ошибка загрузки информации об обновлениях:', error);
+        }
+    }
+    
+    getRobotTypeName(type) {
+        const names = {
+            'classic': 'МикроБокс Классик',
+            'liner': 'МикроБокс Лайнер',
+            'brain': 'МикроБокс Брейн'
+        };
+        return names[type] || type;
+    }
+    
+    async checkForUpdates() {
+        const checkBtn = document.getElementById('checkUpdatesBtn');
+        if (checkBtn) checkBtn.disabled = true;
+        
+        try {
+            const response = await fetch('/api/update/check');
+            if (!response.ok) {
+                alert('Ошибка проверки обновлений');
+                return;
+            }
+            
+            const data = await response.json();
+            const updateAvailableDiv = document.getElementById('updateAvailable');
+            
+            if (data.hasUpdate) {
+                document.getElementById('newVersion').textContent = data.version;
+                document.getElementById('newReleaseName').textContent = data.releaseName;
+                document.getElementById('releaseNotes').textContent = data.releaseNotes;
+                
+                // Сохраняем базовый URL и версию
+                this.baseUpdateUrl = data.downloadUrl;
+                this.updateVersion = data.version;
+                
+                // Определяем доступные типы роботов из имени файла в URL
+                const availableTypes = this.extractAvailableTypes(data.downloadUrl);
+                
+                const selectionDiv = document.getElementById('robotTypeSelection');
+                const downloadBtn = document.getElementById('downloadUpdateBtn');
+                
+                if (availableTypes.length > 1) {
+                    // Есть несколько типов - показываем выбор
+                    this.showRobotTypeSelection(availableTypes);
+                    if (downloadBtn) {
+                        downloadBtn.textContent = '⬇️ Скачать обновление';
+                        downloadBtn.disabled = false;
+                    }
+                } else if (availableTypes.length === 1) {
+                    // Один тип - скрываем выбор
+                    if (selectionDiv) selectionDiv.classList.add('hidden');
+                    this.updateDownloadUrl = this.constructDownloadUrl(availableTypes[0]);
+                    if (downloadBtn) {
+                        downloadBtn.textContent = `⬇️ Скачать ${this.getRobotTypeName(availableTypes[0])}`;
+                        downloadBtn.disabled = false;
+                    }
+                } else {
+                    // Универсальный бинарник - скрываем выбор
+                    if (selectionDiv) selectionDiv.classList.add('hidden');
+                    this.updateDownloadUrl = data.downloadUrl;
+                    if (downloadBtn) {
+                        downloadBtn.textContent = '⬇️ Скачать обновление';
+                        downloadBtn.disabled = false;
+                    }
+                }
+                
+                if (updateAvailableDiv) updateAvailableDiv.classList.remove('hidden');
+            } else {
+                if (updateAvailableDiv) updateAvailableDiv.classList.add('hidden');
+                alert('У вас установлена последняя версия');
+            }
+        } catch (error) {
+            Logger.error('Ошибка проверки обновлений:', error);
+            alert('Ошибка подключения к серверу обновлений');
+        } finally {
+            if (checkBtn) checkBtn.disabled = false;
+        }
+    }
+    
+    extractAvailableTypes(url) {
+        // Определяем какие типы доступны по имени файла
+        // Для v0.1+ будут файлы типа: microbox-classic-v0.1.0-release.bin
+        const types = ['classic', 'liner', 'brain'];
+        
+        // Проверяем есть ли в URL конкретный тип
+        for (const type of types) {
+            if (url.includes(`-${type}-`) || url.includes(`microbox-${type}`)) {
+                // Нашли конкретный тип, значит есть разные типы
+                // Возвращаем все три для выбора
+                return types;
+            }
+        }
+        
+        // Если паттерн не найден, это универсальный файл
+        return [];
+    }
+    
+    showRobotTypeSelection(availableTypes) {
+        const selectionDiv = document.getElementById('robotTypeSelection');
+        if (!selectionDiv) return;
+        
+        // Показываем только доступные типы
+        const allRadios = document.querySelectorAll('input[name="robotType"]');
+        allRadios.forEach(radio => {
+            const optionDiv = radio.closest('.robot-type-option');
+            if (optionDiv) {
+                if (availableTypes.includes(radio.value)) {
+                    optionDiv.style.display = 'block';
+                } else {
+                    optionDiv.style.display = 'none';
+                }
+            }
+            // Снимаем выделение
+            radio.checked = false;
+        });
+        
+        selectionDiv.classList.remove('hidden');
+    }
+    
+    constructDownloadUrl(robotType) {
+        // Формируем URL: microbox-{type}-{version}-release.bin
+        if (!this.baseUpdateUrl || !this.updateVersion) return this.baseUpdateUrl;
+        
+        // Заменяем имя файла в URL
+        const urlParts = this.baseUpdateUrl.split('/');
+        urlParts[urlParts.length - 1] = `microbox-${robotType}-${this.updateVersion}-release.bin`;
+        
+        return urlParts.join('/');
+    }
+    
+    async downloadUpdate() {
+        // Если есть выбор типа робота - сначала проверяем что выбрано
+        const selectionDiv = document.getElementById('robotTypeSelection');
+        if (selectionDiv && !selectionDiv.classList.contains('hidden')) {
+            const selectedRadio = document.querySelector('input[name="robotType"]:checked');
+            if (!selectedRadio) {
+                alert('Выберите тип устройства для обновления');
+                return;
+            }
+            
+            // Формируем URL для выбранного типа
+            const robotType = selectedRadio.value;
+            this.updateDownloadUrl = this.constructDownloadUrl(robotType);
+            Logger.info(`Выбран тип ${robotType}, URL: ${this.updateDownloadUrl}`);
+        }
+        
+        if (!this.updateDownloadUrl) {
+            alert('URL для скачивания не найден');
+            return;
+        }
+        
+        const confirmed = confirm('Начать обновление прошивки?\nУстройство перезагрузится после завершения загрузки.');
+        if (!confirmed) return;
+        
+        try {
+            // Показываем оверлей обновления
+            this.showFirmwareUpdateOverlay();
+            
+            const response = await fetch('/api/update/download', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: `url=${encodeURIComponent(this.updateDownloadUrl)}`
+            });
+            
+            if (response.ok) {
+                const data = await response.json();
+                if (data.rebooting) {
+                    document.getElementById('firmwareStatus').textContent = 'Устройство перезагружается...';
+                    // Устройство перезагружается, показываем индикатор
+                    setTimeout(() => {
+                        document.getElementById('firmwareStatus').textContent = 'Ожидание перезагрузки...';
+                    }, 3000);
+                }
+            } else {
+                alert('Ошибка запуска обновления');
+                this.hideFirmwareUpdateOverlay();
+            }
+        } catch (error) {
+            Logger.error('Ошибка загрузки обновления:', error);
+            alert('Ошибка подключения к устройству');
+            this.hideFirmwareUpdateOverlay();
+        }
+    }
+    
+    async saveUpdateSettings() {
+        const autoUpdate = document.getElementById('autoUpdate')?.checked || false;
+        const dontOffer = document.getElementById('dontOfferUpdates')?.checked || false;
+        
+        try {
+            await fetch('/api/update/settings', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ autoUpdate, dontOffer })
+            });
+        } catch (error) {
+            Logger.error('Ошибка сохранения настроек обновлений:', error);
+        }
+    }
+    
+    showFirmwareUpdateOverlay() {
+        const overlay = document.getElementById('firmwareUpdateOverlay');
+        if (overlay) overlay.classList.remove('hidden');
+    }
+    
+    hideFirmwareUpdateOverlay() {
+        const overlay = document.getElementById('firmwareUpdateOverlay');
+        if (overlay) overlay.classList.add('hidden');
+    }
 }
+
 
 // ═══════════════════════════════════════════════════════════════
 // CLASSIC ROBOT UI - Управляемый робот
