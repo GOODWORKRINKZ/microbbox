@@ -100,15 +100,17 @@ void ClassicRobot::setupWebHandlers(AsyncWebServer* server) {
     // Фонарик (камера LED)
     server->on("/flashlight", HTTP_GET, [](AsyncWebServerRequest* request) {
         // TODO: Реализовать управление камерой LED если поддерживается
-        request->send(200, "text/plain", "OK");
+        request->send(501, "text/plain", "Not Implemented");
     });
     
     // Звуковой сигнал
     server->on("/horn", HTTP_GET, [this](AsyncWebServerRequest* request) {
 #ifdef FEATURE_BUZZER
         playTone(1000, 200); // 1kHz, 200ms
-#endif
         request->send(200, "text/plain", "OK");
+#else
+        request->send(501, "text/plain", "Not Implemented");
+#endif
     });
     
     // WiFi настройки - текущие
@@ -123,7 +125,7 @@ void ClassicRobot::setupWebHandlers(AsyncWebServer* server) {
     // WiFi настройки - сохранение
     server->on("/api/wifi/save", HTTP_POST, [](AsyncWebServerRequest* request) {
         // TODO: Реализовать сохранение WiFi настроек в EEPROM/NVS
-        request->send(200, "text/plain", "OK");
+        request->send(501, "text/plain", "Not Implemented - TODO");
     });
     
     // Перезагрузка устройства

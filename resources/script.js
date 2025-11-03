@@ -1016,6 +1016,9 @@ class ClassicRobotUI extends BaseRobotUI {
         this.effectMode = 'normal';
         this.keyStates = {};
         
+        // Маппинг эффектов для API (DRY)
+        this.effectMap = { normal: 0, police: 1, fire: 2, ambulance: 3, terminator: 4 };
+        
         // T-800 overlay
         this.t800Interval = null;
         this.t800StartTime = null;
@@ -1132,9 +1135,7 @@ class ClassicRobotUI extends BaseRobotUI {
     async setEffectMode(mode) {
         this.effectMode = mode;
         
-        // Маппинг режимов для API
-        const effectMap = { normal: 0, police: 1, fire: 2, ambulance: 3, terminator: 4 };
-        const effectId = effectMap[mode] || 0;
+        const effectId = this.effectMap[mode] || 0;
         
         try {
             await fetch(`/cmd?effect=${effectId}`);
@@ -1248,8 +1249,7 @@ class ClassicRobotUI extends BaseRobotUI {
         localStorage.setItem('robotSettings', JSON.stringify(settings));
         
         // Отправляем эффект на сервер
-        const effectMap = { normal: 0, police: 1, fire: 2, ambulance: 3, terminator: 4 };
-        const effectId = effectMap[settings.effectMode] || 0;
+        const effectId = this.effectMap[settings.effectMode] || 0;
         
         try {
             await fetch(`/cmd?effect=${effectId}`);
@@ -1306,8 +1306,10 @@ class ClassicRobotUI extends BaseRobotUI {
             const response = await fetch('/api/wifi/current');
             if (response.ok) {
                 const data = await response.json();
-                if (data.mode) document.getElementById('wifiMode').value = data.mode;
-                if (data.ssid) document.getElementById('wifiSSID').value = data.ssid;
+                const modeEl = document.getElementById('wifiMode');
+                const ssidEl = document.getElementById('wifiSSID');
+                if (modeEl && data.mode) modeEl.value = data.mode;
+                if (ssidEl && data.ssid) ssidEl.value = data.ssid;
             }
         } catch (error) {
             Logger.debug('Не удалось загрузить WiFi настройки:', error);
