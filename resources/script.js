@@ -1019,6 +1019,13 @@ class ClassicRobotUI extends BaseRobotUI {
         // Маппинг эффектов для API (DRY)
         this.effectMap = { normal: 0, police: 1, fire: 2, ambulance: 3, terminator: 4 };
         
+        // PWM константы для моторов (KISS)
+        this.PWM_NEUTRAL = 1500;
+        this.PWM_FORWARD = 2000;
+        this.PWM_BACKWARD = 1000;
+        this.PWM_LEFT = 1000;
+        this.PWM_RIGHT = 2000;
+        
         // T-800 overlay
         this.t800Interval = null;
         this.t800StartTime = null;
@@ -1059,6 +1066,9 @@ class ClassicRobotUI extends BaseRobotUI {
                 this.handleControlButton(direction, false);
             });
         });
+        
+        // Кнопки настроек (важно!)
+        this.setupSaveButtons();
     }
     
     setupSaveButtons() {
@@ -1096,11 +1106,11 @@ class ClassicRobotUI extends BaseRobotUI {
         }
         
         const speedMap = {
-            'forward': { t: 2000, s: 1500 },
-            'backward': { t: 1000, s: 1500 },
-            'left': { t: 1500, s: 1000 },
-            'right': { t: 1500, s: 2000 },
-            'stop': { t: 1500, s: 1500 }
+            'forward': { t: this.PWM_FORWARD, s: this.PWM_NEUTRAL },
+            'backward': { t: this.PWM_BACKWARD, s: this.PWM_NEUTRAL },
+            'left': { t: this.PWM_NEUTRAL, s: this.PWM_LEFT },
+            'right': { t: this.PWM_NEUTRAL, s: this.PWM_RIGHT },
+            'stop': { t: this.PWM_NEUTRAL, s: this.PWM_NEUTRAL }
         };
         
         const speed = speedMap[direction];
@@ -1112,21 +1122,21 @@ class ClassicRobotUI extends BaseRobotUI {
     updateKeyboardControl(key, pressed) {
         this.keyStates[key] = pressed;
         
-        let throttle = 1500;
-        let steering = 1500;
+        let throttle = this.PWM_NEUTRAL;
+        let steering = this.PWM_NEUTRAL;
         
         // Расчет throttle
         if (this.keyStates['w'] || this.keyStates['arrowup']) {
-            throttle = 2000;
+            throttle = this.PWM_FORWARD;
         } else if (this.keyStates['s'] || this.keyStates['arrowdown']) {
-            throttle = 1000;
+            throttle = this.PWM_BACKWARD;
         }
         
         // Расчет steering
         if (this.keyStates['a'] || this.keyStates['arrowleft']) {
-            steering = 1000;
+            steering = this.PWM_LEFT;
         } else if (this.keyStates['d'] || this.keyStates['arrowright']) {
-            steering = 2000;
+            steering = this.PWM_RIGHT;
         }
         
         this.commandController.setTarget(throttle, steering);
@@ -1211,14 +1221,14 @@ class ClassicRobotUI extends BaseRobotUI {
         
         try {
             // Тест: полный газ вперёд + руль в сторону выбранного мотора
-            const throttle = 2000; // Вперёд
-            const steering = motorSide === 'left' ? 1000 : 2000; // Руль в сторону мотора
+            const throttle = this.PWM_FORWARD;
+            const steering = motorSide === 'left' ? this.PWM_LEFT : this.PWM_RIGHT;
             
             await fetch(`/cmd?throttle=${throttle}&steering=${steering}`);
             
             // Через 1 секунду останавливаем
             setTimeout(async () => {
-                await fetch('/cmd?throttle=1500&steering=1500');
+                await fetch(`/cmd?throttle=${this.PWM_NEUTRAL}&steering=${this.PWM_NEUTRAL}`);
             }, 1000);
         } catch (error) {
             Logger.error('Ошибка тестирования мотора:', error);
