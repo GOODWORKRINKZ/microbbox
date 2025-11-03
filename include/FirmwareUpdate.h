@@ -32,8 +32,7 @@ public:
     void loop();
     void shutdown();
     
-    // Установка типа робота (для правильного выбора прошивки)
-    void setRobotType(RobotType type) { robotType_ = type; }
+    // Получение типа робота из конфигурации (определяется на этапе компиляции)
     RobotType getRobotType() const { return robotType_; }
 
     // Проверка обновлений

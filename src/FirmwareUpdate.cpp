@@ -15,6 +15,20 @@ FirmwareUpdate::FirmwareUpdate() :
     dontOfferUpdates(false)
 {
     DEBUG_PRINTLN("FirmwareUpdate конструктор");
+    
+    // Определяем тип робота из конфигурации компиляции
+    #ifdef TARGET_CLASSIC
+        robotType_ = RobotType::CLASSIC;
+    #elif defined(TARGET_LINER)
+        robotType_ = RobotType::LINER;
+    #elif defined(TARGET_BRAIN)
+        robotType_ = RobotType::BRAIN;
+    #else
+        robotType_ = RobotType::UNKNOWN;
+    #endif
+    
+    DEBUG_PRINT("Тип робота для обновлений: ");
+    DEBUG_PRINTLN(robotTypeToString(robotType_));
 }
 
 FirmwareUpdate::~FirmwareUpdate() {
