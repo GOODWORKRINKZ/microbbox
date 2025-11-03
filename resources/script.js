@@ -717,29 +717,84 @@ class BaseRobotUI {
     
     async checkForUpdates() {
         const checkBtn = document.getElementById('checkUpdatesBtn');
-        if (checkBtn) checkBtn.disabled = true;
+        if (checkBtn) {
+            checkBtn.disabled = true;
+            checkBtn.textContent = 'Проверка...';
+        }
         
         try {
-            const response = await fetch('/api/update/check');
-            if (!response.ok) {
-                alert('Ошибка проверки обновлений');
-                return;
+            // Получаем текущую версию с устройства
+            const currentVersionResponse = await fetch('/api/update/current');
+            if (!currentVersionResponse.ok) {
+                throw new Error('Не удалось получить текущую версию');
+            }
+            const currentVersionData = await currentVersionResponse.json();
+            const currentVersion = currentVersionData.version;
+            
+            if (!currentVersion) {
+                throw new Error('Не удалось получить текущую версию устройства');
             }
             
-            const data = await response.json();
+            // Проверяем обновления на GitHub API напрямую с клиента (KISS - Simple)
+            const githubApiUrl = `https://api.github.com/repos/${this.GITHUB_REPO}/releases/latest`;
+            const githubResponse = await fetch(githubApiUrl, {
+                headers: {
+                    'Accept': 'application/vnd.github+json',
+                    'User-Agent': 'MicroBox-Web-Client'
+                }
+            });
+            
+            if (!githubResponse.ok) {
+                throw new Error('Не удалось получить информацию о релизах с GitHub');
+            }
+            
+            const releaseData = await githubResponse.json();
+            
+            // Валидация обязательных полей GitHub API response
+            if (!releaseData || !releaseData.tag_name) {
+                throw new Error('Некорректный ответ от GitHub API');
+            }
+            
+            // Извлекаем информацию о релизе
+            const latestVersion = releaseData.tag_name;
+            const releaseName = releaseData.name || latestVersion;
+            const releaseNotes = releaseData.body || 'Нет описания';
+            
+            // Находим .bin файл для загрузки
+            let downloadUrl = '';
+            if (releaseData.assets && Array.isArray(releaseData.assets) && releaseData.assets.length > 0) {
+                const binAsset = releaseData.assets.find(asset => 
+                    asset && asset.name && asset.name.endsWith('-release.bin') && asset.browser_download_url
+                );
+                if (binAsset && binAsset.browser_download_url) {
+                    downloadUrl = binAsset.browser_download_url;
+                }
+            }
+            
+            // Сравниваем версии
+            const hasUpdate = this.isVersionNewer(currentVersion, latestVersion);
+            
             const updateAvailableDiv = document.getElementById('updateAvailable');
             
-            if (data.hasUpdate) {
-                document.getElementById('newVersion').textContent = data.version;
-                document.getElementById('newReleaseName').textContent = data.releaseName;
-                document.getElementById('releaseNotes').textContent = data.releaseNotes;
+            if (hasUpdate) {
+                document.getElementById('newVersion').textContent = latestVersion;
+                document.getElementById('newReleaseName').textContent = releaseName;
+                document.getElementById('releaseNotes').textContent = releaseNotes;
                 
                 // Сохраняем базовый URL и версию
-                this.baseUpdateUrl = data.downloadUrl;
-                this.updateVersion = data.version;
+                this.baseUpdateUrl = downloadUrl;
+                this.updateVersion = latestVersion;
+                
+                // Сохраняем информацию о релизе (DRY - Don't Repeat Yourself)
+                this.latestReleaseInfo = {
+                    version: latestVersion,
+                    releaseName: releaseName,
+                    releaseNotes: releaseNotes,
+                    downloadUrl: downloadUrl
+                };
                 
                 // Определяем доступные типы роботов из имени файла в URL
-                const availableTypes = this.extractAvailableTypes(data.downloadUrl);
+                const availableTypes = this.extractAvailableTypes(downloadUrl);
                 
                 const selectionDiv = document.getElementById('robotTypeSelection');
                 const downloadBtn = document.getElementById('downloadUpdateBtn');
@@ -762,7 +817,7 @@ class BaseRobotUI {
                 } else {
                     // Универсальный бинарник - скрываем выбор
                     if (selectionDiv) selectionDiv.classList.add('hidden');
-                    this.updateDownloadUrl = data.downloadUrl;
+                    this.updateDownloadUrl = downloadUrl;
                     if (downloadBtn) {
                         downloadBtn.textContent = '⬇️ Скачать обновление';
                         downloadBtn.disabled = false;
@@ -770,15 +825,24 @@ class BaseRobotUI {
                 }
                 
                 if (updateAvailableDiv) updateAvailableDiv.classList.remove('hidden');
+                
+                Logger.info('Доступно обновление:', {
+                    current: currentVersion,
+                    latest: latestVersion,
+                    downloadUrl: downloadUrl
+                });
             } else {
                 if (updateAvailableDiv) updateAvailableDiv.classList.add('hidden');
-                alert('У вас установлена последняя версия');
+                alert('У вас установлена последняя версия прошивки!');
             }
         } catch (error) {
             Logger.error('Ошибка проверки обновлений:', error);
-            alert('Ошибка подключения к серверу обновлений');
+            alert('Ошибка при проверке обновлений: ' + error.message);
         } finally {
-            if (checkBtn) checkBtn.disabled = false;
+            if (checkBtn) {
+                checkBtn.disabled = false;
+                checkBtn.textContent = 'Проверить обновления';
+            }
         }
     }
     
@@ -798,6 +862,33 @@ class BaseRobotUI {
         
         // Если паттерн не найден, это универсальный файл
         return [];
+    }
+    
+    // Функция сравнения версий (Single Responsibility - только сравнение версий)
+    isVersionNewer(currentVersion, latestVersion) {
+        // Убираем префикс 'v' если есть и берем только числовую часть до дефиса
+        const cleanCurrent = currentVersion.replace(/^v/, '').split('-')[0];
+        const cleanLatest = latestVersion.replace(/^v/, '').split('-')[0];
+        
+        const currentParts = cleanCurrent.split('.').map(part => {
+            const num = parseInt(part, 10);
+            return isNaN(num) ? 0 : num;
+        });
+        const latestParts = cleanLatest.split('.').map(part => {
+            const num = parseInt(part, 10);
+            return isNaN(num) ? 0 : num;
+        });
+        
+        // Сравниваем каждую часть версии (major.minor.patch)
+        for (let i = 0; i < Math.max(currentParts.length, latestParts.length); i++) {
+            const current = currentParts[i] || 0;
+            const latest = latestParts[i] || 0;
+            
+            if (latest > current) return true;
+            if (latest < current) return false;
+        }
+        
+        return false;
     }
     
     showRobotTypeSelection(availableTypes) {
