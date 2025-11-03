@@ -235,7 +235,7 @@ void BrainRobot::handleRoot(AsyncWebServerRequest* request) {
     html += "<button onclick=\"fetch('/protocol?type=tbs')\">TBS</button>";
     html += "</body></html>";
     
-    request->send(200, "text/html", html);
+    request->send(200, "text/html; charset=UTF-8", html);
 }
 
 void BrainRobot::handleCommand(AsyncWebServerRequest* request) {

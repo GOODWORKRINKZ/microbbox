@@ -921,7 +921,9 @@ class ClassicRobotUI extends BaseRobotUI {
 // LINER ROBOT UI - Автономный робот следующий по линии
 // ═══════════════════════════════════════════════════════════════
 
-class LinerRobotUI extends BaseRobotUI {
+class LinerRobotUI extends ClassicRobotUI {
+    // Наследует ВСЕ от Classic: джойстики, стрим камеры, управление
+    // Добавляет только кнопку автономного режима
     constructor() {
         super();
         this.robotType = 'liner';
@@ -930,9 +932,10 @@ class LinerRobotUI extends BaseRobotUI {
     }
     
     setupEventListeners() {
+        // Получаем все функции Classic: джойстики, эффекты и т.д.
         super.setupEventListeners();
         
-        // Кнопка переключения режима
+        // Добавляем только кнопку переключения режима
         const modeBtn = document.getElementById('autonomousModeBtn');
         if (modeBtn) {
             modeBtn.addEventListener('click', () => this.toggleAutonomousMode());
@@ -961,9 +964,10 @@ class LinerRobotUI extends BaseRobotUI {
     }
     
     async updateSpecific() {
-        super.updateSpecific();
+        // Вызываем обновление от Classic
+        await super.updateSpecific();
         
-        // Получаем статус для Liner
+        // Получаем статус PID для Liner
         if (this.autonomousMode) {
             try {
                 const response = await fetch('/status');

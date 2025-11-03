@@ -201,9 +201,9 @@ void ClassicRobot::updateEffects() {
 void ClassicRobot::handleRoot(AsyncWebServerRequest* request) {
 #ifdef USE_EMBEDDED_RESOURCES
     // Отправка встроенных ресурсов
-    request->send_P(200, "text/html", INDEX_HTML_CONTENT, INDEX_HTML_SIZE);
+    request->send_P(200, "text/html; charset=UTF-8", INDEX_HTML_CONTENT, INDEX_HTML_SIZE);
 #else
-    request->send(200, "text/html", "<h1>MicroBox Classic</h1><p>Web interface coming soon...</p>");
+    request->send(200, "text/html; charset=UTF-8", "<h1>MicroBox Classic</h1><p>Web interface coming soon...</p>");
 #endif
 }
 

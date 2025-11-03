@@ -348,7 +348,7 @@ void LinerRobot::handleRoot(AsyncWebServerRequest* request) {
     html += "<button onclick=\"fetch('/cmd?mode=auto')\">Автономный режим</button>";
     html += "</body></html>";
     
-    request->send(200, "text/html", html);
+    request->send(200, "text/html; charset=UTF-8", html);
 }
 
 void LinerRobot::handleCommand(AsyncWebServerRequest* request) {
