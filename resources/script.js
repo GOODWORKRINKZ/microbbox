@@ -920,133 +920,33 @@ class ClassicRobotUI extends BaseRobotUI {
 // ═══════════════════════════════════════════════════════════════
 // LINER ROBOT UI - Автономный робот следующий по линии
 // ═══════════════════════════════════════════════════════════════
+// Liner идентичен Classic - переключение режима через физическую кнопку на GPIO4
 
 class LinerRobotUI extends ClassicRobotUI {
-    // Наследует ВСЕ от Classic: джойстики, стрим камеры, управление
-    // Добавляет только кнопку автономного режима
     constructor() {
         super();
         this.robotType = 'liner';
-        this.autonomousMode = false;
-        this.pidError = 0;
     }
     
-    setupEventListeners() {
-        // Получаем все функции Classic: джойстики, эффекты и т.д.
-        super.setupEventListeners();
-        
-        // Добавляем только кнопку переключения режима
-        const modeBtn = document.getElementById('autonomousModeBtn');
-        if (modeBtn) {
-            modeBtn.addEventListener('click', () => this.toggleAutonomousMode());
-        }
-    }
-    
-    async toggleAutonomousMode() {
-        this.autonomousMode = !this.autonomousMode;
-        
-        try {
-            const mode = this.autonomousMode ? 'auto' : 'manual';
-            await fetch(`/cmd?mode=${mode}`);
-            
-            Logger.info(`Режим переключен: ${mode}`);
-            this.updateModeIndicator();
-        } catch (error) {
-            Logger.error('Ошибка переключения режима:', error);
-        }
-    }
-    
-    updateModeIndicator() {
-        const indicator = document.getElementById('modeIndicator');
-        if (indicator) {
-            indicator.textContent = this.autonomousMode ? '🟢 Автономный' : '🔵 Ручной';
-        }
-    }
-    
-    async updateSpecific() {
-        // Вызываем обновление от Classic
-        await super.updateSpecific();
-        
-        // Получаем статус PID для Liner
-        if (this.autonomousMode) {
-            try {
-                const response = await fetch('/status');
-                if (response.ok) {
-                    const data = await response.json();
-                    this.pidError = data.pid_error || 0;
-                    this.updatePIDDisplay();
-                }
-            } catch (error) {
-                // Игнорируем ошибки статуса
-            }
-        }
-    }
-    
-    updatePIDDisplay() {
-        const pidDisplay = document.getElementById('pidErrorDisplay');
-        if (pidDisplay) {
-            pidDisplay.textContent = `PID Error: ${this.pidError.toFixed(2)}`;
-        }
-    }
+    // Liner полностью идентичен Classic UI
+    // Переключение автономного режима происходит через физическую кнопку на GPIO4
+    // Никаких дополнительных UI элементов не требуется
 }
 
 // ═══════════════════════════════════════════════════════════════
 // BRAIN ROBOT UI - Модуль управления для других роботов
 // ═══════════════════════════════════════════════════════════════
+// Brain идентичен Classic - транслирует команды через API
 
-class BrainRobotUI extends BaseRobotUI {
+class BrainRobotUI extends ClassicRobotUI {
     constructor() {
         super();
         this.robotType = 'brain';
-        this.currentProtocol = 'PWM';
     }
     
-    setupEventListeners() {
-        super.setupEventListeners();
-        
-        // Выбор протокола
-        const protocolSelect = document.getElementById('protocolSelect');
-        if (protocolSelect) {
-            protocolSelect.addEventListener('change', (e) => {
-                this.setProtocol(e.target.value);
-            });
-        }
-    }
-    
-    async setProtocol(protocol) {
-        this.currentProtocol = protocol;
-        
-        try {
-            await fetch(`/protocol?type=${protocol.toLowerCase()}`);
-            Logger.info(`Протокол установлен: ${protocol}`);
-        } catch (error) {
-            Logger.error('Ошибка установки протокола:', error);
-        }
-    }
-    
-    updateMotorFromJoysticks() {
-        // Для Brain отправляем значения каналов
-        const ch1 = 1500 + (this.rightJoystick.y * 5);
-        const ch2 = 1500 + (this.leftJoystick.x * 5);
-        
-        this.sendChannels({
-            ch1: Math.round(Math.max(1000, Math.min(2000, ch1))),
-            ch2: Math.round(Math.max(1000, Math.min(2000, ch2)))
-        });
-    }
-    
-    async sendChannels(channels) {
-        try {
-            const params = new URLSearchParams();
-            Object.entries(channels).forEach(([key, value]) => {
-                params.append(key, value);
-            });
-            
-            await fetch(`/cmd?${params.toString()}`);
-        } catch (error) {
-            Logger.error('Ошибка отправки каналов:', error);
-        }
-    }
+    // Brain полностью идентичен Classic UI
+    // Транслирует команды управления через API в другие протоколы (PWM/PPM/SBUS/TBS)
+    // Никаких дополнительных UI элементов не требуется
 }
 
 // ═══════════════════════════════════════════════════════════════
