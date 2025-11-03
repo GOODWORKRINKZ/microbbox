@@ -5,7 +5,8 @@ MX1508MotorController::MX1508MotorController() :
     initialized_(false),
     currentLeftSpeed_(0),
     currentRightSpeed_(0),
-    lastCommandTime_(0)
+    lastCommandTime_(0),
+    watchdogTriggered_(false)
 {
 }
 
@@ -65,6 +66,7 @@ void MX1508MotorController::update() {
         // Автоостановка моторов если нет команд
         if (currentLeftSpeed_ != 0 || currentRightSpeed_ != 0) {
             DEBUG_PRINTLN("Motor watchdog: остановка моторов");
+            watchdogTriggered_ = true;  // Устанавливаем флаг срабатывания watchdog
             stop();
         }
     }
@@ -91,6 +93,7 @@ void MX1508MotorController::setSpeed(int leftSpeed, int rightSpeed) {
     currentLeftSpeed_ = leftSpeed;
     currentRightSpeed_ = rightSpeed;
     lastCommandTime_ = millis();
+    watchdogTriggered_ = false;  // Сбрасываем флаг при получении новой команды
 }
 
 void MX1508MotorController::setMotorPWM(int throttlePWM, int steeringPWM) {
@@ -178,4 +181,8 @@ void MX1508MotorController::applyMotorSpeed(int leftSpeed, int rightSpeed) {
 
 int MX1508MotorController::constrainSpeed(int speed) const {
     return constrain(speed, -100, 100);
+}
+
+bool MX1508MotorController::wasWatchdogTriggered() const {
+    return watchdogTriggered_;
 }
