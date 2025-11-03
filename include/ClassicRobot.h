@@ -14,6 +14,22 @@
 // МИКРОБОКС КЛАССИК - Полнофункциональный управляемый робот
 // ═══════════════════════════════════════════════════════════════
 
+// Enum для режимов эффектов
+enum class EffectMode {
+    OFF,
+    POLICE,
+    FIRE,
+    AMBULANCE,
+    TERMINATOR,
+    MOVEMENT
+};
+
+// Enum для режимов управления
+enum class ControlMode {
+    MANUAL,
+    AUTO
+};
+
 class ClassicRobot : public BaseRobot {
 public:
     ClassicRobot();
