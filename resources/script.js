@@ -834,24 +834,34 @@ class ClassicRobotUI extends BaseRobotUI {
             let deltaX = clientX - rect.left - centerX;
             let deltaY = clientY - rect.top - centerY;
             
-            const maxDistance = rect.width / 2 - 20;
-            const distance = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
-            
-            if (distance > maxDistance) {
-                const angle = Math.atan2(deltaY, deltaX);
-                deltaX = Math.cos(angle) * maxDistance;
-                deltaY = Math.sin(angle) * maxDistance;
+            // Constrain movement based on joystick type
+            // Left joystick (rotation): horizontal movement only (X-axis)
+            // Right joystick (gas/throttle): vertical movement only (Y-axis)
+            if (side === 'left') {
+                // Horizontal slot - only X-axis movement allowed
+                deltaY = 0;
+                const maxDistance = rect.width / 2 - 30;
+                deltaX = Math.max(-maxDistance, Math.min(maxDistance, deltaX));
+            } else {
+                // Vertical slot - only Y-axis movement allowed
+                deltaX = 0;
+                const maxDistance = rect.height / 2 - 30;
+                deltaY = Math.max(-maxDistance, Math.min(maxDistance, deltaY));
             }
             
             knob.style.transform = `translate(calc(-50% + ${deltaX}px), calc(-50% + ${deltaY}px))`;
             
-            const percentX = (deltaX / maxDistance) * 100;
-            const percentY = (-deltaY / maxDistance) * 100;
+            // Calculate percentages based on actual max distance for each axis
+            const maxDistanceX = side === 'left' ? (rect.width / 2 - 30) : 0;
+            const maxDistanceY = side === 'right' ? (rect.height / 2 - 30) : 0;
+            
+            const percentX = maxDistanceX > 0 ? (deltaX / maxDistanceX) * 100 : 0;
+            const percentY = maxDistanceY > 0 ? (-deltaY / maxDistanceY) * 100 : 0;
             
             if (side === 'left') {
-                this.leftJoystick = { x: percentX, y: percentY, active: true };
+                this.leftJoystick = { x: percentX, y: 0, active: true };
             } else {
-                this.rightJoystick = { x: percentX, y: percentY, active: true };
+                this.rightJoystick = { x: 0, y: percentY, active: true };
             }
             
             this.updateMotorFromJoysticks();
