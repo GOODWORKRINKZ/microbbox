@@ -760,8 +760,10 @@ class BaseRobotUI {
             const releaseName = releaseData.name || latestVersion;
             const releaseNotes = releaseData.body || 'Нет описания';
             
-            // Находим .bin файл для загрузки
-            // Поддерживаем оба варианта: с суффиксом -release и без него
+            // Находим все доступные типы роботов из assets
+            const availableTypes = this.extractAvailableTypesFromAssets(releaseData.assets);
+            
+            // Берем первый доступный файл как базовый URL (для определения формата)
             let downloadUrl = '';
             if (releaseData.assets && Array.isArray(releaseData.assets) && releaseData.assets.length > 0) {
                 // Сначала ищем файл с суффиксом -release.bin
@@ -804,29 +806,18 @@ class BaseRobotUI {
                     downloadUrl: downloadUrl
                 };
                 
-                // Определяем доступные типы роботов из имени файла в URL
-                const availableTypes = this.extractAvailableTypes(downloadUrl);
-                
                 const selectionDiv = document.getElementById('robotTypeSelection');
                 const downloadBtn = document.getElementById('downloadUpdateBtn');
                 
-                if (availableTypes.length > 1) {
-                    // Есть несколько типов - показываем выбор
+                if (availableTypes.length > 0) {
+                    // Показываем выбор типа робота пользователю
                     this.showRobotTypeSelection(availableTypes);
                     if (downloadBtn) {
                         downloadBtn.textContent = '⬇️ Скачать обновление';
                         downloadBtn.disabled = false;
                     }
-                } else if (availableTypes.length === 1) {
-                    // Один тип - скрываем выбор
-                    if (selectionDiv) selectionDiv.classList.add('hidden');
-                    this.updateDownloadUrl = this.constructDownloadUrl(availableTypes[0]);
-                    if (downloadBtn) {
-                        downloadBtn.textContent = `⬇️ Скачать ${this.getRobotTypeName(availableTypes[0])}`;
-                        downloadBtn.disabled = false;
-                    }
                 } else {
-                    // Универсальный бинарник - скрываем выбор
+                    // Универсальный бинарник или файлы не найдены - скрываем выбор
                     if (selectionDiv) selectionDiv.classList.add('hidden');
                     this.updateDownloadUrl = downloadUrl;
                     if (downloadBtn) {
@@ -855,6 +846,33 @@ class BaseRobotUI {
                 checkBtn.textContent = 'Проверить обновления';
             }
         }
+    }
+    
+    
+    extractAvailableTypesFromAssets(assets) {
+        // Проверяем все assets и находим реально доступные типы роботов
+        if (!assets || !Array.isArray(assets)) return [];
+        
+        const types = ['classic', 'liner', 'brain'];
+        const availableTypes = [];
+        
+        // Проходим по всем возможным типам и проверяем, есть ли соответствующий файл
+        for (const type of types) {
+            const found = assets.some(asset => {
+                if (!asset || !asset.name) return false;
+                const name = asset.name.toLowerCase();
+                // Проверяем паттерны: microbox-classic-vX.X.X.bin или microbox-classic-vX.X.X-release.bin
+                return (name.includes(`microbox-${type}`) && 
+                        (name.endsWith('.bin') || name.endsWith('-release.bin')) &&
+                        !name.endsWith('.sha256'));
+            });
+            
+            if (found) {
+                availableTypes.push(type);
+            }
+        }
+        
+        return availableTypes;
     }
     
     extractAvailableTypes(url) {
