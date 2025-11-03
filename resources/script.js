@@ -151,10 +151,11 @@ const Logger = {
 
 class CommandController {
     constructor() {
-        this.targetThrottle = 1500;
-        this.targetSteering = 1500;
-        this.lastSentThrottle = 1500;
-        this.lastSentSteering = 1500;
+        this.STOP_COMMAND_VALUE = 1500;  // Центральное положение PWM (остановка)
+        this.targetThrottle = this.STOP_COMMAND_VALUE;
+        this.targetSteering = this.STOP_COMMAND_VALUE;
+        this.lastSentThrottle = this.STOP_COMMAND_VALUE;
+        this.lastSentSteering = this.STOP_COMMAND_VALUE;
         this.lastSendTime = 0;
         this.sendInterval = 250;
         this.commandTimeout = 500;
@@ -194,10 +195,24 @@ class CommandController {
         if (this.isSending) return;
         
         const now = Date.now();
-        if (now - this.lastSendTime < this.sendInterval) return;
         
-        if (this.targetThrottle === this.lastSentThrottle && 
-            this.targetSteering === this.lastSentSteering) return;
+        // Определяем команду остановки и предыдущее движение
+        const isStopCommand = (this.targetThrottle === this.STOP_COMMAND_VALUE && 
+                               this.targetSteering === this.STOP_COMMAND_VALUE);
+        const wasMoving = (this.lastSentThrottle !== this.STOP_COMMAND_VALUE || 
+                          this.lastSentSteering !== this.STOP_COMMAND_VALUE);
+        
+        // Проверяем нужно ли отправлять команду
+        const shouldSend = (
+            // Всегда отправляем команду остановки после движения (предотвращает залипание)
+            (isStopCommand && wasMoving) ||
+            // Прошло достаточно времени с последней отправки
+            (now - this.lastSendTime >= this.sendInterval) ||
+            // Команда изменилась
+            (this.targetThrottle !== this.lastSentThrottle || this.targetSteering !== this.lastSentSteering)
+        );
+        
+        if (!shouldSend) return;
         
         this.isSending = true;
         
@@ -226,7 +241,7 @@ class CommandController {
     }
     
     stop() {
-        this.setTarget(1500, 1500);
+        this.setTarget(this.STOP_COMMAND_VALUE, this.STOP_COMMAND_VALUE);
     }
 }
 
