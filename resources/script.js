@@ -1058,6 +1058,34 @@ class ClassicRobotUI extends BaseRobotUI {
         });
     }
     
+    setupSaveButtons() {
+        // Обработчики для кнопок настроек
+        const testMotorBtn = document.getElementById('testMotorBtn');
+        if (testMotorBtn) {
+            testMotorBtn.addEventListener('click', () => this.testMotor());
+        }
+        
+        const saveSettingsBtn = document.getElementById('saveSettings');
+        if (saveSettingsBtn) {
+            saveSettingsBtn.addEventListener('click', () => this.saveSettings());
+        }
+        
+        const saveMotorBtn = document.getElementById('saveMotorConfig');
+        if (saveMotorBtn) {
+            saveMotorBtn.addEventListener('click', () => this.saveSettings());
+        }
+        
+        const saveWiFiBtn = document.getElementById('saveWiFi');
+        if (saveWiFiBtn) {
+            saveWiFiBtn.addEventListener('click', () => this.saveWiFiSettings());
+        }
+        
+        const restartBtn = document.getElementById('restartDevice');
+        if (restartBtn) {
+            restartBtn.addEventListener('click', () => this.restartDevice());
+        }
+    }
+    
     handleControlButton(direction, pressed) {
         if (!pressed) {
             this.commandController.stop();
@@ -1104,8 +1132,12 @@ class ClassicRobotUI extends BaseRobotUI {
     async setEffectMode(mode) {
         this.effectMode = mode;
         
+        // Маппинг режимов для API
+        const effectMap = { normal: 0, police: 1, fire: 2, ambulance: 3, terminator: 4 };
+        const effectId = effectMap[mode] || 0;
+        
         try {
-            await fetch(`/effect?mode=${mode}`);
+            await fetch(`/cmd?effect=${effectId}`);
             
             // T-800 overlay
             if (mode === 'terminator') {
@@ -1169,6 +1201,142 @@ class ClassicRobotUI extends BaseRobotUI {
             await fetch('/horn');
         } catch (error) {
             Logger.error('Ошибка воспроизведения сигнала:', error);
+        }
+    }
+    
+    async testMotor() {
+        const motorSide = document.querySelector('input[name="testMotor"]:checked')?.value || 'left';
+        Logger.info(`Тестирование ${motorSide} мотора`);
+        
+        try {
+            // Тест: полный газ вперёд + руль в сторону выбранного мотора
+            const throttle = 2000; // Вперёд
+            const steering = motorSide === 'left' ? 1000 : 2000; // Руль в сторону мотора
+            
+            await fetch(`/cmd?throttle=${throttle}&steering=${steering}`);
+            
+            // Через 1 секунду останавливаем
+            setTimeout(async () => {
+                await fetch('/cmd?throttle=1500&steering=1500');
+            }, 1000);
+        } catch (error) {
+            Logger.error('Ошибка тестирования мотора:', error);
+        }
+    }
+    
+    async saveSettings() {
+        // Собираем все настройки из UI
+        const settings = {
+            // Эффекты и чувствительность
+            speedSensitivity: parseInt(document.getElementById('speedSensitivity')?.value) || 80,
+            turnSensitivity: parseInt(document.getElementById('turnSensitivity')?.value) || 70,
+            effectMode: document.querySelector('input[name="effectMode"]:checked')?.value || 'normal',
+            
+            // Моторы
+            motorSwapLeftRight: document.getElementById('motorSwapLeftRight')?.checked || false,
+            motorInvertLeft: document.getElementById('motorInvertLeft')?.checked || false,
+            motorInvertRight: document.getElementById('motorInvertRight')?.checked || false,
+            invertThrottleStick: document.getElementById('invertThrottleStick')?.checked || false,
+            invertSteeringStick: document.getElementById('invertSteeringStick')?.checked || false
+        };
+        
+        // Применяем локально
+        this.speedSensitivity = settings.speedSensitivity;
+        this.turnSensitivity = settings.turnSensitivity;
+        
+        // Сохраняем в localStorage
+        localStorage.setItem('robotSettings', JSON.stringify(settings));
+        
+        // Отправляем эффект на сервер
+        const effectMap = { normal: 0, police: 1, fire: 2, ambulance: 3, terminator: 4 };
+        const effectId = effectMap[settings.effectMode] || 0;
+        
+        try {
+            await fetch(`/cmd?effect=${effectId}`);
+            this.setEffectMode(settings.effectMode);
+            Logger.info('Настройки сохранены');
+        } catch (error) {
+            Logger.error('Ошибка сохранения настроек:', error);
+        }
+    }
+    
+    async saveWiFiSettings() {
+        const mode = document.getElementById('wifiMode')?.value;
+        const ssid = document.getElementById('wifiSSID')?.value;
+        const password = document.getElementById('wifiPassword')?.value;
+        
+        if (!ssid) {
+            Logger.error('SSID не может быть пустым');
+            return;
+        }
+        
+        try {
+            const response = await fetch('/api/wifi/save', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ mode, ssid, password })
+            });
+            
+            if (response.ok) {
+                Logger.info('WiFi настройки сохранены. Требуется перезагрузка.');
+            } else {
+                Logger.error('Ошибка сохранения WiFi настроек');
+            }
+        } catch (error) {
+            Logger.error('Ошибка сохранения WiFi настроек:', error);
+        }
+    }
+    
+    async restartDevice() {
+        if (!confirm('Вы уверены, что хотите перезагрузить устройство?')) {
+            return;
+        }
+        
+        try {
+            await fetch('/api/restart', { method: 'POST' });
+            Logger.info('Устройство перезагружается...');
+        } catch (error) {
+            Logger.error('Ошибка перезагрузки устройства:', error);
+        }
+    }
+    
+    async loadSettings() {
+        // Загружаем WiFi настройки с сервера
+        try {
+            const response = await fetch('/api/wifi/current');
+            if (response.ok) {
+                const data = await response.json();
+                if (data.mode) document.getElementById('wifiMode').value = data.mode;
+                if (data.ssid) document.getElementById('wifiSSID').value = data.ssid;
+            }
+        } catch (error) {
+            Logger.debug('Не удалось загрузить WiFi настройки:', error);
+        }
+        
+        // Загружаем остальные настройки из localStorage
+        try {
+            const saved = localStorage.getItem('robotSettings');
+            if (saved) {
+                const settings = JSON.parse(saved);
+                
+                // Применяем чувствительность
+                this.speedSensitivity = settings.speedSensitivity || 80;
+                this.turnSensitivity = settings.turnSensitivity || 70;
+                
+                // Применяем к UI элементам
+                const setChecked = (id, value) => {
+                    const el = document.getElementById(id);
+                    if (el) el.checked = value || false;
+                };
+                
+                setChecked('motorSwapLeftRight', settings.motorSwapLeftRight);
+                setChecked('motorInvertLeft', settings.motorInvertLeft);
+                setChecked('motorInvertRight', settings.motorInvertRight);
+                setChecked('invertThrottleStick', settings.invertThrottleStick);
+                setChecked('invertSteeringStick', settings.invertSteeringStick);
+            }
+        } catch (error) {
+            Logger.debug('Не удалось загрузить настройки:', error);
         }
     }
     
