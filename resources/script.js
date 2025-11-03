@@ -194,10 +194,22 @@ class CommandController {
         if (this.isSending) return;
         
         const now = Date.now();
-        if (now - this.lastSendTime < this.sendInterval) return;
         
-        if (this.targetThrottle === this.lastSentThrottle && 
-            this.targetSteering === this.lastSentSteering) return;
+        // Определяем команду остановки и предыдущее движение
+        const isStopCommand = (this.targetThrottle === 1500 && this.targetSteering === 1500);
+        const wasMoving = (this.lastSentThrottle !== 1500 || this.lastSentSteering !== 1500);
+        
+        // Проверяем нужно ли отправлять команду
+        const shouldSend = (
+            // Всегда отправляем команду остановки после движения (предотвращает залипание)
+            (isStopCommand && wasMoving) ||
+            // Прошло достаточно времени с последней отправки
+            (now - this.lastSendTime >= this.sendInterval) ||
+            // Команда изменилась
+            (this.targetThrottle !== this.lastSentThrottle || this.targetSteering !== this.lastSentSteering)
+        );
+        
+        if (!shouldSend) return;
         
         this.isSending = true;
         
