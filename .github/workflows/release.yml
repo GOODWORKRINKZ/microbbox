@@ -526,7 +526,7 @@ jobs:
         draft: true  # Создаем как черновик - релиз НЕ виден пользователям
         prerelease: false
       env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        GITHUB_TOKEN: ${{ secrets.ADMIN_TOKEN }}
         
     - name: Publish Release
       run: |
@@ -536,7 +536,7 @@ jobs:
         
         echo "✅ Релиз ${{ steps.version.outputs.version }} успешно опубликован!"
       env:
-        GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        GH_TOKEN: ${{ secrets.ADMIN_TOKEN}}
         
     - name: Build Summary
       run: |
