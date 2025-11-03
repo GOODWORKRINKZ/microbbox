@@ -1016,6 +1016,16 @@ class ClassicRobotUI extends BaseRobotUI {
         this.effectMode = 'normal';
         this.keyStates = {};
         
+        // Маппинг эффектов для API (DRY)
+        this.effectMap = { normal: 0, police: 1, fire: 2, ambulance: 3, terminator: 4 };
+        
+        // PWM константы для моторов (KISS)
+        this.PWM_NEUTRAL = 1500;
+        this.PWM_FORWARD = 2000;
+        this.PWM_BACKWARD = 1000;
+        this.PWM_LEFT = 1000;
+        this.PWM_RIGHT = 2000;
+        
         // T-800 overlay
         this.t800Interval = null;
         this.t800StartTime = null;
@@ -1056,6 +1066,37 @@ class ClassicRobotUI extends BaseRobotUI {
                 this.handleControlButton(direction, false);
             });
         });
+        
+        // Кнопки настроек (важно!)
+        this.setupSaveButtons();
+    }
+    
+    setupSaveButtons() {
+        // Обработчики для кнопок настроек
+        const testMotorBtn = document.getElementById('testMotorBtn');
+        if (testMotorBtn) {
+            testMotorBtn.addEventListener('click', () => this.testMotor());
+        }
+        
+        const saveSettingsBtn = document.getElementById('saveSettings');
+        if (saveSettingsBtn) {
+            saveSettingsBtn.addEventListener('click', () => this.saveSettings());
+        }
+        
+        const saveMotorBtn = document.getElementById('saveMotorConfig');
+        if (saveMotorBtn) {
+            saveMotorBtn.addEventListener('click', () => this.saveSettings());
+        }
+        
+        const saveWiFiBtn = document.getElementById('saveWiFi');
+        if (saveWiFiBtn) {
+            saveWiFiBtn.addEventListener('click', () => this.saveWiFiSettings());
+        }
+        
+        const restartBtn = document.getElementById('restartDevice');
+        if (restartBtn) {
+            restartBtn.addEventListener('click', () => this.restartDevice());
+        }
     }
     
     handleControlButton(direction, pressed) {
@@ -1065,11 +1106,11 @@ class ClassicRobotUI extends BaseRobotUI {
         }
         
         const speedMap = {
-            'forward': { t: 2000, s: 1500 },
-            'backward': { t: 1000, s: 1500 },
-            'left': { t: 1500, s: 1000 },
-            'right': { t: 1500, s: 2000 },
-            'stop': { t: 1500, s: 1500 }
+            'forward': { t: this.PWM_FORWARD, s: this.PWM_NEUTRAL },
+            'backward': { t: this.PWM_BACKWARD, s: this.PWM_NEUTRAL },
+            'left': { t: this.PWM_NEUTRAL, s: this.PWM_LEFT },
+            'right': { t: this.PWM_NEUTRAL, s: this.PWM_RIGHT },
+            'stop': { t: this.PWM_NEUTRAL, s: this.PWM_NEUTRAL }
         };
         
         const speed = speedMap[direction];
@@ -1081,21 +1122,21 @@ class ClassicRobotUI extends BaseRobotUI {
     updateKeyboardControl(key, pressed) {
         this.keyStates[key] = pressed;
         
-        let throttle = 1500;
-        let steering = 1500;
+        let throttle = this.PWM_NEUTRAL;
+        let steering = this.PWM_NEUTRAL;
         
         // Расчет throttle
         if (this.keyStates['w'] || this.keyStates['arrowup']) {
-            throttle = 2000;
+            throttle = this.PWM_FORWARD;
         } else if (this.keyStates['s'] || this.keyStates['arrowdown']) {
-            throttle = 1000;
+            throttle = this.PWM_BACKWARD;
         }
         
         // Расчет steering
         if (this.keyStates['a'] || this.keyStates['arrowleft']) {
-            steering = 1000;
+            steering = this.PWM_LEFT;
         } else if (this.keyStates['d'] || this.keyStates['arrowright']) {
-            steering = 2000;
+            steering = this.PWM_RIGHT;
         }
         
         this.commandController.setTarget(throttle, steering);
@@ -1104,8 +1145,10 @@ class ClassicRobotUI extends BaseRobotUI {
     async setEffectMode(mode) {
         this.effectMode = mode;
         
+        const effectId = this.effectMap[mode] || 0;
+        
         try {
-            await fetch(`/effect?mode=${mode}`);
+            await fetch(`/cmd?effect=${effectId}`);
             
             // T-800 overlay
             if (mode === 'terminator') {
@@ -1169,6 +1212,147 @@ class ClassicRobotUI extends BaseRobotUI {
             await fetch('/horn');
         } catch (error) {
             Logger.error('Ошибка воспроизведения сигнала:', error);
+        }
+    }
+    
+    async testMotor() {
+        const motorSide = document.querySelector('input[name="testMotor"]:checked')?.value || 'left';
+        Logger.info(`Тестирование ${motorSide} мотора`);
+        
+        try {
+            // Тест: полный газ вперёд + руль в сторону выбранного мотора
+            const throttle = this.PWM_FORWARD;
+            const steering = motorSide === 'left' ? this.PWM_LEFT : this.PWM_RIGHT;
+            
+            await fetch(`/cmd?throttle=${throttle}&steering=${steering}`);
+            
+            // Через 1 секунду останавливаем (с обработкой ошибок)
+            setTimeout(async () => {
+                try {
+                    await fetch(`/cmd?throttle=${this.PWM_NEUTRAL}&steering=${this.PWM_NEUTRAL}`);
+                } catch (error) {
+                    Logger.error('Ошибка остановки мотора:', error);
+                }
+            }, 1000);
+        } catch (error) {
+            Logger.error('Ошибка тестирования мотора:', error);
+        }
+    }
+    
+    async saveSettings() {
+        // Собираем все настройки из UI
+        const settings = {
+            // Эффекты и чувствительность
+            speedSensitivity: parseInt(document.getElementById('speedSensitivity')?.value) || 80,
+            turnSensitivity: parseInt(document.getElementById('turnSensitivity')?.value) || 70,
+            effectMode: document.querySelector('input[name="effectMode"]:checked')?.value || 'normal',
+            
+            // Моторы
+            motorSwapLeftRight: document.getElementById('motorSwapLeftRight')?.checked || false,
+            motorInvertLeft: document.getElementById('motorInvertLeft')?.checked || false,
+            motorInvertRight: document.getElementById('motorInvertRight')?.checked || false,
+            invertThrottleStick: document.getElementById('invertThrottleStick')?.checked || false,
+            invertSteeringStick: document.getElementById('invertSteeringStick')?.checked || false
+        };
+        
+        // Применяем локально
+        this.speedSensitivity = settings.speedSensitivity;
+        this.turnSensitivity = settings.turnSensitivity;
+        
+        // Сохраняем в localStorage
+        localStorage.setItem('robotSettings', JSON.stringify(settings));
+        
+        // Отправляем эффект на сервер
+        const effectId = this.effectMap[settings.effectMode] || 0;
+        
+        try {
+            await fetch(`/cmd?effect=${effectId}`);
+            this.setEffectMode(settings.effectMode);
+            Logger.info('Настройки сохранены');
+        } catch (error) {
+            Logger.error('Ошибка сохранения настроек:', error);
+        }
+    }
+    
+    async saveWiFiSettings() {
+        const mode = document.getElementById('wifiMode')?.value;
+        const ssid = document.getElementById('wifiSSID')?.value;
+        const password = document.getElementById('wifiPassword')?.value;
+        
+        if (!ssid) {
+            Logger.error('SSID не может быть пустым');
+            return;
+        }
+        
+        try {
+            const response = await fetch('/api/wifi/save', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ mode, ssid, password })
+            });
+            
+            if (response.ok) {
+                Logger.info('WiFi настройки сохранены. Требуется перезагрузка.');
+            } else {
+                Logger.error('Ошибка сохранения WiFi настроек');
+            }
+        } catch (error) {
+            Logger.error('Ошибка сохранения WiFi настроек:', error);
+        }
+    }
+    
+    async restartDevice() {
+        if (!confirm('Вы уверены, что хотите перезагрузить устройство?')) {
+            return;
+        }
+        
+        try {
+            await fetch('/api/restart', { method: 'POST' });
+            Logger.info('Устройство перезагружается...');
+        } catch (error) {
+            Logger.error('Ошибка перезагрузки устройства:', error);
+        }
+    }
+    
+    async loadSettings() {
+        // Загружаем WiFi настройки с сервера
+        try {
+            const response = await fetch('/api/wifi/current');
+            if (response.ok) {
+                const data = await response.json();
+                const modeEl = document.getElementById('wifiMode');
+                const ssidEl = document.getElementById('wifiSSID');
+                if (modeEl && data.mode) modeEl.value = data.mode;
+                if (ssidEl && data.ssid) ssidEl.value = data.ssid;
+            }
+        } catch (error) {
+            Logger.debug('Не удалось загрузить WiFi настройки:', error);
+        }
+        
+        // Загружаем остальные настройки из localStorage
+        try {
+            const saved = localStorage.getItem('robotSettings');
+            if (saved) {
+                const settings = JSON.parse(saved);
+                
+                // Применяем чувствительность
+                this.speedSensitivity = settings.speedSensitivity || 80;
+                this.turnSensitivity = settings.turnSensitivity || 70;
+                
+                // Применяем к UI элементам
+                const setChecked = (id, value) => {
+                    const el = document.getElementById(id);
+                    if (el) el.checked = value || false;
+                };
+                
+                setChecked('motorSwapLeftRight', settings.motorSwapLeftRight);
+                setChecked('motorInvertLeft', settings.motorInvertLeft);
+                setChecked('motorInvertRight', settings.motorInvertRight);
+                setChecked('invertThrottleStick', settings.invertThrottleStick);
+                setChecked('invertSteeringStick', settings.invertSteeringStick);
+            }
+        } catch (error) {
+            Logger.debug('Не удалось загрузить настройки:', error);
         }
     }
     
