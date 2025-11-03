@@ -250,12 +250,12 @@ void FirmwareUpdate::handleUpdateUpload(AsyncWebServerRequest *request, String f
 
 void FirmwareUpdate::handleUpdateStatus(AsyncWebServerRequest *request) {
     String json = "{";
-    json += "\"progress\":" + String(currentProgress) + ",";
-    json += "\"status\":\"" + updateStatus + "\",";
-    json += "\"state\":" + String((int)currentState) + ",";
-    json += "\"received\":" + String(updateReceived) + ",";
-    json += "\"size\":" + String(updateSize) + ",";
-    json += "\"updating\":" + String(updating ? "true" : "false");
+    json += "\"progress\":" + String(currentProgress);
+    json += ",\"status\":\"" + escapeJsonString(updateStatus) + "\"";
+    json += ",\"state\":" + String((int)currentState);
+    json += ",\"received\":" + String(updateReceived);
+    json += ",\"size\":" + String(updateSize);
+    json += ",\"updating\":" + String(updating ? "true" : "false");
     json += "}";
     
     AsyncWebServerResponse *response = request->beginResponse(200, "application/json", json);
@@ -268,13 +268,13 @@ void FirmwareUpdate::handleCheckUpdates(AsyncWebServerRequest *request) {
     bool hasUpdate = checkForUpdates(releaseInfo);
     
     String json = "{";
-    json += "\"hasUpdate\":" + String(hasUpdate ? "true" : "false") + ",";
+    json += "\"hasUpdate\":" + String(hasUpdate ? "true" : "false");
     if (hasUpdate) {
-        json += "\"version\":\"" + releaseInfo.version + "\",";
-        json += "\"releaseName\":\"" + releaseInfo.releaseName + "\",";
-        json += "\"releaseNotes\":\"" + releaseInfo.releaseNotes + "\",";
-        json += "\"downloadUrl\":\"" + releaseInfo.downloadUrl + "\",";
-        json += "\"publishedAt\":\"" + releaseInfo.publishedAt + "\"";
+        json += ",\"version\":\"" + escapeJsonString(releaseInfo.version) + "\"";
+        json += ",\"releaseName\":\"" + escapeJsonString(releaseInfo.releaseName) + "\"";
+        json += ",\"releaseNotes\":\"" + escapeJsonString(releaseInfo.releaseNotes) + "\"";
+        json += ",\"downloadUrl\":\"" + escapeJsonString(releaseInfo.downloadUrl) + "\"";
+        json += ",\"publishedAt\":\"" + escapeJsonString(releaseInfo.publishedAt) + "\"";
     }
     json += "}";
     
@@ -287,9 +287,9 @@ void FirmwareUpdate::handleCurrentVersion(AsyncWebServerRequest *request) {
     ReleaseInfo currentInfo = getCurrentVersionInfo();
     
     String json = "{";
-    json += "\"version\":\"" + currentInfo.version + "\",";
-    json += "\"releaseName\":\"" + currentInfo.releaseName + "\",";
-    json += "\"projectName\":\"" + String(PROJECT_NAME) + "\"";
+    json += "\"version\":\"" + escapeJsonString(currentInfo.version) + "\"";
+    json += ",\"releaseName\":\"" + escapeJsonString(currentInfo.releaseName) + "\"";
+    json += ",\"projectName\":\"" + escapeJsonString(String(PROJECT_NAME)) + "\"";
     json += "}";
     
     AsyncWebServerResponse *response = request->beginResponse(200, "application/json", json);
@@ -433,6 +433,37 @@ String FirmwareUpdate::extractJsonValue(const String& json, const String& key) {
     if (valueEnd < 0) return "";
     
     return json.substring(valueStart, valueEnd);
+}
+
+String FirmwareUpdate::escapeJsonString(const String& str) {
+    String escaped = "";
+    escaped.reserve(str.length() + 20); // Reserve some extra space for escape sequences
+    
+    for (size_t i = 0; i < str.length(); i++) {
+        char c = str.charAt(i);
+        switch (c) {
+            case '"':  escaped += "\\\""; break;
+            case '\\': escaped += "\\\\"; break;
+            case '\b': escaped += "\\b"; break;
+            case '\f': escaped += "\\f"; break;
+            case '\n': escaped += "\\n"; break;
+            case '\r': escaped += "\\r"; break;
+            case '\t': escaped += "\\t"; break;
+            default:
+                // Keep regular characters as-is, including UTF-8
+                if ((unsigned char)c < 0x20) {
+                    // Control characters - use unicode escape
+                    char buf[7];
+                    snprintf(buf, sizeof(buf), "\\u%04x", (unsigned char)c);
+                    escaped += buf;
+                } else {
+                    escaped += c;
+                }
+                break;
+        }
+    }
+    
+    return escaped;
 }
 
 bool FirmwareUpdate::isVersionNewer(const String& current, const String& latest) {

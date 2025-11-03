@@ -78,6 +78,7 @@ private:
     // Парсинг GitHub API
     bool parseGitHubRelease(const String& json, ReleaseInfo& releaseInfo);
     String extractJsonValue(const String& json, const String& key);
+    String escapeJsonString(const String& str);
     bool isVersionNewer(const String& current, const String& latest);
 
     void updateProgress(int progress);
