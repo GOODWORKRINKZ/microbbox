@@ -15,6 +15,20 @@ FirmwareUpdate::FirmwareUpdate() :
     dontOfferUpdates(false)
 {
     DEBUG_PRINTLN("FirmwareUpdate конструктор");
+    
+    // Определяем тип робота из конфигурации компиляции
+    #ifdef TARGET_CLASSIC
+        robotType_ = RobotType::CLASSIC;
+    #elif defined(TARGET_LINER)
+        robotType_ = RobotType::LINER;
+    #elif defined(TARGET_BRAIN)
+        robotType_ = RobotType::BRAIN;
+    #else
+        robotType_ = RobotType::UNKNOWN;
+    #endif
+    
+    DEBUG_PRINT("Тип робота для обновлений: ");
+    DEBUG_PRINTLN(robotTypeToString(robotType_));
 }
 
 FirmwareUpdate::~FirmwareUpdate() {
@@ -349,21 +363,61 @@ bool FirmwareUpdate::parseGitHubRelease(const String& json, ReleaseInfo& release
     releaseInfo.releaseName = extractJsonValue(json, "name");
     releaseInfo.releaseNotes = extractJsonValue(json, "body");
     releaseInfo.publishedAt = extractJsonValue(json, "published_at");
+    releaseInfo.robotType = robotType_;
     
-    // Ищем URL для скачивания .bin файла
+    // Получаем строковое представление типа робота (lowercase)
+    String robotTypeStr = robotTypeToLowerString(robotType_);
+    
+    // Ищем URL для скачивания .bin файла для нашего типа робота
+    // Формат имени: microbox-{type}-{version}-release.bin
+    // Примеры: microbox-classic-v0.1.0-release.bin, microbox-liner-v0.1.0-release.bin
+    String targetFilename = "microbox-" + robotTypeStr + "-" + releaseInfo.version + "-release.bin";
+    
     int assetsPos = json.indexOf("\"assets\":");
     if (assetsPos >= 0) {
         String assetsSection = json.substring(assetsPos);
-        int urlPos = assetsSection.indexOf("\"browser_download_url\":\"");
-        if (urlPos >= 0) {
+        
+        // Ищем все browser_download_url в assets
+        int searchPos = 0;
+        while (true) {
+            int urlPos = assetsSection.indexOf("\"browser_download_url\":\"", searchPos);
+            if (urlPos < 0) break;
+            
             int urlStart = urlPos + 24;
             int urlEnd = assetsSection.indexOf("\"", urlStart);
+            if (urlEnd < 0) break;
+            
             String url = assetsSection.substring(urlStart, urlEnd);
-            // Ищем .bin файл с -release.bin в конце имени
-            if (url.endsWith("-release.bin")) {
+            
+            // Проверяем, содержит ли URL наш тип робота
+            if (url.indexOf(targetFilename) >= 0 || 
+                (url.endsWith("-release.bin") && url.indexOf(robotTypeStr) >= 0)) {
                 releaseInfo.downloadUrl = url;
+                DEBUG_PRINTF("Найден бинарник для %s: %s\n", robotTypeStr.c_str(), url.c_str());
+                break;
+            }
+            
+            searchPos = urlEnd;
+        }
+        
+        // Если не нашли специфичный файл, пробуем найти универсальный (для обратной совместимости)
+        if (releaseInfo.downloadUrl.length() == 0) {
+            DEBUG_PRINTLN("Специфичный бинарник не найден, ищем универсальный...");
+            int urlPos = assetsSection.indexOf("\"browser_download_url\":\"");
+            if (urlPos >= 0) {
+                int urlStart = urlPos + 24;
+                int urlEnd = assetsSection.indexOf("\"", urlStart);
+                String url = assetsSection.substring(urlStart, urlEnd);
+                if (url.endsWith("-release.bin")) {
+                    releaseInfo.downloadUrl = url;
+                    DEBUG_PRINTF("Используется универсальный бинарник: %s\n", url.c_str());
+                }
             }
         }
+    }
+    
+    if (releaseInfo.downloadUrl.length() == 0) {
+        DEBUG_PRINTLN("ПРЕДУПРЕЖДЕНИЕ: Не найден подходящий бинарник для обновления!");
     }
     
     return releaseInfo.version.length() > 0;
