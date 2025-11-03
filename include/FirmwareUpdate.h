@@ -58,6 +58,12 @@ public:
     static bool isOTAPending();
     static void setOTAPending(bool pending);
     static void clearOTAPending();
+    
+    // Управление выбором типа робота для миграции с 0.0.1 на 0.1
+    static bool hasUserSelectedRobotType();
+    static RobotType getUserSelectedRobotType();
+    static void setUserSelectedRobotType(RobotType type);
+    static bool needsRobotTypeSelection();
 
 private:
     enum class UpdateState {

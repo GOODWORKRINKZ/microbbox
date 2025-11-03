@@ -467,10 +467,61 @@ class BaseRobotUI {
         
         // Кнопки сохранения
         this.setupSaveButtons();
+        
+        // Настройка обработчиков обновления
+        this.setupUpdateHandlers();
     }
     
     setupSaveButtons() {
         // Переопределяется в наследниках
+    }
+    
+    setupUpdateHandlers() {
+        // Кнопка проверки обновлений
+        const checkBtn = document.getElementById('checkUpdatesBtn');
+        if (checkBtn) {
+            checkBtn.addEventListener('click', () => this.checkForUpdates());
+        }
+        
+        // Кнопка скачивания обновления
+        const downloadBtn = document.getElementById('downloadUpdateBtn');
+        if (downloadBtn) {
+            downloadBtn.addEventListener('click', () => this.downloadUpdate());
+        }
+        
+        // Выбор типа робота
+        const robotTypeRadios = document.querySelectorAll('input[name="robotType"]');
+        const confirmBtn = document.getElementById('confirmRobotTypeBtn');
+        
+        robotTypeRadios.forEach(radio => {
+            radio.addEventListener('change', () => {
+                if (confirmBtn) {
+                    confirmBtn.disabled = false;
+                }
+            });
+        });
+        
+        if (confirmBtn) {
+            confirmBtn.addEventListener('click', () => this.confirmRobotType());
+        }
+        
+        // Чекбоксы настроек обновлений
+        const autoUpdateCheck = document.getElementById('autoUpdate');
+        const dontOfferCheck = document.getElementById('dontOfferUpdates');
+        
+        if (autoUpdateCheck) {
+            autoUpdateCheck.addEventListener('change', () => this.saveUpdateSettings());
+        }
+        
+        if (dontOfferCheck) {
+            dontOfferCheck.addEventListener('change', () => this.saveUpdateSettings());
+        }
+        
+        // Проверяем при открытии вкладки обновлений
+        const updatesTab = document.querySelector('[data-tab="updates"]');
+        if (updatesTab) {
+            updatesTab.addEventListener('click', () => this.loadUpdateInfo());
+        }
     }
     
     switchTab(tabName) {
@@ -640,7 +691,216 @@ class BaseRobotUI {
             Logger.debug('Не удалось проверить обновления:', error);
         }
     }
+    
+    // ═══════════════════════════════════════════════════════════════
+    // МЕТОДЫ ОБНОВЛЕНИЯ ПРОШИВКИ
+    // ═══════════════════════════════════════════════════════════════
+    
+    async loadUpdateInfo() {
+        try {
+            // Загружаем текущую версию
+            const currentResponse = await fetch('/api/update/current');
+            if (currentResponse.ok) {
+                const data = await currentResponse.json();
+                const versionEl = document.getElementById('currentVersion');
+                const releaseNameEl = document.getElementById('releaseName');
+                if (versionEl) versionEl.textContent = data.version;
+                if (releaseNameEl) releaseNameEl.textContent = data.releaseName;
+            }
+            
+            // Загружаем настройки
+            const settingsResponse = await fetch('/api/update/settings');
+            if (settingsResponse.ok) {
+                const settings = await settingsResponse.json();
+                const autoUpdateCheck = document.getElementById('autoUpdate');
+                const dontOfferCheck = document.getElementById('dontOfferUpdates');
+                if (autoUpdateCheck) autoUpdateCheck.checked = settings.autoUpdate;
+                if (dontOfferCheck) dontOfferCheck.checked = settings.dontOffer;
+            }
+            
+            // Проверяем, нужен ли выбор типа робота
+            await this.checkRobotTypeSelection();
+        } catch (error) {
+            Logger.error('Ошибка загрузки информации об обновлениях:', error);
+        }
+    }
+    
+    async checkRobotTypeSelection() {
+        try {
+            const response = await fetch('/api/update/needs-robot-type');
+            if (response.ok) {
+                const data = await response.json();
+                const selectionDiv = document.getElementById('robotTypeSelection');
+                const updateActions = document.querySelector('.update-actions');
+                const updateAvailable = document.getElementById('updateAvailable');
+                
+                if (data.needsSelection) {
+                    // Показываем выбор типа робота
+                    if (selectionDiv) selectionDiv.classList.remove('hidden');
+                    if (updateActions) updateActions.style.display = 'none';
+                    if (updateAvailable) updateAvailable.classList.add('hidden');
+                } else {
+                    // Скрываем выбор типа робота
+                    if (selectionDiv) selectionDiv.classList.add('hidden');
+                    if (updateActions) updateActions.style.display = 'block';
+                }
+            }
+        } catch (error) {
+            Logger.error('Ошибка проверки необходимости выбора типа робота:', error);
+        }
+    }
+    
+    async confirmRobotType() {
+        const selectedRadio = document.querySelector('input[name="robotType"]:checked');
+        if (!selectedRadio) return;
+        
+        const robotType = selectedRadio.value;
+        
+        try {
+            const response = await fetch('/api/update/set-robot-type', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ type: robotType })
+            });
+            
+            if (response.ok) {
+                Logger.info('Тип робота выбран:', robotType);
+                
+                // Скрываем выбор типа, показываем кнопки обновления
+                const selectionDiv = document.getElementById('robotTypeSelection');
+                const updateActions = document.querySelector('.update-actions');
+                
+                if (selectionDiv) selectionDiv.classList.add('hidden');
+                if (updateActions) updateActions.style.display = 'block';
+                
+                // Показываем уведомление
+                alert(`Выбран тип устройства: ${this.getRobotTypeName(robotType)}.\nТеперь можно проверить обновления.`);
+            } else {
+                Logger.error('Ошибка сохранения типа робота');
+                alert('Ошибка сохранения типа устройства');
+            }
+        } catch (error) {
+            Logger.error('Ошибка при подтверждении типа робота:', error);
+            alert('Ошибка подключения к устройству');
+        }
+    }
+    
+    getRobotTypeName(type) {
+        const names = {
+            'classic': 'МикроБокс Классик',
+            'liner': 'МикроБокс Лайнер',
+            'brain': 'МикроБокс Брейн'
+        };
+        return names[type] || type;
+    }
+    
+    async checkForUpdates() {
+        const checkBtn = document.getElementById('checkUpdatesBtn');
+        if (checkBtn) checkBtn.disabled = true;
+        
+        try {
+            const response = await fetch('/api/update/check');
+            if (!response.ok) {
+                alert('Ошибка проверки обновлений');
+                return;
+            }
+            
+            const data = await response.json();
+            
+            if (data.needsRobotTypeSelection) {
+                alert('Сначала выберите тип устройства');
+                await this.checkRobotTypeSelection();
+                return;
+            }
+            
+            const updateAvailableDiv = document.getElementById('updateAvailable');
+            
+            if (data.hasUpdate) {
+                document.getElementById('newVersion').textContent = data.version;
+                document.getElementById('newReleaseName').textContent = data.releaseName;
+                document.getElementById('releaseNotes').textContent = data.releaseNotes;
+                
+                if (updateAvailableDiv) updateAvailableDiv.classList.remove('hidden');
+                
+                // Сохраняем URL для скачивания
+                this.updateDownloadUrl = data.downloadUrl;
+            } else {
+                if (updateAvailableDiv) updateAvailableDiv.classList.add('hidden');
+                alert('У вас установлена последняя версия');
+            }
+        } catch (error) {
+            Logger.error('Ошибка проверки обновлений:', error);
+            alert('Ошибка подключения к серверу обновлений');
+        } finally {
+            if (checkBtn) checkBtn.disabled = false;
+        }
+    }
+    
+    async downloadUpdate() {
+        if (!this.updateDownloadUrl) {
+            alert('URL для скачивания не найден');
+            return;
+        }
+        
+        const confirmed = confirm('Начать обновление прошивки?\nУстройство перезагрузится после завершения загрузки.');
+        if (!confirmed) return;
+        
+        try {
+            // Показываем оверлей обновления
+            this.showFirmwareUpdateOverlay();
+            
+            const response = await fetch('/api/update/download', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: `url=${encodeURIComponent(this.updateDownloadUrl)}`
+            });
+            
+            if (response.ok) {
+                const data = await response.json();
+                if (data.rebooting) {
+                    document.getElementById('firmwareStatus').textContent = 'Устройство перезагружается...';
+                    // Устройство перезагружается, показываем индикатор
+                    setTimeout(() => {
+                        document.getElementById('firmwareStatus').textContent = 'Ожидание перезагрузки...';
+                    }, 3000);
+                }
+            } else {
+                alert('Ошибка запуска обновления');
+                this.hideFirmwareUpdateOverlay();
+            }
+        } catch (error) {
+            Logger.error('Ошибка загрузки обновления:', error);
+            alert('Ошибка подключения к устройству');
+            this.hideFirmwareUpdateOverlay();
+        }
+    }
+    
+    async saveUpdateSettings() {
+        const autoUpdate = document.getElementById('autoUpdate')?.checked || false;
+        const dontOffer = document.getElementById('dontOfferUpdates')?.checked || false;
+        
+        try {
+            await fetch('/api/update/settings', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ autoUpdate, dontOffer })
+            });
+        } catch (error) {
+            Logger.error('Ошибка сохранения настроек обновлений:', error);
+        }
+    }
+    
+    showFirmwareUpdateOverlay() {
+        const overlay = document.getElementById('firmwareUpdateOverlay');
+        if (overlay) overlay.classList.remove('hidden');
+    }
+    
+    hideFirmwareUpdateOverlay() {
+        const overlay = document.getElementById('firmwareUpdateOverlay');
+        if (overlay) overlay.classList.add('hidden');
+    }
 }
+
 
 // ═══════════════════════════════════════════════════════════════
 // CLASSIC ROBOT UI - Управляемый робот
