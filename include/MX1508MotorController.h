@@ -25,12 +25,14 @@ public:
     void setMotorPWM(int throttlePWM, int steeringPWM) override;
     void stop() override;
     void getCurrentSpeed(int& leftSpeed, int& rightSpeed) const override;
+    bool wasWatchdogTriggered() const override;
 
 private:
     bool initialized_;
     int currentLeftSpeed_;
     int currentRightSpeed_;
     unsigned long lastCommandTime_;
+    bool watchdogTriggered_;  // Флаг для отслеживания срабатывания watchdog
     
     // Внутренние методы
     void applyMotorSpeed(int leftSpeed, int rightSpeed);

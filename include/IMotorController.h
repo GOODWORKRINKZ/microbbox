@@ -25,6 +25,9 @@ public:
     
     // Получение текущей скорости
     virtual void getCurrentSpeed(int& leftSpeed, int& rightSpeed) const = 0;
+    
+    // Проверка, был ли произведен watchdog-stop (нужно для повторной отправки команды)
+    virtual bool wasWatchdogTriggered() const = 0;
 };
 
 #endif // IMOTOR_CONTROLLER_H

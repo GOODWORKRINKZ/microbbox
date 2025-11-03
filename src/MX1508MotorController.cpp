@@ -5,7 +5,8 @@ MX1508MotorController::MX1508MotorController() :
     initialized_(false),
     currentLeftSpeed_(0),
     currentRightSpeed_(0),
-    lastCommandTime_(0)
+    lastCommandTime_(0),
+    watchdogTriggered_(false)
 {
 }
 
@@ -65,7 +66,9 @@ void MX1508MotorController::update() {
         // Автоостановка моторов если нет команд
         if (currentLeftSpeed_ != 0 || currentRightSpeed_ != 0) {
             DEBUG_PRINTLN("Motor watchdog: остановка моторов");
+            watchdogTriggered_ = true;  // Устанавливаем флаг срабатывания watchdog
             stop();
+            // Не сбрасываем флаг здесь - он будет сброшен при следующей команде
         }
     }
 }
@@ -91,6 +94,7 @@ void MX1508MotorController::setSpeed(int leftSpeed, int rightSpeed) {
     currentLeftSpeed_ = leftSpeed;
     currentRightSpeed_ = rightSpeed;
     lastCommandTime_ = millis();
+    watchdogTriggered_ = false;  // Сбрасываем флаг при получении новой команды
 }
 
 void MX1508MotorController::setMotorPWM(int throttlePWM, int steeringPWM) {
@@ -119,6 +123,11 @@ void MX1508MotorController::stop() {
         return;
     }
     
+    // Note: We deliberately do NOT clear watchdogTriggered_ flag here.
+    // If watchdog triggered before this stop(), the flag should remain set
+    // so that the next motor command will be forced to apply.
+    // The flag is only cleared when a new motor command is received via setSpeed().
+    
     ledcWrite(MOTOR_PWM_CHANNEL_LF, 0);
     ledcWrite(MOTOR_PWM_CHANNEL_LR, 0);
     ledcWrite(MOTOR_PWM_CHANNEL_RF, 0);
@@ -126,6 +135,8 @@ void MX1508MotorController::stop() {
     
     currentLeftSpeed_ = 0;
     currentRightSpeed_ = 0;
+    // Reset lastCommandTime_ to prevent watchdog from firing repeatedly.
+    // Watchdog will only fire again after new commands arrive and another timeout occurs.
     lastCommandTime_ = 0;
 }
 
@@ -178,4 +189,8 @@ void MX1508MotorController::applyMotorSpeed(int leftSpeed, int rightSpeed) {
 
 int MX1508MotorController::constrainSpeed(int speed) const {
     return constrain(speed, -100, 100);
+}
+
+bool MX1508MotorController::wasWatchdogTriggered() const {
+    return watchdogTriggered_;
 }
