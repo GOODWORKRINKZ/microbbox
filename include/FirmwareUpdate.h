@@ -18,6 +18,7 @@ struct ReleaseInfo {
     String downloadUrl;
     String publishedAt;
     bool isNewer;
+    String robotType;  // classic, liner, brain
 };
 
 class FirmwareUpdate {
@@ -29,6 +30,10 @@ public:
     bool init(AsyncWebServer* server);
     void loop();
     void shutdown();
+    
+    // Установка типа робота (для правильного выбора прошивки)
+    void setRobotType(const String& type) { robotType_ = type; }
+    String getRobotType() const { return robotType_; }
 
     // Проверка обновлений
     bool checkForUpdates(ReleaseInfo& releaseInfo);
@@ -91,6 +96,9 @@ private:
     // Отложенная перезагрузка
     bool shouldReboot;
     unsigned long rebootScheduledTime;
+    
+    // Тип робота
+    String robotType_;
     
     // Preferences для настроек
     Preferences preferences;

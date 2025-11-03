@@ -42,6 +42,8 @@ bool BaseRobot::init() {
     
     // Инициализация системы обновления
     firmwareUpdate_ = new FirmwareUpdate();
+    // Устанавливаем тип робота для правильного выбора прошивки при обновлении
+    firmwareUpdate_->setRobotType(String(getRobotType()).toLowerCase());
     
     // Инициализация WiFi
     if (!initWiFi()) {
