@@ -131,8 +131,11 @@ void ClassicRobot::setupWebHandlers(AsyncWebServer* server) {
     // Перезагрузка устройства
     server->on("/api/restart", HTTP_POST, [](AsyncWebServerRequest* request) {
         request->send(200, "text/plain", "Rebooting...");
-        delay(100);
-        ESP.restart();
+        // Асинхронная перезагрузка через 100ms после отправки ответа
+        request->onDisconnect([]() {
+            delay(100);
+            ESP.restart();
+        });
     });
 }
 

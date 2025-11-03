@@ -1226,9 +1226,13 @@ class ClassicRobotUI extends BaseRobotUI {
             
             await fetch(`/cmd?throttle=${throttle}&steering=${steering}`);
             
-            // Через 1 секунду останавливаем
+            // Через 1 секунду останавливаем (с обработкой ошибок)
             setTimeout(async () => {
-                await fetch(`/cmd?throttle=${this.PWM_NEUTRAL}&steering=${this.PWM_NEUTRAL}`);
+                try {
+                    await fetch(`/cmd?throttle=${this.PWM_NEUTRAL}&steering=${this.PWM_NEUTRAL}`);
+                } catch (error) {
+                    Logger.error('Ошибка остановки мотора:', error);
+                }
             }, 1000);
         } catch (error) {
             Logger.error('Ошибка тестирования мотора:', error);
