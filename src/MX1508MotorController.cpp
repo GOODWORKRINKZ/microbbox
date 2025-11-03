@@ -107,6 +107,10 @@ void MX1508MotorController::setMotorPWM(int throttlePWM, int steeringPWM) {
     int leftSpeed = throttle + steering;
     int rightSpeed = throttle - steering;
     
+    // Детальные логи для диагностики
+    DEBUG_PRINTF("PWM: t=%d s=%d -> throttle=%d steering=%d -> L=%d R=%d\n", 
+                 throttlePWM, steeringPWM, throttle, steering, leftSpeed, rightSpeed);
+    
     setSpeed(leftSpeed, rightSpeed);
 }
 
@@ -135,15 +139,18 @@ void MX1508MotorController::applyMotorSpeed(int leftSpeed, int rightSpeed) {
     const int maxPWM = (1 << MOTOR_PWM_RESOLUTION) - 1; // 8191 для 13-бит
     const int limitedMaxPWM = (maxPWM * MOTOR_MAX_POWER_PERCENT) / 100;
     
+    int leftPWM = 0;
+    int rightPWM = 0;
+    
     // Левый мотор
     if (leftSpeed > 0) {
-        int pwm = map(leftSpeed, 0, 100, 0, limitedMaxPWM);
-        ledcWrite(MOTOR_PWM_CHANNEL_LF, pwm);
+        leftPWM = map(leftSpeed, 0, 100, 0, limitedMaxPWM);
+        ledcWrite(MOTOR_PWM_CHANNEL_LF, leftPWM);
         ledcWrite(MOTOR_PWM_CHANNEL_LR, 0);
     } else if (leftSpeed < 0) {
-        int pwm = map(-leftSpeed, 0, 100, 0, limitedMaxPWM);
+        leftPWM = map(-leftSpeed, 0, 100, 0, limitedMaxPWM);
         ledcWrite(MOTOR_PWM_CHANNEL_LF, 0);
-        ledcWrite(MOTOR_PWM_CHANNEL_LR, pwm);
+        ledcWrite(MOTOR_PWM_CHANNEL_LR, leftPWM);
     } else {
         ledcWrite(MOTOR_PWM_CHANNEL_LF, 0);
         ledcWrite(MOTOR_PWM_CHANNEL_LR, 0);
@@ -151,17 +158,22 @@ void MX1508MotorController::applyMotorSpeed(int leftSpeed, int rightSpeed) {
     
     // Правый мотор
     if (rightSpeed > 0) {
-        int pwm = map(rightSpeed, 0, 100, 0, limitedMaxPWM);
-        ledcWrite(MOTOR_PWM_CHANNEL_RF, pwm);
+        rightPWM = map(rightSpeed, 0, 100, 0, limitedMaxPWM);
+        ledcWrite(MOTOR_PWM_CHANNEL_RF, rightPWM);
         ledcWrite(MOTOR_PWM_CHANNEL_RR, 0);
     } else if (rightSpeed < 0) {
-        int pwm = map(-rightSpeed, 0, 100, 0, limitedMaxPWM);
+        rightPWM = map(-rightSpeed, 0, 100, 0, limitedMaxPWM);
         ledcWrite(MOTOR_PWM_CHANNEL_RF, 0);
-        ledcWrite(MOTOR_PWM_CHANNEL_RR, pwm);
+        ledcWrite(MOTOR_PWM_CHANNEL_RR, rightPWM);
     } else {
         ledcWrite(MOTOR_PWM_CHANNEL_RF, 0);
         ledcWrite(MOTOR_PWM_CHANNEL_RR, 0);
     }
+    
+    DEBUG_PRINTF("Motor PWM: L=%d (%s) R=%d (%s) [max=%d]\n", 
+                 leftPWM, leftSpeed > 0 ? "FWD" : (leftSpeed < 0 ? "REV" : "STOP"),
+                 rightPWM, rightSpeed > 0 ? "FWD" : (rightSpeed < 0 ? "REV" : "STOP"),
+                 limitedMaxPWM);
 }
 
 int MX1508MotorController::constrainSpeed(int speed) const {
