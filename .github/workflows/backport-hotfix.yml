@@ -142,46 +142,36 @@ jobs:
           const customTitle = '${{ inputs.pr_title }}';
           const prTitle = customTitle || `[Backport ${targetVersion}] ${commitMsg.split('\n')[0]}`;
           
+          const prBody = `# Backport to ${targetVersion}\n\n` +
+            `## Original Commit\n\n` +
+            `- **SHA**: ${commitSha}\n` +
+            `- **Author**: ${commitAuthor}\n` +
+            `- **Date**: ${commitDate}\n` +
+            `- **Message**: \n` +
+            `  \`\`\`\n` +
+            `  ${commitMsg}\n` +
+            `  \`\`\`\n\n` +
+            `## Changes\n\n` +
+            `This PR backports the fix from commit ${commitShort} to the \`support/${targetVersion}\` branch.\n\n` +
+            `### Cherry-pick Status\n\n` +
+            `✅ **Cherry-pick successful** - no conflicts detected\n\n` +
+            `## Testing\n\n` +
+            `- [ ] Build test passed\n` +
+            `- [ ] Manual testing completed\n` +
+            `- [ ] No regressions introduced\n\n` +
+            `## Related Issues\n\n` +
+            `<!-- Link any related issues here -->\n\n` +
+            `---\n\n` +
+            `**Auto-created by backport-hotfix workflow**\n` +
+            `Requested by: @${context.actor}`;
+          
           const pr = await github.rest.pulls.create({
             owner: context.repo.owner,
             repo: context.repo.repo,
             title: prTitle,
             head: branchName,
             base: `support/${targetVersion}`,
-            body: `# Backport to ${targetVersion}
-            
-## Original Commit
-
-- **SHA**: ${commitSha}
-- **Author**: ${commitAuthor}
-- **Date**: ${commitDate}
-- **Message**: 
-  \`\`\`
-  ${commitMsg}
-  \`\`\`
-
-## Changes
-
-This PR backports the fix from commit ${commitShort} to the \`support/${targetVersion}\` branch.
-
-### Cherry-pick Status
-
-✅ **Cherry-pick successful** - no conflicts detected
-
-## Testing
-
-- [ ] Build test passed
-- [ ] Manual testing completed
-- [ ] No regressions introduced
-
-## Related Issues
-
-<!-- Link any related issues here -->
-
----
-
-**Auto-created by backport-hotfix workflow**
-Requested by: @${context.actor}`,
+            body: prBody,
             draft: false
           });
           
@@ -206,63 +196,50 @@ Requested by: @${context.actor}`,
             conflicts = 'Could not determine conflicting files';
           }
           
+          const issueBody = `# Backport Failed: Conflicts Detected\n\n` +
+            `## Original Commit\n\n` +
+            `- **SHA**: ${commitSha}\n` +
+            `- **Target Version**: ${targetVersion}\n` +
+            `- **Message**: \n` +
+            `  \`\`\`\n` +
+            `  ${commitMsg}\n` +
+            `  \`\`\`\n\n` +
+            `## Problem\n\n` +
+            `❌ Cherry-pick failed due to merge conflicts.\n\n` +
+            `### Conflicting Files\n\n` +
+            `\`\`\`\n` +
+            `${conflicts}\n` +
+            `\`\`\`\n\n` +
+            `## Resolution Steps\n\n` +
+            `Manual intervention required:\n\n` +
+            `1. Checkout support branch:\n` +
+            `   \`\`\`bash\n` +
+            `   git checkout support/${targetVersion}\n` +
+            `   git pull\n` +
+            `   \`\`\`\n\n` +
+            `2. Cherry-pick commit manually:\n` +
+            `   \`\`\`bash\n` +
+            `   git cherry-pick ${commitSha}\n` +
+            `   \`\`\`\n\n` +
+            `3. Resolve conflicts in the files listed above\n\n` +
+            `4. Complete cherry-pick:\n` +
+            `   \`\`\`bash\n` +
+            `   git add <resolved-files>\n` +
+            `   git cherry-pick --continue\n` +
+            `   \`\`\`\n\n` +
+            `5. Push and create PR:\n` +
+            `   \`\`\`bash\n` +
+            `   git push origin support/${targetVersion}\n` +
+            `   \`\`\`\n\n` +
+            `---\n\n` +
+            `**Auto-created by backport-hotfix workflow**\n` +
+            `Requested by: @${context.actor}`;
+          
           const issue = await github.rest.issues.create({
             owner: context.repo.owner,
             repo: context.repo.repo,
             title: `[Backport Failed] Cannot backport ${commitSha.substring(0, 7)} to ${targetVersion}`,
-            body: `# Backport Failed: Conflicts Detected
-            
-## Original Commit
-
-- **SHA**: ${commitSha}
-- **Target Version**: ${targetVersion}
-- **Message**: 
-  \`\`\`
-  ${commitMsg}
-  \`\`\`
-
-## Problem
-
-❌ Cherry-pick failed due to merge conflicts.
-
-### Conflicting Files
-
-\`\`\`
-${conflicts}
-\`\`\`
-
-## Resolution Steps
-
-Manual intervention required:
-
-1. Checkout support branch:
-   \`\`\`bash
-   git checkout support/${targetVersion}
-   git pull
-   \`\`\`
-
-2. Cherry-pick commit manually:
-   \`\`\`bash
-   git cherry-pick ${commitSha}
-   \`\`\`
-
-3. Resolve conflicts in the files listed above
-
-4. Complete cherry-pick:
-   \`\`\`bash
-   git add <resolved-files>
-   git cherry-pick --continue
-   \`\`\`
-
-5. Push and create PR:
-   \`\`\`bash
-   git push origin support/${targetVersion}
-   \`\`\`
-
----
-
-**Auto-created by backport-hotfix workflow**
-Requested by: @${context.actor}`,
+            body: issueBody,
             labels: ['backport', 'needs-manual-intervention', `version-${targetVersion}`]
           });
           

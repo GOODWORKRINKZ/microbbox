@@ -85,50 +85,43 @@ jobs:
           const eolDate = new Date(releaseDate);
           eolDate.setMonth(eolDate.getMonth() + 6);
           
+          const eolNotifyDate = new Date(eolDate.getTime() - 30*24*60*60*1000).toISOString().split('T')[0];
+          
+          const issueBody = `# Support Branch Created: ${supportBranch}\n\n` +
+            `## Release Information\n\n` +
+            `- **Version**: ${version}\n` +
+            `- **Release Tag**: ${tagName}\n` +
+            `- **Release Date**: ${releaseDate.toISOString().split('T')[0]}\n` +
+            `- **EOL Date**: ${eolDate.toISOString().split('T')[0]} (6 months from release)\n` +
+            `- **Support Branch**: \`${supportBranch}\`\n` +
+            `- **Release URL**: ${context.payload.release.html_url}\n\n` +
+            `## Support Status\n\n` +
+            `- [x] Support branch created\n` +
+            `- [ ] Branch protection enabled\n` +
+            `- [ ] Documentation updated\n` +
+            `- [ ] First maintenance release planned\n\n` +
+            `## Maintenance Schedule\n\n` +
+            `| Task | Status | Target Date |\n` +
+            `|------|--------|-------------|\n` +
+            `| Branch created | ✅ Done | ${releaseDate.toISOString().split('T')[0]} |\n` +
+            `| First patch release | ⏳ Pending | TBD |\n` +
+            `| EOL notification | ⏳ Scheduled | ${eolNotifyDate} |\n` +
+            `| Version EOL | ⏳ Scheduled | ${eolDate.toISOString().split('T')[0]} |\n\n` +
+            `## Next Steps\n\n` +
+            `1. Enable branch protection rules for \`${supportBranch}\`\n` +
+            `2. Update \`SUPPORT_STATUS.md\` with new version\n` +
+            `3. Plan maintenance releases if needed\n` +
+            `4. Monitor for critical bugs requiring backport\n\n` +
+            `---\n\n` +
+            `This issue tracks the support lifecycle for version ${version}.\n` +
+            `It will be updated with maintenance releases and backported fixes.\n\n` +
+            `**Auto-created by create-support-branch workflow**`;
+          
           const issue = await github.rest.issues.create({
             owner: context.repo.owner,
             repo: context.repo.repo,
             title: `[Support] Version ${version} Support Tracking`,
-            body: `# Support Branch Created: ${supportBranch}
-            
-## Release Information
-
-- **Version**: ${version}
-- **Release Tag**: ${tagName}
-- **Release Date**: ${releaseDate.toISOString().split('T')[0]}
-- **EOL Date**: ${eolDate.toISOString().split('T')[0]} (6 months from release)
-- **Support Branch**: \`${supportBranch}\`
-- **Release URL**: ${context.payload.release.html_url}
-
-## Support Status
-
-- [x] Support branch created
-- [ ] Branch protection enabled
-- [ ] Documentation updated
-- [ ] First maintenance release planned
-
-## Maintenance Schedule
-
-| Task | Status | Target Date |
-|------|--------|-------------|
-| Branch created | ✅ Done | ${releaseDate.toISOString().split('T')[0]} |
-| First patch release | ⏳ Pending | TBD |
-| EOL notification | ⏳ Scheduled | ${new Date(eolDate.getTime() - 30*24*60*60*1000).toISOString().split('T')[0]} |
-| Version EOL | ⏳ Scheduled | ${eolDate.toISOString().split('T')[0]} |
-
-## Next Steps
-
-1. Enable branch protection rules for \`${supportBranch}\`
-2. Update \`SUPPORT_STATUS.md\` with new version
-3. Plan maintenance releases if needed
-4. Monitor for critical bugs requiring backport
-
----
-
-This issue tracks the support lifecycle for version ${version}.
-It will be updated with maintenance releases and backported fixes.
-
-**Auto-created by create-support-branch workflow**`,
+            body: issueBody,
             labels: ['support', 'tracking', `version-${version}`]
           });
           
