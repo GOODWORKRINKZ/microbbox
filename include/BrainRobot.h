@@ -19,6 +19,9 @@ public:
     
     RobotType getRobotType() const override { return RobotType::BRAIN; }
     
+    // Обработка команд управления (для Brain транслируются в протоколы)
+    void handleMotorCommand(int throttlePWM, int steeringPWM) override;
+    
 protected:
     bool initSpecificComponents() override;
     void updateSpecificComponents() override;

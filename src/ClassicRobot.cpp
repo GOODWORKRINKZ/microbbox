@@ -151,10 +151,25 @@ bool ClassicRobot::initBuzzer() {
 }
 
 void ClassicRobot::updateMotors() {
-    if (motorController_ && motorController_->isInitialized()) {
-        // Применение целевых значений PWM
-        motorController_->setMotorPWM(targetThrottlePWM_, targetSteeringPWM_);
+    if (!motorController_ || !motorController_->isInitialized()) {
+        return;
     }
+    
+    // Применяем значения PWM только если они изменились
+    static int lastAppliedThrottle = 1500;
+    static int lastAppliedSteering = 1500;
+    
+    if (targetThrottlePWM_ != lastAppliedThrottle || targetSteeringPWM_ != lastAppliedSteering) {
+        motorController_->setMotorPWM(targetThrottlePWM_, targetSteeringPWM_);
+        lastAppliedThrottle = targetThrottlePWM_;
+        lastAppliedSteering = targetSteeringPWM_;
+    }
+}
+
+void ClassicRobot::handleMotorCommand(int throttlePWM, int steeringPWM) {
+    // Обновляем целевые значения PWM (быстро, без блокировки)
+    targetThrottlePWM_ = constrain(throttlePWM, 1000, 2000);
+    targetSteeringPWM_ = constrain(steeringPWM, 1000, 2000);
 }
 
 void ClassicRobot::updateEffects() {

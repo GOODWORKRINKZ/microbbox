@@ -227,6 +227,13 @@ void BrainRobot::handleCommand(AsyncWebServerRequest* request) {
     }
 }
 
+void BrainRobot::handleMotorCommand(int throttlePWM, int steeringPWM) {
+    // Brain транслирует команды в каналы протокола
+    // Канал 1 = throttle, Канал 2 = steering
+    channelValues_[0] = constrain(throttlePWM, 1000, 2000);
+    channelValues_[1] = constrain(steeringPWM, 1000, 2000);
+}
+
 void BrainRobot::handleProtocol(AsyncWebServerRequest* request) {
     if (request->hasParam("type")) {
         String type = request->getParam("type")->value();

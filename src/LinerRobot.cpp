@@ -319,10 +319,28 @@ void LinerRobot::applyPIDControl(float linePosition) {
 }
 
 void LinerRobot::updateMotors() {
-    if (motorController_ && motorController_->isInitialized()) {
-        // Применение целевых значений PWM из веб-команд
-        motorController_->setMotorPWM(targetThrottlePWM_, targetSteeringPWM_);
+    if (!motorController_ || !motorController_->isInitialized()) {
+        return;
     }
+    
+    // Применяем значения PWM только если они изменились
+    static int lastAppliedThrottle = 1500;
+    static int lastAppliedSteering = 1500;
+    
+    if (targetThrottlePWM_ != lastAppliedThrottle || targetSteeringPWM_ != lastAppliedSteering) {
+        motorController_->setMotorPWM(targetThrottlePWM_, targetSteeringPWM_);
+        lastAppliedThrottle = targetThrottlePWM_;
+        lastAppliedSteering = targetSteeringPWM_;
+    }
+}
+
+void LinerRobot::handleMotorCommand(int throttlePWM, int steeringPWM) {
+    // В ручном режиме обновляем целевые значения PWM
+    if (currentMode_ == Mode::MANUAL) {
+        targetThrottlePWM_ = constrain(throttlePWM, 1000, 2000);
+        targetSteeringPWM_ = constrain(steeringPWM, 1000, 2000);
+    }
+    // В автономном режиме игнорируем команды управления
 }
 
 void LinerRobot::updateStatusLED() {

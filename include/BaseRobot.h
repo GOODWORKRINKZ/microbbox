@@ -35,6 +35,9 @@ protected:
     virtual void shutdownSpecificComponents() = 0;
     virtual void setupWebHandlers(AsyncWebServer* server) = 0;
     
+    // Метод для обработки команд управления моторами (переопределяется в наследниках)
+    virtual void handleMotorCommand(int throttlePWM, int steeringPWM) = 0;
+    
     // Общие методы
     bool initWiFi();
     bool initWebServer();
