@@ -90,6 +90,7 @@ jobs:
       uses: actions/github-script@v7
       continue-on-error: true
       with:
+        github-token: ${{ secrets.ADMIN_TOKEN }}
         script: |
           try {
             await github.rest.repos.updateBranchProtection({
@@ -102,7 +103,6 @@ jobs:
               },
               enforce_admins: false,
               required_pull_request_reviews: {
-                dismissal_restrictions: {},
                 dismiss_stale_reviews: true,
                 require_code_owner_reviews: false,
                 required_approving_review_count: 1,
@@ -139,6 +139,7 @@ jobs:
       uses: actions/github-script@v7
       continue-on-error: true
       with:
+        github-token: ${{ secrets.ADMIN_TOKEN }}
         script: |
           try {
             await github.rest.repos.updateBranchProtection({
@@ -151,7 +152,6 @@ jobs:
               },
               enforce_admins: false,
               required_pull_request_reviews: {
-                dismissal_restrictions: {},
                 dismiss_stale_reviews: false,
                 require_code_owner_reviews: false,
                 required_approving_review_count: 1,
@@ -186,6 +186,7 @@ jobs:
       id: support_branches
       uses: actions/github-script@v7
       with:
+        github-token: ${{ secrets.ADMIN_TOKEN }}
         script: |
           const { data: branches } = await github.rest.repos.listBranches({
             owner: context.repo.owner,
@@ -207,6 +208,7 @@ jobs:
       uses: actions/github-script@v7
       continue-on-error: true
       with:
+        github-token: ${{ secrets.ADMIN_TOKEN }}
         script: |
           const supportBranches = ${{ steps.support_branches.outputs.result }};
           
@@ -223,7 +225,6 @@ jobs:
                 },
                 enforce_admins: false,
                 required_pull_request_reviews: {
-                  dismissal_restrictions: {},
                   dismiss_stale_reviews: true,
                   require_code_owner_reviews: false,
                   required_approving_review_count: 1,

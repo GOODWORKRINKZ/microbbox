@@ -46,9 +46,9 @@ private:
     // Обновление выходов
     void updateOutputs();
     void sendPWMOutput(int ch1, int ch2, int ch3, int ch4);
-    void sendPPMOutput(int channels[], int count);
-    void sendSBUSOutput(int channels[], int count);
-    void sendTBSOutput(int channels[], int count);
+    void sendPPMOutput(volatile int channels[], int count);
+    void sendSBUSOutput(volatile int channels[], int count);
+    void sendTBSOutput(volatile int channels[], int count);
     
     // Веб-обработчики
     void handleCommand(AsyncWebServerRequest* request);

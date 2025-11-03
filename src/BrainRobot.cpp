@@ -177,7 +177,7 @@ void BrainRobot::sendPWMOutput(int ch1, int ch2, int ch3, int ch4) {
 #endif
 }
 
-void BrainRobot::sendPPMOutput(int channels[], int count) {
+void BrainRobot::sendPPMOutput(volatile int channels[], int count) {
 #ifdef FEATURE_PPM_OUTPUT
     // NOTE: PPM протокол не реализован в версии 2.0
     // Будет добавлен в будущих версиях
@@ -187,7 +187,7 @@ void BrainRobot::sendPPMOutput(int channels[], int count) {
 #endif
 }
 
-void BrainRobot::sendSBUSOutput(int channels[], int count) {
+void BrainRobot::sendSBUSOutput(volatile int channels[], int count) {
 #ifdef FEATURE_SBUS_OUTPUT
     // NOTE: SBUS протокол не реализован в версии 2.0
     // Будет добавлен в будущих версиях
@@ -197,7 +197,7 @@ void BrainRobot::sendSBUSOutput(int channels[], int count) {
 #endif
 }
 
-void BrainRobot::sendTBSOutput(int channels[], int count) {
+void BrainRobot::sendTBSOutput(volatile int channels[], int count) {
 #ifdef FEATURE_TBS_OUTPUT
     // NOTE: TBS Crossfire протокол не реализован в версии 2.0
     // Будет добавлен в будущих версиях
