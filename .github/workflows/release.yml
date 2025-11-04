@@ -253,7 +253,7 @@ jobs:
         # Copy and rename firmware files for all robot types (release only)
         for robot in "${ROBOT_TYPES[@]}"; do
           BUILD_DIR=".pio/build/${robot}-release"
-          OUTPUT_NAME="microbox-${robot}-${VERSION}.bin"
+          OUTPUT_NAME="microbox-${robot}-${VERSION}-release.bin"
           
           cp "${BUILD_DIR}/firmware.bin" "${OUTPUT_NAME}"
           echo "📦 Created: ${OUTPUT_NAME}"
@@ -342,17 +342,17 @@ jobs:
         ### 🚗 МикроБокс Классик (Classic)
         Полнофункциональный управляемый робот с веб-интерфейсом, видеостримом и эффектами.
         
-        - **microbox-classic-$VERSION.bin** - Оптимизированная release версия
+        - **microbox-classic-$VERSION-release.bin** - Оптимизированная release версия
         
         ### 🛤️ МикроБокс Лайнер (Liner)
         Автономный робот следующий по линии с PID-контроллером.
         
-        - **microbox-liner-$VERSION.bin** - Оптимизированная release версия
+        - **microbox-liner-$VERSION-release.bin** - Оптимизированная release версия
         
         ### 🎮 МикроБокс Брейн (Brain)
         Модуль управления для других роботов с трансляцией протоколов (PWM/PPM/SBUS/TBS).
         
-        - **microbox-brain-$VERSION.bin** - Оптимизированная release версия
+        - **microbox-brain-$VERSION-release.bin** - Оптимизированная release версия
         
         > 💡 **Какой тип выбрать?** Для обычного управляемого робота используйте **Classic**. Для автономного следования по линии - **Liner**. Для подключения к другим роботам - **Brain**.
         > 
