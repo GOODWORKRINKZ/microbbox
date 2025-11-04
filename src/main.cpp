@@ -3,6 +3,9 @@
 #include "hardware_config.h"
 #include "IRobot.h"
 #include "FirmwareUpdate.h"
+#include "WiFiSettings.h"
+#include <Preferences.h>
+#include <ESPAsyncWebServer.h>
 #include "soc/soc.h"
 #include "soc/rtc_cntl_reg.h"
 
@@ -58,13 +61,113 @@ void setup() {
     if (FirmwareUpdate::isOTAPending()) {
         Serial.println("═══════════════════════════════════════");
         Serial.println("  ОБНАРУЖЕНО ОЖИДАЮЩЕЕ OTA ОБНОВЛЕНИЕ");
-        Serial.println("  Функция безопасного режима пока не реализована");
-        Serial.println("  Очистка флага и продолжение загрузки...");
+        Serial.println("  Запуск безопасного режима OTA...");
         Serial.println("═══════════════════════════════════════");
         
-        // TODO: Реализовать безопасный режим для OTA в будущих версиях
-        // Пока просто очищаем флаг и продолжаем нормальную загрузку
-        FirmwareUpdate::clearOTAPending();
+        // Получаем URL обновления
+        Preferences otaPrefs;
+        if (!otaPrefs.begin("ota", true)) {
+            Serial.println("ОШИБКА: Не удалось открыть preferences для чтения URL");
+            FirmwareUpdate::clearOTAPending();
+        } else {
+            String updateUrl = otaPrefs.getString("url", "");
+            otaPrefs.end();
+            
+            if (updateUrl.length() == 0) {
+                Serial.println("ОШИБКА: URL обновления не найден");
+                FirmwareUpdate::clearOTAPending();
+            } else {
+                Serial.printf("URL обновления: %s\n", updateUrl.c_str());
+                
+                // Инициализируем минимальный WiFi для OTA
+                Serial.println("Инициализация WiFi для OTA...");
+                
+                // Загружаем WiFi настройки
+                WiFiSettings* wifiSettings = new WiFiSettings();
+                if (!wifiSettings->init()) {
+                    Serial.println("ОШИБКА: Не удалось загрузить WiFi настройки");
+                    FirmwareUpdate::clearOTAPending();
+                    delete wifiSettings;
+                } else {
+                    // Подключаемся к WiFi
+                    if (wifiSettings->getMode() == WiFiMode::AP) {
+                        Serial.println("ОШИБКА: OTA невозможно в режиме AP");
+                        FirmwareUpdate::clearOTAPending();
+                        delete wifiSettings;
+                    } else {
+                        WiFi.mode(WIFI_STA);
+                        WiFi.begin(wifiSettings->getSSID().c_str(), wifiSettings->getPassword().c_str());
+                        
+                        Serial.print("Подключение к WiFi");
+                        int attempts = 0;
+                        while (WiFi.status() != WL_CONNECTED && attempts < 30) {
+                            delay(500);
+                            Serial.print(".");
+                            attempts++;
+                        }
+                        Serial.println();
+                        
+                        if (WiFi.status() != WL_CONNECTED) {
+                            Serial.println("ОШИБКА: Не удалось подключиться к WiFi");
+                            FirmwareUpdate::clearOTAPending();
+                            delete wifiSettings;
+                        } else {
+                            Serial.print("WiFi подключен. IP: ");
+                            Serial.println(WiFi.localIP());
+                            
+                            // Создаем минимальный веб-сервер для OTA (как в старом коде)
+                            AsyncWebServer* server = new AsyncWebServer(80);
+                            
+                            // Создаем объект FirmwareUpdate и регистрируем OTA endpoint'ы
+                            FirmwareUpdate* firmwareUpdate = new FirmwareUpdate();
+                            firmwareUpdate->init(server);
+                            
+                            // Добавляем простой индикатор статуса
+                            server->on("/", HTTP_GET, [](AsyncWebServerRequest *request){
+                                request->send(200, "text/html",
+                                    "<html><body><h1>OTA Update Mode</h1>"
+                                    "<p>Device is in safe mode for firmware update.</p>"
+                                    "<p>Please wait while update completes...</p>"
+                                    "</body></html>");
+                            });
+                            
+                            server->begin();
+                            Serial.println("Минимальный веб-сервер запущен");
+                            
+                            // Запускаем обновление напрямую
+                            Serial.println("Запуск загрузки и установки прошивки...");
+                            bool success = firmwareUpdate->downloadAndInstallFirmware(updateUrl);
+                            
+                            // Очищаем флаг OTA
+                            FirmwareUpdate::clearOTAPending();
+                            
+                            if (success) {
+                                Serial.println("═══════════════════════════════════════");
+                                Serial.println("  ОБНОВЛЕНИЕ УСПЕШНО ЗАВЕРШЕНО!");
+                                Serial.println("  Перезагрузка через 2 секунды...");
+                                Serial.println("═══════════════════════════════════════");
+                            } else {
+                                Serial.println("═══════════════════════════════════════");
+                                Serial.println("  ОШИБКА ПРИ ОБНОВЛЕНИИ ПРОШИВКИ");
+                                Serial.println("  Перезагрузка в нормальном режиме...");
+                                Serial.println("═══════════════════════════════════════");
+                            }
+                            
+                            delay(2000);
+                            ESP.restart();
+                            
+                            // Cleanup (unreachable после ESP.restart())
+                            delete firmwareUpdate;
+                            delete server;
+                        }
+                        delete wifiSettings;
+                    }
+                }
+            }
+        }
+        
+        // После обработки OTA продолжаем обычную загрузку
+        Serial.println("Продолжение обычной загрузки...");
     }
     
     // НОРМАЛЬНАЯ ЗАГРУЗКА: Создание робота нужного типа
