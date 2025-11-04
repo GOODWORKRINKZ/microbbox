@@ -1676,14 +1676,16 @@ class ClassicRobotUI extends BaseRobotUI {
             }
         });
         
-        // Touch события - привязаны к document для отслеживания за пределами элемента
+        // Touch события
         element.addEventListener('touchstart', (e) => {
+            if (isDragging) return; // Предотвращаем повторную активацию
+            
             e.preventDefault();
             const touch = e.touches[0];
             handleStart(touch.clientX, touch.clientY, touch.identifier);
         }, { passive: false });
         
-        document.addEventListener('touchmove', (e) => {
+        element.addEventListener('touchmove', (e) => {
             if (!isDragging || touchId === null) return;
             
             // Ищем наш touch среди всех активных touches
@@ -1695,15 +1697,9 @@ class ClassicRobotUI extends BaseRobotUI {
                     return;
                 }
             }
-            
-            // ВАЖНО: Если наш touchId не найден среди активных touches,
-            // значит палец был убран, но touchend не сработал
-            // Принудительно завершаем
-            Logger.warn(`Touch ${touchId} lost for ${side} joystick, forcing end`);
-            handleEnd();
         }, { passive: false });
         
-        document.addEventListener('touchend', (e) => {
+        element.addEventListener('touchend', (e) => {
             if (!isDragging || touchId === null) return;
             
             // Проверяем завершенные touches
@@ -1717,7 +1713,7 @@ class ClassicRobotUI extends BaseRobotUI {
         }, { passive: false });
         
         // Дополнительная защита: touchcancel
-        document.addEventListener('touchcancel', (e) => {
+        element.addEventListener('touchcancel', (e) => {
             if (!isDragging || touchId === null) return;
             
             for (let i = 0; i < e.changedTouches.length; i++) {
