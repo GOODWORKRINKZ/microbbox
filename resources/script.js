@@ -405,6 +405,7 @@ class BaseRobotUI {
     // Статические константы класса
     static ROBOT_TYPES = ['classic', 'liner', 'brain']; // Доступные типы роботов
     
+    // Конфигурация стрима (DRY) - инициализируется один раз
     constructor() {
         this.GITHUB_REPO = 'GOODWORKRINKZ/microbbox';
         this.robotType = 'unknown';
@@ -423,6 +424,15 @@ class BaseRobotUI {
         // VR
         this.xrSession = null;
         this.controllers = [];
+        
+        // Конфигурация стрима (один раз)
+        this.STREAM_CONFIG = {
+            PORT: 81,
+            MAX_RECONNECT_ATTEMPTS: 10,
+            BASE_RECONNECT_DELAY: 2000,
+            MAX_RECONNECT_DELAY: 30000,  // Максимум 30 секунд
+            ERROR_DEBOUNCE: 1000
+        };
     }
     
     async init() {
@@ -481,7 +491,6 @@ class BaseRobotUI {
         const pcControls = document.getElementById('pcControls');
         const mobileControls = document.getElementById('mobileControls');
         const vrControls = document.getElementById('vrControls');
-        const mobilePanel = document.querySelector('.mobile-panel');
         
         // Скрываем все
         [pcControls, mobileControls, vrControls].forEach(el => {
@@ -492,8 +501,6 @@ class BaseRobotUI {
         switch (this.deviceType) {
             case 'desktop':
                 if (pcControls) pcControls.classList.remove('hidden');
-                // Показываем мобильную панель с кнопками для десктопа тоже
-                if (mobilePanel) mobilePanel.classList.remove('hidden');
                 break;
             case 'mobile':
                 if (mobileControls) mobileControls.classList.remove('hidden');
@@ -505,15 +512,124 @@ class BaseRobotUI {
         }
     }
     
+    // DRY: Единственное место для формирования URL стрима
+    getStreamUrl() {
+        const { PORT } = this.STREAM_CONFIG;
+        return `${window.location.protocol}//${window.location.hostname}:${PORT}/stream`;
+    }
+    
     setupCameraStream() {
         const streamImg = document.getElementById('cameraStream');
+        if (!streamImg) return;
+        
+        // Инициализация состояния стрима (Single Responsibility)
+        this.initStreamState();
+        
+        // Установка обработчиков (Single Responsibility)
+        this.setupStreamHandlers(streamImg);
+        
+        // Первоначальная загрузка
+        streamImg.src = this.getStreamUrl();
+    }
+    
+    // Single Responsibility: Только инициализация состояния
+    initStreamState() {
+        const { MAX_RECONNECT_ATTEMPTS, BASE_RECONNECT_DELAY } = this.STREAM_CONFIG;
+        this.streamState = {
+            isConnected: false,
+            reconnectAttempts: 0,
+            maxReconnectAttempts: MAX_RECONNECT_ATTEMPTS,
+            reconnectDelay: BASE_RECONNECT_DELAY,
+            reconnectTimeout: null,
+            lastErrorTime: 0
+        };
+    }
+    
+    // Single Responsibility: Только установка обработчиков
+    setupStreamHandlers(streamImg) {
+        streamImg.onload = () => this.handleStreamConnect();
+        streamImg.onerror = () => this.handleStreamError();
+    }
+    
+    // Single Responsibility: Обработка успешного подключения
+    handleStreamConnect() {
+        if (!this.streamState.isConnected) {
+            Logger.info('Видео поток подключен');
+            this.streamState.isConnected = true;
+            this.resetReconnectState();
+            this.toggleStreamFallback(false);
+        }
+    }
+    
+    // Single Responsibility: Сброс состояния переподключения (DRY)
+    resetReconnectState() {
+        this.streamState.reconnectAttempts = 0;
+        // Очищаем таймаут если есть
+        if (this.streamState.reconnectTimeout) {
+            clearTimeout(this.streamState.reconnectTimeout);
+            this.streamState.reconnectTimeout = null;
+        }
+    }
+    
+    // Single Responsibility: Обработка ошибки стрима
+    handleStreamError() {
+        const now = Date.now();
+        const { ERROR_DEBOUNCE } = this.STREAM_CONFIG;
+        
+        // KISS: Простая защита от множественных вызовов
+        if (now - this.streamState.lastErrorTime < ERROR_DEBOUNCE) {
+            return;
+        }
+        this.streamState.lastErrorTime = now;
+        
+        Logger.error('Ошибка загрузки видео потока');
+        this.streamState.isConnected = false;
+        this.toggleStreamFallback(true);
+        this.attemptStreamReconnect();
+    }
+    
+    // Single Responsibility: Только логика переподключения
+    attemptStreamReconnect() {
+        // Проверка лимита попыток
+        if (this.streamState.reconnectAttempts >= this.streamState.maxReconnectAttempts) {
+            Logger.error('Превышен лимит попыток переподключения стрима');
+            this.updateFallbackMessage('Не удалось восстановить видео поток. Обновите страницу.');
+            return;
+        }
+        
+        this.streamState.reconnectAttempts++;
+        // Экспоненциальная задержка с ограничением максимума (KISS)
+        const calculatedDelay = this.streamState.reconnectDelay * this.streamState.reconnectAttempts;
+        const delay = Math.min(calculatedDelay, this.STREAM_CONFIG.MAX_RECONNECT_DELAY);
+        
+        Logger.info(`Попытка переподключения ${this.streamState.reconnectAttempts}/${this.streamState.maxReconnectAttempts} через ${delay}ms`);
+        this.updateFallbackMessage(`Переподключение... (попытка ${this.streamState.reconnectAttempts}/${this.streamState.maxReconnectAttempts})`);
+        
+        this.streamState.reconnectTimeout = setTimeout(() => this.reconnectStream(), delay);
+    }
+    
+    // Single Responsibility: Только переподключение
+    reconnectStream() {
+        const streamImg = document.getElementById('cameraStream');
         if (streamImg) {
-            // CameraServer работает на порту 81
-            const streamUrl = `${window.location.protocol}//${window.location.hostname}:81/stream`;
-            streamImg.src = streamUrl;
-            streamImg.onerror = () => {
-                Logger.error('Ошибка загрузки видео потока');
-            };
+            // Добавляем timestamp для обхода кэша браузера
+            streamImg.src = `${this.getStreamUrl()}?_cb=${Date.now()}`;
+        }
+    }
+    
+    // DRY: Единый метод для показа/скрытия fallback
+    toggleStreamFallback(show) {
+        const fallbackOverlay = document.getElementById('streamFallback');
+        if (fallbackOverlay) {
+            fallbackOverlay.classList.toggle('hidden', !show);
+        }
+    }
+    
+    // Single Responsibility: Только обновление сообщения
+    updateFallbackMessage(message) {
+        const messageEl = document.getElementById('streamFallbackMessage');
+        if (messageEl) {
+            messageEl.textContent = message;
         }
     }
     
@@ -576,6 +692,17 @@ class BaseRobotUI {
         if (helpBtn) {
             helpBtn.addEventListener('click', () => this.openHelp());
         }
+        
+        // Десктопные кнопки настроек и справки
+        const pcSettingsBtn = document.getElementById('pcSettings');
+        if (pcSettingsBtn) {
+            pcSettingsBtn.addEventListener('click', () => this.openSettings());
+        }
+        
+        const pcHelpBtn = document.getElementById('pcHelp');
+        if (pcHelpBtn) {
+            pcHelpBtn.addEventListener('click', () => this.openHelp());
+        }
     }
     
     setupSettingsModal() {
@@ -585,6 +712,14 @@ class BaseRobotUI {
         
         if (closeBtn) {
             closeBtn.addEventListener('click', () => this.closeSettings());
+        }
+        
+        // Настройка модального окна справки (DRY - один метод для всех модальных окон)
+        const helpModal = document.getElementById('helpModal');
+        const helpCloseBtn = helpModal?.querySelector('.help-close');
+        
+        if (helpCloseBtn) {
+            helpCloseBtn.addEventListener('click', () => this.closeHelp());
         }
         
         // Табы
@@ -668,6 +803,13 @@ class BaseRobotUI {
         const modal = document.getElementById('helpModal');
         if (modal) {
             modal.classList.remove('hidden');
+        }
+    }
+    
+    closeHelp() {
+        const modal = document.getElementById('helpModal');
+        if (modal) {
+            modal.classList.add('hidden');
         }
     }
     
