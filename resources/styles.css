@@ -2317,3 +2317,10 @@ body {
         font-size: 0.85em;
     }
 }
+.horizontal {
+    display: flex;
+    flex-direction: row;
+    justify-content: space-around;
+    align-items: stretch;
+    gap: 20px;
+}
