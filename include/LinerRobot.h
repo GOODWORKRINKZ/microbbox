@@ -61,33 +61,16 @@ private:
     void handleStatus(AsyncWebServerRequest* request);
     
 #ifdef FEATURE_NEOPIXEL
-    // Управление LED и эффектами
-    void updateEffects();
-    void setLEDColor(int ledIndex, uint32_t color);
-    void setAllLEDs(uint32_t color);
-    void clearLEDs();
-    void updateLEDs();
-    
-    // Эффекты
-    void playPoliceEffect();
-    void playFireEffect();
-    void playAmbulanceEffect();
-    void playTerminatorEffect();
-    
     Adafruit_NeoPixel* pixels_;
+    
+    // Эффекты (для будущей поддержки)
+    EffectMode currentEffectMode_;
 #endif
     
     // Состояние робота
     Mode currentMode_;
     bool buttonPressed_;
     unsigned long lastButtonCheck_;
-    
-#if defined(FEATURE_NEOPIXEL)
-    // Эффекты
-    EffectMode currentEffectMode_;
-    unsigned long lastEffectUpdate_;
-    bool effectState_;
-#endif
     
     // PID контроллер
     float pidError_;

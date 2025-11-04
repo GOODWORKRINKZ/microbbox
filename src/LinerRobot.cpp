@@ -11,8 +11,6 @@ LinerRobot::LinerRobot() :
 #ifdef FEATURE_NEOPIXEL
     pixels_(nullptr),
     currentEffectMode_(EffectMode::NORMAL),
-    lastEffectUpdate_(0),
-    effectState_(false),
 #endif
     currentMode_(Mode::MANUAL),
     buttonPressed_(false),
@@ -53,6 +51,15 @@ bool LinerRobot::initSpecificComponents() {
     }
 #endif
     
+#ifdef FEATURE_NEOPIXEL
+    // Применяем сохраненный эффект
+    if (wifiSettings_) {
+        currentEffectMode_ = static_cast<EffectMode>(wifiSettings_->getEffectMode());
+        DEBUG_PRINT("Применен сохраненный эффект: ");
+        DEBUG_PRINTLN(wifiSettings_->getEffectMode());
+    }
+#endif
+    
     DEBUG_PRINTLN("=== Liner робот готов ===");
     return true;
 }
@@ -70,9 +77,9 @@ void LinerRobot::updateSpecificComponents() {
         updateMotors();
     }
     
-    // Обновление эффектов
+    // Обновление индикации
 #ifdef FEATURE_NEOPIXEL
-    updateEffects();
+    updateStatusLED();
 #endif
     
     // Обновление контроллера моторов
@@ -428,106 +435,5 @@ void LinerRobot::handleStatus(AsyncWebServerRequest* request) {
     
     request->send(200, "application/json", json);
 }
-
-#ifdef FEATURE_NEOPIXEL
-void LinerRobot::updateEffects() {
-    if (!pixels_) return;
-    
-    unsigned long now = millis();
-    
-    // Обновление эффектов с определенной частотой
-    if (now - lastEffectUpdate_ < 100) {
-        return; // Пока рано обновлять
-    }
-    lastEffectUpdate_ = now;
-    
-    switch (currentEffectMode_) {
-        case EffectMode::POLICE:
-            playPoliceEffect();
-            break;
-        case EffectMode::FIRE:
-            playFireEffect();
-            break;
-        case EffectMode::AMBULANCE:
-            playAmbulanceEffect();
-            break;
-        case EffectMode::TERMINATOR:
-            playTerminatorEffect();
-            break;
-        case EffectMode::NORMAL:
-        default:
-            updateStatusLED();
-            break;
-    }
-}
-
-void LinerRobot::setLEDColor(int ledIndex, uint32_t color) {
-    if (pixels_ && ledIndex >= 0 && ledIndex < NEOPIXEL_COUNT) {
-        pixels_->setPixelColor(ledIndex, color);
-    }
-}
-
-void LinerRobot::setAllLEDs(uint32_t color) {
-    if (pixels_) {
-        for (int i = 0; i < NEOPIXEL_COUNT; i++) {
-            pixels_->setPixelColor(i, color);
-        }
-    }
-}
-
-void LinerRobot::clearLEDs() {
-    if (pixels_) {
-        pixels_->clear();
-        pixels_->show();
-    }
-}
-
-void LinerRobot::updateLEDs() {
-    if (pixels_) {
-        pixels_->show();
-    }
-}
-
-void LinerRobot::playPoliceEffect() {
-    if (!pixels_) return;
-    
-    effectState_ = !effectState_;
-    if (effectState_) {
-        setLEDColor(0, pixels_->Color(255, 0, 0)); // Красный
-        setLEDColor(1, pixels_->Color(0, 0, 0));   // Выкл
-        setLEDColor(2, pixels_->Color(0, 0, 0));   // Выкл
-    } else {
-        setLEDColor(0, pixels_->Color(0, 0, 0));   // Выкл
-        setLEDColor(1, pixels_->Color(0, 0, 255)); // Синий
-        setLEDColor(2, pixels_->Color(0, 0, 0));   // Выкл
-    }
-    updateLEDs();
-}
-
-void LinerRobot::playFireEffect() {
-    if (!pixels_) return;
-    
-    effectState_ = !effectState_;
-    uint32_t color = effectState_ ? pixels_->Color(255, 0, 0) : pixels_->Color(255, 165, 0);
-    setAllLEDs(color);
-    updateLEDs();
-}
-
-void LinerRobot::playAmbulanceEffect() {
-    if (!pixels_) return;
-    
-    effectState_ = !effectState_;
-    uint32_t color = effectState_ ? pixels_->Color(255, 0, 0) : pixels_->Color(255, 255, 255);
-    setAllLEDs(color);
-    updateLEDs();
-}
-
-void LinerRobot::playTerminatorEffect() {
-    if (!pixels_) return;
-    
-    setAllLEDs(pixels_->Color(255, 0, 0)); // Красный HUD
-    updateLEDs();
-}
-#endif // FEATURE_NEOPIXEL
 
 #endif // TARGET_LINER

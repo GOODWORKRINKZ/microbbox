@@ -211,7 +211,7 @@ void BrainRobot::handleCommand(AsyncWebServerRequest* request) {
     // Обработка команд управления
     bool updated = false;
     
-    // Обработка эффектов (Brain не имеет LED, но принимаем параметр для совместимости)
+    // Обработка эффектов (Brain не имеет LED, но принимаем для совместимости)
     if (request->hasParam("effect")) {
         // Brain робот не имеет LED эффектов, просто игнорируем
         request->send(200, "text/plain", "OK");

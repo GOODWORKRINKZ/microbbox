@@ -1383,10 +1383,13 @@ class ClassicRobotUI extends BaseRobotUI {
     
     async saveSettings() {
         // Собираем настройки эффектов и чувствительности
+        const effectMode = document.querySelector('input[name="effectMode"]:checked')?.value || 'normal';
+        const effectId = this.effectMap[effectMode] || 0;
+        
         const settings = {
             speedSensitivity: parseInt(document.getElementById('speedSensitivity')?.value) || 80,
             turnSensitivity: parseInt(document.getElementById('turnSensitivity')?.value) || 70,
-            effectMode: document.querySelector('input[name="effectMode"]:checked')?.value || 'normal'
+            effectMode: effectId
         };
         
         // Применяем локально
@@ -1394,15 +1397,26 @@ class ClassicRobotUI extends BaseRobotUI {
         this.turnSensitivity = settings.turnSensitivity;
         
         // Сохраняем в localStorage
-        localStorage.setItem('robotSettings', JSON.stringify(settings));
-        
-        // Отправляем эффект на сервер
-        const effectId = this.effectMap[settings.effectMode] || 0;
+        localStorage.setItem('robotSettings', JSON.stringify({
+            speedSensitivity: settings.speedSensitivity,
+            turnSensitivity: settings.turnSensitivity,
+            effectMode: effectMode
+        }));
         
         try {
-            await fetch(`/cmd?effect=${effectId}`);
-            await this.setEffectMode(settings.effectMode);
-            Logger.info('Настройки сохранены');
+            // Сохраняем настройки через API
+            const response = await fetch('/api/settings/save', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(settings)
+            });
+            
+            if (response.ok) {
+                await this.setEffectMode(effectMode);
+                Logger.info('Настройки сохранены');
+            } else {
+                Logger.error('Ошибка сохранения настроек');
+            }
         } catch (error) {
             Logger.error('Ошибка сохранения настроек:', error);
         }
