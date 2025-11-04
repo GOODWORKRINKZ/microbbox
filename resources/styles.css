@@ -804,10 +804,10 @@ body {
     display: flex;
     gap: 15px;
     justify-content: center;
-    flex-wrap: wrap;
 }
 
 .modal-buttons button {
+    flex: 1;
     min-width: 120px;
     padding: 12px 24px;
     border-radius: 8px;
