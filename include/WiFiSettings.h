@@ -35,6 +35,10 @@ public:
     // Получение настроек инверсии стиков
     bool getInvertThrottleStick() const { return invertThrottleStick; }
     bool getInvertSteeringStick() const { return invertSteeringStick; }
+    
+    // Получение настроек камеры
+    bool getCameraHMirror() const { return cameraHMirror; }
+    bool getCameraVFlip() const { return cameraVFlip; }
 
     // Установка настроек
     void setSSID(const String& value);
@@ -50,6 +54,10 @@ public:
     // Установка настроек инверсии стиков
     void setInvertThrottleStick(bool value);
     void setInvertSteeringStick(bool value);
+    
+    // Установка настроек камеры
+    void setCameraHMirror(bool value);
+    void setCameraVFlip(bool value);
 
     // Сохранение в память
     bool save();
@@ -76,6 +84,10 @@ private:
     // Настройки инверсии стиков
     bool invertThrottleStick;   // Инвертировать стик газа (вперёд/назад)
     bool invertSteeringStick;   // Инвертировать стик руля (лево/право)
+    
+    // Настройки камеры
+    bool cameraHMirror;         // Горизонтальное зеркало камеры
+    bool cameraVFlip;           // Вертикальный переворот камеры
 
     void loadDefaults();
     void loadFromMemory();
