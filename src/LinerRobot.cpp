@@ -353,6 +353,12 @@ void LinerRobot::handleMotorCommand(int throttlePWM, int steeringPWM) {
     if (currentMode_ == Mode::MANUAL) {
         targetThrottlePWM_ = constrain(throttlePWM, 1000, 2000);
         targetSteeringPWM_ = constrain(steeringPWM, 1000, 2000);
+        
+        // ВАЖНО: Обновляем timestamp СРАЗУ при получении команды
+        // Это предотвращает срабатывание watchdog когда команды приходят с одинаковыми значениями
+        if (motorController_) {
+            motorController_->updateCommandTime();
+        }
     }
     // В автономном режиме игнорируем команды управления
 }

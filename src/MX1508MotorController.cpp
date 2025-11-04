@@ -97,8 +97,8 @@ void MX1508MotorController::setSpeed(int leftSpeed, int rightSpeed) {
     
     currentLeftSpeed_ = leftSpeed;
     currentRightSpeed_ = rightSpeed;
-    lastCommandTime_ = millis();
-    watchdogTriggered_ = false;  // Сбрасываем флаг при получении новой команды
+    // NOTE: lastCommandTime_ обновляется в updateCommandTime(), вызываемом из handleMotorCommand
+    // Не обновляем здесь, чтобы watchdog отслеживал получение команд, а не их применение
 }
 
 void MX1508MotorController::setMotorPWM(int throttlePWM, int steeringPWM) {
@@ -229,6 +229,11 @@ int MX1508MotorController::constrainSpeed(int speed) const {
 
 bool MX1508MotorController::wasWatchdogTriggered() const {
     return watchdogTriggered_;
+}
+
+void MX1508MotorController::updateCommandTime() {
+    lastCommandTime_ = millis();
+    watchdogTriggered_ = false;  // Сбрасываем флаг при получении новой команды
 }
 
 #endif // FEATURE_MOTORS

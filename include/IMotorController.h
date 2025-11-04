@@ -28,6 +28,10 @@ public:
     
     // Проверка, был ли произведен watchdog-stop (нужно для повторной отправки команды)
     virtual bool wasWatchdogTriggered() const = 0;
+    
+    // Обновление времени последней команды (для watchdog)
+    // Вызывается при получении команды, даже если она не изменилась
+    virtual void updateCommandTime() = 0;
 };
 
 #endif // IMOTOR_CONTROLLER_H

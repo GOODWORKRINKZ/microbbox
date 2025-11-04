@@ -28,6 +28,7 @@ public:
     void stop() override;
     void getCurrentSpeed(int& leftSpeed, int& rightSpeed) const override;
     bool wasWatchdogTriggered() const override;
+    void updateCommandTime() override;
     
     // Установка WiFi настроек для применения инвертирования моторов
     void setWiFiSettings(WiFiSettings* settings) { wifiSettings_ = settings; }
