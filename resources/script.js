@@ -994,11 +994,50 @@ class BaseRobotUI {
             if (response.ok) {
                 const data = await response.json();
                 if (data.rebooting) {
-                    document.getElementById('firmwareStatus').textContent = 'Устройство перезагружается...';
-                    // Устройство перезагружается, показываем индикатор
-                    setTimeout(() => {
-                        document.getElementById('firmwareStatus').textContent = 'Ожидание перезагрузки...';
-                    }, 3000);
+                    // Устройство перезагружается в safe mode для OTA
+                    document.getElementById('firmwareStatus').textContent = 'Устройство перезагружается в безопасном режиме...';
+                    
+                    // Ждем перезагрузки
+                    await new Promise(resolve => setTimeout(resolve, 5000));
+                    
+                    document.getElementById('firmwareStatus').textContent = 'Ожидание переподключения...';
+                    
+                    // Пробуем переподключиться и начать опрос статуса
+                    let reconnectAttempts = 0;
+                    const maxReconnectAttempts = 30; // 30 попыток * 2 секунды = 60 секунд
+                    
+                    const checkConnection = setInterval(async () => {
+                        reconnectAttempts++;
+                        
+                        try {
+                            const statusResponse = await fetch('/api/update/status');
+                            if (statusResponse.ok) {
+                                clearInterval(checkConnection);
+                                document.getElementById('firmwareStatus').textContent = 'Устройство подключено! Обновление в процессе...';
+                                
+                                // Теперь начинаем обычный опрос статуса
+                                this.pollFirmwareStatus();
+                            }
+                        } catch (error) {
+                            console.log('Reconnect attempt ' + reconnectAttempts);
+                            const progress = 15 + (reconnectAttempts / maxReconnectAttempts * 5);
+                            const progressFill = document.getElementById('firmwareProgressFill');
+                            const progressText = document.getElementById('firmwareProgressText');
+                            if (progressFill) progressFill.style.width = progress + '%';
+                            if (progressText) progressText.textContent = Math.round(progress) + '%';
+                            
+                            if (reconnectAttempts >= maxReconnectAttempts) {
+                                clearInterval(checkConnection);
+                                alert('Не удалось переподключиться к устройству после перезагрузки');
+                                this.hideFirmwareUpdateOverlay();
+                            }
+                        }
+                    }, 2000);
+                    
+                } else if (data.updating) {
+                    // Обновление началось без перезагрузки - начинаем опрос статуса
+                    document.getElementById('firmwareStatus').textContent = 'Загрузка прошивки...';
+                    this.pollFirmwareStatus();
                 }
             } else {
                 alert('Ошибка запуска обновления');
@@ -1009,6 +1048,58 @@ class BaseRobotUI {
             alert('Ошибка подключения к устройству');
             this.hideFirmwareUpdateOverlay();
         }
+    }
+    
+    pollFirmwareStatus() {
+        // Опрашиваем статус обновления каждую секунду
+        const pollInterval = setInterval(async () => {
+            try {
+                const response = await fetch('/api/update/status');
+                if (!response.ok) {
+                    Logger.warn('Не удалось получить статус обновления');
+                    return;
+                }
+                
+                const status = await response.json();
+                
+                // Обновляем UI
+                const statusEl = document.getElementById('firmwareStatus');
+                const progressFill = document.getElementById('firmwareProgressFill');
+                const progressText = document.getElementById('firmwareProgressText');
+                
+                if (statusEl) statusEl.textContent = status.status || 'Обновление...';
+                if (progressFill) progressFill.style.width = (status.progress || 0) + '%';
+                if (progressText) progressText.textContent = (status.progress || 0) + '%';
+                
+                // Проверяем состояние
+                if (status.state === 3) { // SUCCESS
+                    clearInterval(pollInterval);
+                    if (statusEl) statusEl.textContent = 'Обновление завершено! Перезагрузка...';
+                    if (progressFill) progressFill.style.width = '100%';
+                    if (progressText) progressText.textContent = '100%';
+                    
+                    setTimeout(() => {
+                        this.hideFirmwareUpdateOverlay();
+                        location.reload();
+                    }, 3000);
+                } else if (status.state === 4) { // FAILED
+                    clearInterval(pollInterval);
+                    if (statusEl) statusEl.textContent = 'Ошибка обновления: ' + (status.status || 'Неизвестная ошибка');
+                    alert('Ошибка обновления прошивки');
+                    setTimeout(() => {
+                        this.hideFirmwareUpdateOverlay();
+                    }, 3000);
+                }
+            } catch (error) {
+                Logger.error('Ошибка опроса статуса:', error);
+                // Не прерываем опрос при единичных ошибках
+            }
+        }, 1000);
+        
+        // Таймаут на случай зависания (2 минуты)
+        setTimeout(() => {
+            clearInterval(pollInterval);
+        }, 120000);
     }
     
     async saveUpdateSettings() {
@@ -1029,6 +1120,22 @@ class BaseRobotUI {
     showFirmwareUpdateOverlay() {
         const overlay = document.getElementById('firmwareUpdateOverlay');
         if (overlay) overlay.classList.remove('hidden');
+        
+        // Заполняем информацию о прошивке если есть
+        if (this.latestReleaseInfo) {
+            const versionEl = document.getElementById('firmwareVersion');
+            const releaseNameEl = document.getElementById('firmwareReleaseName');
+            const notesEl = document.getElementById('firmwareReleaseNotes');
+            
+            if (versionEl) versionEl.textContent = `Версия: ${this.latestReleaseInfo.version}`;
+            if (releaseNameEl) releaseNameEl.textContent = this.latestReleaseInfo.releaseName || '';
+            if (notesEl) {
+                // Обрезаем длинные заметки для оверлея
+                const notes = this.latestReleaseInfo.releaseNotes || '';
+                const shortNotes = notes.length > 200 ? notes.substring(0, 200) + '...' : notes;
+                notesEl.textContent = shortNotes;
+            }
+        }
     }
     
     hideFirmwareUpdateOverlay() {
