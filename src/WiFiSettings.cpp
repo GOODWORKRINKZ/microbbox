@@ -9,7 +9,11 @@ WiFiSettings::WiFiSettings() :
     mode(WiFiMode::CLIENT),
     motorSwapLeftRight(false),
     motorInvertLeft(false),
-    motorInvertRight(false)
+    motorInvertRight(false),
+    invertThrottleStick(false),
+    invertSteeringStick(false),
+    cameraHMirror(false),
+    cameraVFlip(false)
 {
 }
 
@@ -49,6 +53,10 @@ void WiFiSettings::loadDefaults() {
     invertThrottleStick = false;
     invertSteeringStick = false;
     
+    // По умолчанию камера без зеркалирования и переворота
+    cameraHMirror = false;
+    cameraVFlip = false;
+    
     DEBUG_PRINTLN("WiFiSettings::loadDefaults()");
     DEBUG_PRINT("  SSID: ");
     DEBUG_PRINTLN(ssid);
@@ -84,6 +92,10 @@ void WiFiSettings::loadFromMemory() {
         invertThrottleStick = preferences.getBool("invThrottle", false);
         invertSteeringStick = preferences.getBool("invSteering", false);
         
+        // Загружаем настройки камеры
+        cameraHMirror = preferences.getBool("camHMirror", false);
+        cameraVFlip = preferences.getBool("camVFlip", false);
+        
         DEBUG_PRINTLN("  Загружены сохраненные настройки:");
         DEBUG_PRINT("    SSID: '"); DEBUG_PRINT(ssid); DEBUG_PRINTLN("'");
         DEBUG_PRINT("    Password length: "); DEBUG_PRINTLN(password.length());
@@ -94,6 +106,8 @@ void WiFiSettings::loadFromMemory() {
         DEBUG_PRINT("    Motor invert R: "); DEBUG_PRINTLN(motorInvertRight ? "YES" : "NO");
         DEBUG_PRINT("    Invert Throttle: "); DEBUG_PRINTLN(invertThrottleStick ? "YES" : "NO");
         DEBUG_PRINT("    Invert Steering: "); DEBUG_PRINTLN(invertSteeringStick ? "YES" : "NO");
+        DEBUG_PRINT("    Camera HMirror: "); DEBUG_PRINTLN(cameraHMirror ? "YES" : "NO");
+        DEBUG_PRINT("    Camera VFlip: "); DEBUG_PRINTLN(cameraVFlip ? "YES" : "NO");
         
         // ВАЖНО: Если SSID пустой - это значит старые битые настройки, сбрасываем!
         if (ssid.length() == 0) {
@@ -140,6 +154,14 @@ void WiFiSettings::setInvertSteeringStick(bool value) {
     invertSteeringStick = value;
 }
 
+void WiFiSettings::setCameraHMirror(bool value) {
+    cameraHMirror = value;
+}
+
+void WiFiSettings::setCameraVFlip(bool value) {
+    cameraVFlip = value;
+}
+
 bool WiFiSettings::save() {
     DEBUG_PRINTLN("WiFiSettings::save() - начало сохранения");
     DEBUG_PRINT("  SSID: '"); DEBUG_PRINT(ssid); DEBUG_PRINTLN("'");
@@ -151,6 +173,8 @@ bool WiFiSettings::save() {
     DEBUG_PRINT("  Motor invert R: "); DEBUG_PRINTLN(motorInvertRight ? "YES" : "NO");
     DEBUG_PRINT("  Invert Throttle: "); DEBUG_PRINTLN(invertThrottleStick ? "YES" : "NO");
     DEBUG_PRINT("  Invert Steering: "); DEBUG_PRINTLN(invertSteeringStick ? "YES" : "NO");
+    DEBUG_PRINT("  Camera HMirror: "); DEBUG_PRINTLN(cameraHMirror ? "YES" : "NO");
+    DEBUG_PRINT("  Camera VFlip: "); DEBUG_PRINTLN(cameraVFlip ? "YES" : "NO");
     
     // Сохраняем все настройки и проверяем результат каждой операции
     size_t w1 = preferences.putBool("initialized", true);
@@ -168,6 +192,10 @@ bool WiFiSettings::save() {
     size_t w9 = preferences.putBool("invThrottle", invertThrottleStick);
     size_t w10 = preferences.putBool("invSteering", invertSteeringStick);
     
+    // Сохраняем настройки камеры
+    size_t w11 = preferences.putBool("camHMirror", cameraHMirror);
+    size_t w12 = preferences.putBool("camVFlip", cameraVFlip);
+    
     DEBUG_PRINT("  Записано байт - initialized: "); DEBUG_PRINTLN(w1);
     DEBUG_PRINT("  Записано байт - ssid: "); DEBUG_PRINTLN(w2);
     DEBUG_PRINT("  Записано байт - password: "); DEBUG_PRINTLN(w3);
@@ -178,6 +206,8 @@ bool WiFiSettings::save() {
     DEBUG_PRINT("  Записано байт - motorInvR: "); DEBUG_PRINTLN(w8);
     DEBUG_PRINT("  Записано байт - invThrottle: "); DEBUG_PRINTLN(w9);
     DEBUG_PRINT("  Записано байт - invSteering: "); DEBUG_PRINTLN(w10);
+    DEBUG_PRINT("  Записано байт - camHMirror: "); DEBUG_PRINTLN(w11);
+    DEBUG_PRINT("  Записано байт - camVFlip: "); DEBUG_PRINTLN(w12);
     
     // Принудительно сохраняем изменения (commit)
     bool committed = preferences.putBool("_commit", true);

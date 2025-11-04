@@ -239,6 +239,12 @@ bool BaseRobot::initWebServer() {
         json += "\"sticks\":{";
         json += "\"invertThrottle\":" + String(wifiSettings_->getInvertThrottleStick() ? "true" : "false") + ",";
         json += "\"invertSteering\":" + String(wifiSettings_->getInvertSteeringStick() ? "true" : "false");
+        json += "},";
+        
+        // Настройки камеры
+        json += "\"camera\":{";
+        json += "\"hMirror\":" + String(wifiSettings_->getCameraHMirror() ? "true" : "false") + ",";
+        json += "\"vFlip\":" + String(wifiSettings_->getCameraVFlip() ? "true" : "false");
         json += "}";
         
         json += "}";
@@ -334,6 +340,19 @@ bool BaseRobot::initWebServer() {
                     wifiSettings_->setInvertSteeringStick(false);
                 }
                 
+                // Настройки камеры (применяются сразу)
+                if (settingsBody.indexOf("\"hMirror\":true") >= 0) {
+                    wifiSettings_->setCameraHMirror(true);
+                } else if (settingsBody.indexOf("\"hMirror\":false") >= 0) {
+                    wifiSettings_->setCameraHMirror(false);
+                }
+                
+                if (settingsBody.indexOf("\"vFlip\":true") >= 0) {
+                    wifiSettings_->setCameraVFlip(true);
+                } else if (settingsBody.indexOf("\"vFlip\":false") >= 0) {
+                    wifiSettings_->setCameraVFlip(false);
+                }
+                
                 // Сохраняем в NVS
                 if (wifiSettings_->save()) {
                     String response = "{\"status\":\"ok\",\"message\":\"Настройки сохранены\"";
@@ -358,6 +377,22 @@ bool BaseRobot::initWebServer() {
             delay(100);
             ESP.restart();
         });
+    });
+    
+    // API endpoint: Применение настроек камеры (без перезагрузки)
+    server_->on("/api/camera/apply", HTTP_POST, [this](AsyncWebServerRequest* request) {
+#ifdef FEATURE_CAMERA
+        sensor_t* s = esp_camera_sensor_get();
+        if (s != nullptr && wifiSettings_ != nullptr) {
+            s->set_hmirror(s, wifiSettings_->getCameraHMirror() ? 1 : 0);
+            s->set_vflip(s, wifiSettings_->getCameraVFlip() ? 1 : 0);
+            request->send(200, "application/json", "{\"status\":\"ok\",\"message\":\"Настройки камеры применены\"}");
+        } else {
+            request->send(500, "application/json", "{\"status\":\"error\",\"message\":\"Камера не инициализирована\"}");
+        }
+#else
+        request->send(500, "application/json", "{\"status\":\"error\",\"message\":\"Камера отключена\"}");
+#endif
     });
     
     // Move command - motor control
@@ -520,8 +555,8 @@ bool BaseRobot::initCamera() {
         s->set_wpc(s, 1);            // 0 = disable , 1 = enable
         s->set_raw_gma(s, 1);        // 0 = disable , 1 = enable
         s->set_lenc(s, 1);           // 0 = disable , 1 = enable
-        s->set_hmirror(s, 0);        // 0 = disable , 1 = enable
-        s->set_vflip(s, 0);          // 0 = disable , 1 = enable
+        s->set_hmirror(s, wifiSettings_->getCameraHMirror() ? 1 : 0);  // Горизонтальное зеркало
+        s->set_vflip(s, wifiSettings_->getCameraVFlip() ? 1 : 0);      // Вертикальный переворот
         s->set_dcw(s, 1);            // 0 = disable , 1 = enable
         s->set_colorbar(s, 0);       // 0 = disable , 1 = enable
     }
