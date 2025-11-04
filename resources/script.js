@@ -366,7 +366,6 @@ class BaseRobotUI {
         const pcControls = document.getElementById('pcControls');
         const mobileControls = document.getElementById('mobileControls');
         const vrControls = document.getElementById('vrControls');
-        const mobilePanel = document.querySelector('.mobile-panel');
         
         // Скрываем все
         [pcControls, mobileControls, vrControls].forEach(el => {
@@ -377,8 +376,6 @@ class BaseRobotUI {
         switch (this.deviceType) {
             case 'desktop':
                 if (pcControls) pcControls.classList.remove('hidden');
-                // Показываем мобильную панель с кнопками для десктопа тоже
-                if (mobilePanel) mobilePanel.classList.remove('hidden');
                 break;
             case 'mobile':
                 if (mobileControls) mobileControls.classList.remove('hidden');
@@ -570,6 +567,17 @@ class BaseRobotUI {
         if (helpBtn) {
             helpBtn.addEventListener('click', () => this.openHelp());
         }
+        
+        // Десктопные кнопки настроек и справки
+        const pcSettingsBtn = document.getElementById('pcSettings');
+        if (pcSettingsBtn) {
+            pcSettingsBtn.addEventListener('click', () => this.openSettings());
+        }
+        
+        const pcHelpBtn = document.getElementById('pcHelp');
+        if (pcHelpBtn) {
+            pcHelpBtn.addEventListener('click', () => this.openHelp());
+        }
     }
     
     setupSettingsModal() {
@@ -579,6 +587,14 @@ class BaseRobotUI {
         
         if (closeBtn) {
             closeBtn.addEventListener('click', () => this.closeSettings());
+        }
+        
+        // Настройка модального окна справки (DRY - один метод для всех модальных окон)
+        const helpModal = document.getElementById('helpModal');
+        const helpCloseBtn = helpModal?.querySelector('.help-close');
+        
+        if (helpCloseBtn) {
+            helpCloseBtn.addEventListener('click', () => this.closeHelp());
         }
         
         // Табы
@@ -662,6 +678,13 @@ class BaseRobotUI {
         const modal = document.getElementById('helpModal');
         if (modal) {
             modal.classList.remove('hidden');
+        }
+    }
+    
+    closeHelp() {
+        const modal = document.getElementById('helpModal');
+        if (modal) {
+            modal.classList.add('hidden');
         }
     }
     
