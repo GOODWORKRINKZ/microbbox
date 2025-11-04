@@ -107,8 +107,10 @@ void LinerRobot::setupWebHandlers(AsyncWebServer* server) {
         String json = "{\"type\":\"liner\",\"name\":\"MicroBox Liner\"}";
         request->send(200, "application/json", json);
     });
+    
+    // Специфичные для Liner endpoints
+    // (общие /api/settings/*, /api/restart уже в BaseRobot)
 }
-
 bool LinerRobot::initMotors() {
     DEBUG_PRINTLN("Инициализация моторов...");
     
@@ -117,6 +119,11 @@ bool LinerRobot::initMotors() {
     if (!motorController_->init()) {
         DEBUG_PRINTLN("ОШИБКА: Не удалось инициализировать контроллер моторов");
         return false;
+    }
+    
+    // Передаем WiFi настройки для применения инвертирования моторов
+    if (wifiSettings_) {
+        static_cast<MX1508MotorController*>(motorController_)->setWiFiSettings(wifiSettings_);
     }
     
     DEBUG_PRINTLN("Моторы инициализированы");
@@ -346,6 +353,12 @@ void LinerRobot::handleMotorCommand(int throttlePWM, int steeringPWM) {
     if (currentMode_ == Mode::MANUAL) {
         targetThrottlePWM_ = constrain(throttlePWM, 1000, 2000);
         targetSteeringPWM_ = constrain(steeringPWM, 1000, 2000);
+        
+        // ВАЖНО: Обновляем timestamp СРАЗУ при получении команды
+        // Это предотвращает срабатывание watchdog когда команды приходят с одинаковыми значениями
+        if (motorController_) {
+            motorController_->updateCommandTime();
+        }
     }
     // В автономном режиме игнорируем команды управления
 }

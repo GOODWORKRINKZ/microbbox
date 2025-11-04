@@ -212,6 +212,154 @@ bool BaseRobot::initWebServer() {
         request->send(200, "application/json", json);
     });
     
+    // API endpoint: Получение ВСЕХ настроек (WiFi + моторы + стики)
+    server_->on("/api/settings/get", HTTP_GET, [this](AsyncWebServerRequest* request) {
+        if (!wifiSettings_) {
+            request->send(500, "application/json", "{\"error\":\"WiFiSettings not initialized\"}");
+            return;
+        }
+        
+        String json = "{";
+        
+        // WiFi настройки
+        json += "\"wifi\":{";
+        json += "\"ssid\":\"" + wifiSettings_->getSSID() + "\",";
+        json += "\"mode\":\"" + String(wifiSettings_->getMode() == WiFiMode::CLIENT ? "CLIENT" : "AP") + "\",";
+        json += "\"deviceName\":\"" + wifiSettings_->getDeviceName() + "\"";
+        json += "},";
+        
+        // Настройки моторов
+        json += "\"motors\":{";
+        json += "\"swapLeftRight\":" + String(wifiSettings_->getMotorSwapLeftRight() ? "true" : "false") + ",";
+        json += "\"invertLeft\":" + String(wifiSettings_->getMotorInvertLeft() ? "true" : "false") + ",";
+        json += "\"invertRight\":" + String(wifiSettings_->getMotorInvertRight() ? "true" : "false");
+        json += "},";
+        
+        // Настройки стиков
+        json += "\"sticks\":{";
+        json += "\"invertThrottle\":" + String(wifiSettings_->getInvertThrottleStick() ? "true" : "false") + ",";
+        json += "\"invertSteering\":" + String(wifiSettings_->getInvertSteeringStick() ? "true" : "false");
+        json += "}";
+        
+        json += "}";
+        
+        request->send(200, "application/json", json);
+    });
+    
+    // API endpoint: Сохранение настроек (поддержка частичных обновлений)
+    server_->on("/api/settings/save", HTTP_POST,
+        [this](AsyncWebServerRequest* request) {
+            // Ответ будет отправлен в onBody
+        },
+        NULL,
+        [this](AsyncWebServerRequest* request, uint8_t *data, size_t len, size_t index, size_t total) {
+            static String settingsBody = "";
+            
+            // Добавляем полученный фрагмент
+            for (size_t i = 0; i < len; i++) {
+                settingsBody += (char)data[i];
+            }
+            
+            // Если это последний фрагмент
+            if (index + len == total) {
+                DEBUG_PRINT("Получена конфигурация настроек: ");
+                DEBUG_PRINTLN(settingsBody);
+                
+                if (!wifiSettings_) {
+                    request->send(500, "application/json", "{\"status\":\"error\",\"message\":\"WiFiSettings not initialized\"}");
+                    settingsBody = "";
+                    return;
+                }
+                
+                bool needRestart = false;
+                
+                // WiFi настройки (требуют перезагрузки)
+                if (settingsBody.indexOf("\"ssid\"") >= 0) {
+                    int ssidStart = settingsBody.indexOf("\"ssid\":\"") + 8;
+                    int ssidEnd = settingsBody.indexOf("\"", ssidStart);
+                    if (ssidEnd > ssidStart) {
+                        String ssid = settingsBody.substring(ssidStart, ssidEnd);
+                        wifiSettings_->setSSID(ssid);
+                        needRestart = true;
+                    }
+                }
+                
+                if (settingsBody.indexOf("\"password\"") >= 0) {
+                    int passStart = settingsBody.indexOf("\"password\":\"") + 12;
+                    int passEnd = settingsBody.indexOf("\"", passStart);
+                    if (passEnd > passStart) {
+                        String password = settingsBody.substring(passStart, passEnd);
+                        wifiSettings_->setPassword(password);
+                        needRestart = true;
+                    }
+                }
+                
+                if (settingsBody.indexOf("\"mode\":\"AP\"") >= 0) {
+                    wifiSettings_->setMode(WiFiMode::AP);
+                    needRestart = true;
+                } else if (settingsBody.indexOf("\"mode\":\"CLIENT\"") >= 0) {
+                    wifiSettings_->setMode(WiFiMode::CLIENT);
+                    needRestart = true;
+                }
+                
+                // Настройки моторов (применяются сразу)
+                if (settingsBody.indexOf("\"swapLeftRight\":true") >= 0) {
+                    wifiSettings_->setMotorSwapLeftRight(true);
+                } else if (settingsBody.indexOf("\"swapLeftRight\":false") >= 0) {
+                    wifiSettings_->setMotorSwapLeftRight(false);
+                }
+                
+                if (settingsBody.indexOf("\"invertLeft\":true") >= 0) {
+                    wifiSettings_->setMotorInvertLeft(true);
+                } else if (settingsBody.indexOf("\"invertLeft\":false") >= 0) {
+                    wifiSettings_->setMotorInvertLeft(false);
+                }
+                
+                if (settingsBody.indexOf("\"invertRight\":true") >= 0) {
+                    wifiSettings_->setMotorInvertRight(true);
+                } else if (settingsBody.indexOf("\"invertRight\":false") >= 0) {
+                    wifiSettings_->setMotorInvertRight(false);
+                }
+                
+                // Настройки стиков (применяются сразу)
+                if (settingsBody.indexOf("\"invertThrottle\":true") >= 0) {
+                    wifiSettings_->setInvertThrottleStick(true);
+                } else if (settingsBody.indexOf("\"invertThrottle\":false") >= 0) {
+                    wifiSettings_->setInvertThrottleStick(false);
+                }
+                
+                if (settingsBody.indexOf("\"invertSteering\":true") >= 0) {
+                    wifiSettings_->setInvertSteeringStick(true);
+                } else if (settingsBody.indexOf("\"invertSteering\":false") >= 0) {
+                    wifiSettings_->setInvertSteeringStick(false);
+                }
+                
+                // Сохраняем в NVS
+                if (wifiSettings_->save()) {
+                    String response = "{\"status\":\"ok\",\"message\":\"Настройки сохранены\"";
+                    if (needRestart) {
+                        response += ",\"needRestart\":true";
+                    }
+                    response += "}";
+                    request->send(200, "application/json", response);
+                } else {
+                    request->send(500, "application/json", "{\"status\":\"error\",\"message\":\"Ошибка сохранения настроек\"}");
+                }
+                
+                settingsBody = "";
+            }
+        }
+    );
+    
+    // API endpoint: Перезагрузка устройства
+    server_->on("/api/restart", HTTP_POST, [](AsyncWebServerRequest* request) {
+        request->send(200, "text/plain", "Rebooting...");
+        request->onDisconnect([]() {
+            delay(100);
+            ESP.restart();
+        });
+    });
+    
     // Move command - motor control
     server_->on("/move", HTTP_GET, [this](AsyncWebServerRequest* request) {
         if (request->hasParam("t") && request->hasParam("s")) {

@@ -1,4 +1,5 @@
 #include "MX1508MotorController.h"
+#include "WiFiSettings.h"
 #include <Arduino.h>
 
 #ifdef FEATURE_MOTORS
@@ -8,7 +9,8 @@ MX1508MotorController::MX1508MotorController() :
     currentLeftSpeed_(0),
     currentRightSpeed_(0),
     lastCommandTime_(0),
-    watchdogTriggered_(false)
+    watchdogTriggered_(false),
+    wifiSettings_(nullptr)
 {
 }
 
@@ -95,8 +97,8 @@ void MX1508MotorController::setSpeed(int leftSpeed, int rightSpeed) {
     
     currentLeftSpeed_ = leftSpeed;
     currentRightSpeed_ = rightSpeed;
-    lastCommandTime_ = millis();
-    watchdogTriggered_ = false;  // Сбрасываем флаг при получении новой команды
+    // NOTE: lastCommandTime_ обновляется в updateCommandTime(), вызываемом из handleMotorCommand
+    // Не обновляем здесь, чтобы watchdog отслеживал получение команд, а не их применение
 }
 
 void MX1508MotorController::setMotorPWM(int throttlePWM, int steeringPWM) {
@@ -113,9 +115,41 @@ void MX1508MotorController::setMotorPWM(int throttlePWM, int steeringPWM) {
     int leftSpeed = throttle + steering;
     int rightSpeed = throttle - steering;
     
+    DEBUG_PRINTF("BEFORE settings: L=%d R=%d", leftSpeed, rightSpeed);
+    
+    // Применяем настройки моторов из WiFiSettings
+    if (wifiSettings_) {
+        DEBUG_PRINTF("Motor settings: swap=%d invertL=%d invertR=%d", 
+                     wifiSettings_->getMotorSwapLeftRight(),
+                     wifiSettings_->getMotorInvertLeft(),
+                     wifiSettings_->getMotorInvertRight());
+        
+        // ВАЖНО: Сначала применяем инверсию, ПОТОМ swap
+        // Инверсия применяется к логическим левому/правому моторам
+        if (wifiSettings_->getMotorInvertLeft()) {
+            leftSpeed = -leftSpeed;
+            DEBUG_PRINTLN("Applied LEFT invert");
+        }
+        
+        if (wifiSettings_->getMotorInvertRight()) {
+            rightSpeed = -rightSpeed;
+            DEBUG_PRINTLN("Applied RIGHT invert");
+        }
+        
+        // Меняем местами левый и правый ПОСЛЕ инверсии
+        // Теперь инвертированные настройки идут вместе с моторами
+        if (wifiSettings_->getMotorSwapLeftRight()) {
+            int temp = leftSpeed;
+            leftSpeed = rightSpeed;
+            rightSpeed = temp;
+            DEBUG_PRINTLN("Applied SWAP");
+        }
+    } else {
+        DEBUG_PRINTLN("WARNING: wifiSettings_ is NULL!");
+    }
+    
     // Детальные логи для диагностики
-    DEBUG_PRINTF("PWM: t=%d s=%d -> throttle=%d steering=%d -> L=%d R=%d\n", 
-                 throttlePWM, steeringPWM, throttle, steering, leftSpeed, rightSpeed);
+    DEBUG_PRINTF("AFTER settings: L=%d R=%d", leftSpeed, rightSpeed);
     
     setSpeed(leftSpeed, rightSpeed);
 }
@@ -195,6 +229,11 @@ int MX1508MotorController::constrainSpeed(int speed) const {
 
 bool MX1508MotorController::wasWatchdogTriggered() const {
     return watchdogTriggered_;
+}
+
+void MX1508MotorController::updateCommandTime() {
+    lastCommandTime_ = millis();
+    watchdogTriggered_ = false;  // Сбрасываем флаг при получении новой команды
 }
 
 #endif // FEATURE_MOTORS

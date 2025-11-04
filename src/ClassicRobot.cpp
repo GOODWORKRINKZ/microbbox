@@ -113,30 +113,8 @@ void ClassicRobot::setupWebHandlers(AsyncWebServer* server) {
 #endif
     });
     
-    // WiFi настройки - текущие
-    server->on("/api/wifi/current", HTTP_GET, [this](AsyncWebServerRequest* request) {
-        String json = "{";
-        json += "\"mode\":\"" + String(WiFi.getMode() == WIFI_AP ? "AP" : "CLIENT") + "\",";
-        json += "\"ssid\":\"" + WiFi.SSID() + "\"";
-        json += "}";
-        request->send(200, "application/json", json);
-    });
-    
-    // WiFi настройки - сохранение
-    server->on("/api/wifi/save", HTTP_POST, [](AsyncWebServerRequest* request) {
-        // TODO: Реализовать сохранение WiFi настроек в EEPROM/NVS
-        request->send(501, "text/plain", "Not Implemented - TODO");
-    });
-    
-    // Перезагрузка устройства
-    server->on("/api/restart", HTTP_POST, [](AsyncWebServerRequest* request) {
-        request->send(200, "text/plain", "Rebooting...");
-        // Асинхронная перезагрузка через 100ms после отправки ответа
-        request->onDisconnect([]() {
-            delay(100);
-            ESP.restart();
-        });
-    });
+    // Специфичные для Classic endpoints
+    // (общие /api/settings/*, /api/restart уже в BaseRobot)
 }
 
 bool ClassicRobot::initMotors() {
@@ -147,6 +125,11 @@ bool ClassicRobot::initMotors() {
     if (!motorController_->init()) {
         DEBUG_PRINTLN("ОШИБКА: Не удалось инициализировать контроллер моторов");
         return false;
+    }
+    
+    // Передаем WiFi настройки для применения инвертирования моторов
+    if (wifiSettings_) {
+        static_cast<MX1508MotorController*>(motorController_)->setWiFiSettings(wifiSettings_);
     }
     
     DEBUG_PRINTLN("Моторы инициализированы");
@@ -218,6 +201,12 @@ void ClassicRobot::handleMotorCommand(int throttlePWM, int steeringPWM) {
     // Обновляем целевые значения PWM (быстро, без блокировки)
     targetThrottlePWM_ = constrain(throttlePWM, 1000, 2000);
     targetSteeringPWM_ = constrain(steeringPWM, 1000, 2000);
+    
+    // ВАЖНО: Обновляем timestamp СРАЗУ при получении команды
+    // Это предотвращает срабатывание watchdog когда команды приходят с одинаковыми значениями
+    if (motorController_) {
+        motorController_->updateCommandTime();
+    }
 }
 
 void ClassicRobot::updateEffects() {
