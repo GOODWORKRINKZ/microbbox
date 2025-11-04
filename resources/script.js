@@ -280,6 +280,7 @@ class BaseRobotUI {
     // Статические константы класса
     static ROBOT_TYPES = ['classic', 'liner', 'brain']; // Доступные типы роботов
     
+    // Конфигурация стрима (DRY) - инициализируется один раз
     constructor() {
         this.GITHUB_REPO = 'GOODWORKRINKZ/microbbox';
         this.robotType = 'unknown';
@@ -298,6 +299,15 @@ class BaseRobotUI {
         // VR
         this.xrSession = null;
         this.controllers = [];
+        
+        // Конфигурация стрима (один раз)
+        this.STREAM_CONFIG = {
+            PORT: 81,
+            MAX_RECONNECT_ATTEMPTS: 10,
+            BASE_RECONNECT_DELAY: 2000,
+            MAX_RECONNECT_DELAY: 30000,  // Максимум 30 секунд
+            ERROR_DEBOUNCE: 1000
+        };
     }
     
     async init() {
@@ -378,16 +388,6 @@ class BaseRobotUI {
                 if (vrControls) vrControls.classList.remove('hidden');
                 break;
         }
-    }
-    
-    // DRY: Константы для конфигурации стрима
-    get STREAM_CONFIG() {
-        return {
-            PORT: 81,
-            MAX_RECONNECT_ATTEMPTS: 10,
-            BASE_RECONNECT_DELAY: 2000,
-            ERROR_DEBOUNCE: 1000
-        };
     }
     
     // DRY: Единственное место для формирования URL стрима
@@ -472,7 +472,9 @@ class BaseRobotUI {
         }
         
         this.streamState.reconnectAttempts++;
-        const delay = this.streamState.reconnectDelay * this.streamState.reconnectAttempts;
+        // Экспоненциальная задержка с ограничением максимума (KISS)
+        const calculatedDelay = this.streamState.reconnectDelay * this.streamState.reconnectAttempts;
+        const delay = Math.min(calculatedDelay, this.STREAM_CONFIG.MAX_RECONNECT_DELAY);
         
         Logger.info(`Попытка переподключения ${this.streamState.reconnectAttempts}/${this.streamState.maxReconnectAttempts} через ${delay}ms`);
         this.updateFallbackMessage(`Переподключение... (попытка ${this.streamState.reconnectAttempts}/${this.streamState.maxReconnectAttempts})`);
@@ -484,8 +486,8 @@ class BaseRobotUI {
     reconnectStream() {
         const streamImg = document.getElementById('cameraStream');
         if (streamImg) {
-            // Добавляем timestamp для обхода кэша
-            streamImg.src = `${this.getStreamUrl()}?t=${Date.now()}`;
+            // Добавляем timestamp для обхода кэша браузера
+            streamImg.src = `${this.getStreamUrl()}?_cb=${Date.now()}`;
         }
     }
     
