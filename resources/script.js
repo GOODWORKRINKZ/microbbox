@@ -277,6 +277,9 @@ class DeviceDetector {
 // ═══════════════════════════════════════════════════════════════
 
 class BaseRobotUI {
+    // Статические константы класса
+    static ROBOT_TYPES = ['classic', 'liner', 'brain']; // Доступные типы роботов
+    
     constructor() {
         this.GITHUB_REPO = 'GOODWORKRINKZ/microbbox';
         this.robotType = 'unknown';
@@ -760,12 +763,17 @@ class BaseRobotUI {
             const releaseName = releaseData.name || latestVersion;
             const releaseNotes = releaseData.body || 'Нет описания';
             
-            // Находим .bin файл для загрузки
+            // Находим все доступные типы роботов из assets
+            const availableTypes = this.extractAvailableTypesFromAssets(releaseData.assets);
+            
+            // Берем первый доступный файл как базовый URL (для определения формата)
             let downloadUrl = '';
             if (releaseData.assets && Array.isArray(releaseData.assets) && releaseData.assets.length > 0) {
+                // Ищем любой валидный файл прошивки для определения формата
                 const binAsset = releaseData.assets.find(asset => 
-                    asset && asset.name && asset.name.endsWith('-release.bin') && asset.browser_download_url
+                    this.isValidFirmwareAsset(asset) && asset.browser_download_url
                 );
+                
                 if (binAsset && binAsset.browser_download_url) {
                     downloadUrl = binAsset.browser_download_url;
                 }
@@ -793,35 +801,22 @@ class BaseRobotUI {
                     downloadUrl: downloadUrl
                 };
                 
-                // Определяем доступные типы роботов из имени файла в URL
-                const availableTypes = this.extractAvailableTypes(downloadUrl);
-                
                 const selectionDiv = document.getElementById('robotTypeSelection');
                 const downloadBtn = document.getElementById('downloadUpdateBtn');
                 
-                if (availableTypes.length > 1) {
-                    // Есть несколько типов - показываем выбор
+                if (availableTypes.length > 0) {
+                    // Показываем выбор типа робота пользователю
                     this.showRobotTypeSelection(availableTypes);
-                    if (downloadBtn) {
-                        downloadBtn.textContent = '⬇️ Скачать обновление';
-                        downloadBtn.disabled = false;
-                    }
-                } else if (availableTypes.length === 1) {
-                    // Один тип - скрываем выбор
-                    if (selectionDiv) selectionDiv.classList.add('hidden');
-                    this.updateDownloadUrl = this.constructDownloadUrl(availableTypes[0]);
-                    if (downloadBtn) {
-                        downloadBtn.textContent = `⬇️ Скачать ${this.getRobotTypeName(availableTypes[0])}`;
-                        downloadBtn.disabled = false;
-                    }
                 } else {
-                    // Универсальный бинарник - скрываем выбор
+                    // Универсальный бинарник или файлы не найдены - скрываем выбор
                     if (selectionDiv) selectionDiv.classList.add('hidden');
                     this.updateDownloadUrl = downloadUrl;
-                    if (downloadBtn) {
-                        downloadBtn.textContent = '⬇️ Скачать обновление';
-                        downloadBtn.disabled = false;
-                    }
+                }
+                
+                // Включаем кнопку загрузки
+                if (downloadBtn) {
+                    downloadBtn.textContent = '⬇️ Скачать обновление';
+                    downloadBtn.disabled = false;
                 }
                 
                 if (updateAvailableDiv) updateAvailableDiv.classList.remove('hidden');
@@ -846,22 +841,43 @@ class BaseRobotUI {
         }
     }
     
-    extractAvailableTypes(url) {
-        // Определяем какие типы доступны по имени файла
-        // Для v0.1+ будут файлы типа: microbox-classic-v0.1.0-release.bin
-        const types = ['classic', 'liner', 'brain'];
+    // Вспомогательная функция для проверки, является ли asset валидным файлом прошивки
+    isValidFirmwareAsset(asset, robotType = null) {
+        if (!asset || !asset.name) return false;
         
-        // Проверяем есть ли в URL конкретный тип
-        for (const type of types) {
-            if (url.includes(`-${type}-`) || url.includes(`microbox-${type}`)) {
-                // Нашли конкретный тип, значит есть разные типы
-                // Возвращаем все три для выбора
-                return types;
+        const name = asset.name.toLowerCase();
+        
+        // Проверяем что это .bin файл (но не .bin.sha256)
+        // Файлы контрольных сумм имеют расширение .bin.sha256
+        if (!name.endsWith('.bin') || name.endsWith('.bin.sha256')) {
+            return false;
+        }
+        
+        // Если указан тип робота, проверяем соответствие
+        if (robotType) {
+            return name.includes(`microbox-${robotType}`);
+        }
+        
+        // Если тип не указан, просто проверяем что это microbox файл
+        return name.startsWith('microbox-');
+    }
+    
+    extractAvailableTypesFromAssets(assets) {
+        // Проверяем все assets и находим реально доступные типы роботов
+        if (!assets || !Array.isArray(assets)) return [];
+        
+        const availableTypes = [];
+        
+        // Проходим по всем возможным типам и проверяем, есть ли соответствующий файл
+        for (const type of BaseRobotUI.ROBOT_TYPES) {
+            const found = assets.some(asset => this.isValidFirmwareAsset(asset, type));
+            
+            if (found) {
+                availableTypes.push(type);
             }
         }
         
-        // Если паттерн не найден, это универсальный файл
-        return [];
+        return availableTypes;
     }
     
     // Функция сравнения версий (Single Responsibility - только сравнение версий)
@@ -914,12 +930,17 @@ class BaseRobotUI {
     }
     
     constructDownloadUrl(robotType) {
-        // Формируем URL: microbox-{type}-{version}-release.bin
+        // Формируем URL: microbox-{type}-{version}-release.bin или microbox-{type}-{version}.bin
+        // в зависимости от того, какой формат используется в базовом URL
         if (!this.baseUpdateUrl || !this.updateVersion) return this.baseUpdateUrl;
+        
+        // Определяем, используется ли суффикс -release в базовом URL
+        const hasReleaseSuffix = this.baseUpdateUrl.includes('-release.bin');
         
         // Заменяем имя файла в URL
         const urlParts = this.baseUpdateUrl.split('/');
-        urlParts[urlParts.length - 1] = `microbox-${robotType}-${this.updateVersion}-release.bin`;
+        const suffix = hasReleaseSuffix ? '-release.bin' : '.bin';
+        urlParts[urlParts.length - 1] = `microbox-${robotType}-${this.updateVersion}${suffix}`;
         
         return urlParts.join('/');
     }
