@@ -437,14 +437,17 @@ bool BaseRobot::initWebServer() {
     // Регистрация обработчиков прошивки
     firmwareUpdate_->init(server_);
     
+    DEBUG_PRINTLN("Настройка специфичных веб-обработчиков...");
     // Настройка специфичных обработчиков наследником
     setupWebHandlers(server_);
     
+    DEBUG_PRINTLN("Регистрация обработчика 404...");
     // Обработчик 404
     server_->onNotFound([](AsyncWebServerRequest* request) {
         request->send(404, "text/plain", "Not Found");
     });
     
+    DEBUG_PRINTLN("Запуск веб-сервера...");
     // Запуск сервера
     server_->begin();
     

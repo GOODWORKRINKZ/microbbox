@@ -488,6 +488,18 @@ void FirmwareUpdate::updateProgress(int progress) {
     DEBUG_PRINTF("Прогресс: %d%%\n", progress);
 }
 
+void FirmwareUpdate::setUpdatingState(bool isUpdating, UpdateState state, const String& status) {
+    updating = isUpdating;
+    currentState = state;
+    if (status.length() > 0) {
+        updateStatus = status;
+    }
+    if (isUpdating) {
+        updateStartTime = millis();
+        currentProgress = 0;
+    }
+}
+
 void FirmwareUpdate::handleDownloadAndInstall(AsyncWebServerRequest *request) {
     // Получаем URL из параметров запроса
     if (!request->hasParam("url", true)) {
@@ -509,13 +521,11 @@ void FirmwareUpdate::handleDownloadAndInstall(AsyncWebServerRequest *request) {
         return;
     }
     
-    // НОВЫЙ ПОДХОД: Сохраняем URL в EEPROM и перезагружаемся в безопасном режиме
+    // SAFE MODE ПОДХОД: Сохраняем URL в EEPROM и перезагружаемся в безопасном режиме
     // Это освободит память камеры и веб-сервера для OTA обновления
     DEBUG_PRINTLN("Сохраняем URL обновления и планируем перезагрузку в безопасном режиме...");
     
     // Сохраняем URL обновления
-    // ВАЖНО: Используем локальную переменную, а не member variable preferences,
-    // который уже открыт с namespace "firmware"
     Preferences otaPrefs;
     if (!otaPrefs.begin("ota", false)) {
         DEBUG_PRINTLN("ОШИБКА: Не удалось открыть preferences для сохранения URL");
@@ -550,8 +560,11 @@ void FirmwareUpdate::handleDownloadAndInstall(AsyncWebServerRequest *request) {
     response->addHeader("Access-Control-Allow-Origin", "*");
     request->send(response);
     
-    // Даем время на отправку ответа и перезагружаемся
-    delay(1000);
+    // Даем время на отправку ответа
+    delay(500);
+    
+    // Перезагружаемся
+    DEBUG_PRINTLN("Перезагрузка для безопасного режима OTA...");
     ESP.restart();
 }
 
