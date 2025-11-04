@@ -1099,9 +1099,6 @@ class ClassicRobotUI extends BaseRobotUI {
                 this.handleControlButton(direction, false);
             });
         });
-        
-        // Кнопки настроек (важно!)
-        this.setupSaveButtons();
     }
     
     setupSaveButtons() {
@@ -1118,7 +1115,7 @@ class ClassicRobotUI extends BaseRobotUI {
         
         const saveMotorBtn = document.getElementById('saveMotorConfig');
         if (saveMotorBtn) {
-            saveMotorBtn.addEventListener('click', () => this.saveSettings());
+            saveMotorBtn.addEventListener('click', () => this.saveMotorSettings());
         }
         
         const saveWiFiBtn = document.getElementById('saveWiFi');
@@ -1273,19 +1270,11 @@ class ClassicRobotUI extends BaseRobotUI {
     }
     
     async saveSettings() {
-        // Собираем все настройки из UI
+        // Собираем настройки эффектов и чувствительности
         const settings = {
-            // Эффекты и чувствительность
             speedSensitivity: parseInt(document.getElementById('speedSensitivity')?.value) || 80,
             turnSensitivity: parseInt(document.getElementById('turnSensitivity')?.value) || 70,
-            effectMode: document.querySelector('input[name="effectMode"]:checked')?.value || 'normal',
-            
-            // Моторы
-            motorSwapLeftRight: document.getElementById('motorSwapLeftRight')?.checked || false,
-            motorInvertLeft: document.getElementById('motorInvertLeft')?.checked || false,
-            motorInvertRight: document.getElementById('motorInvertRight')?.checked || false,
-            invertThrottleStick: document.getElementById('invertThrottleStick')?.checked || false,
-            invertSteeringStick: document.getElementById('invertSteeringStick')?.checked || false
+            effectMode: document.querySelector('input[name="effectMode"]:checked')?.value || 'normal'
         };
         
         // Применяем локально
@@ -1300,10 +1289,39 @@ class ClassicRobotUI extends BaseRobotUI {
         
         try {
             await fetch(`/cmd?effect=${effectId}`);
-            this.setEffectMode(settings.effectMode);
+            await this.setEffectMode(settings.effectMode);
             Logger.info('Настройки сохранены');
         } catch (error) {
             Logger.error('Ошибка сохранения настроек:', error);
+        }
+    }
+    
+    async saveMotorSettings() {
+        // Собираем только настройки моторов (частичное обновление)
+        const settings = {
+            swapLeftRight: document.getElementById('motorSwapLeftRight')?.checked || false,
+            invertLeft: document.getElementById('motorInvertLeft')?.checked || false,
+            invertRight: document.getElementById('motorInvertRight')?.checked || false,
+            invertThrottle: document.getElementById('invertThrottleStick')?.checked || false,
+            invertSteering: document.getElementById('invertSteeringStick')?.checked || false
+        };
+        
+        try {
+            const response = await fetch('/api/settings/save', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(settings)
+            });
+            
+            if (response.ok) {
+                const result = await response.json();
+                Logger.info('Настройки моторов сохранены и применены');
+                // Моторы применяются сразу, needRestart не ожидается
+            } else {
+                Logger.error('Ошибка сохранения настроек моторов');
+            }
+        } catch (error) {
+            Logger.error('Ошибка сохранения настроек моторов:', error);
         }
     }
     
@@ -1318,14 +1336,23 @@ class ClassicRobotUI extends BaseRobotUI {
         }
         
         try {
-            const response = await fetch('/api/wifi/save', {
+            const response = await fetch('/api/settings/save', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ mode, ssid, password })
+                body: JSON.stringify({ ssid, password, mode })
             });
             
             if (response.ok) {
-                Logger.info('WiFi настройки сохранены. Требуется перезагрузка.');
+                const result = await response.json();
+                if (result.needRestart) {
+                    Logger.info('WiFi настройки сохранены. Требуется перезагрузка.');
+                    // Можно предложить перезагрузку
+                    if (confirm('Для применения WiFi настроек требуется перезагрузка. Перезагрузить сейчас?')) {
+                        this.restartDevice();
+                    }
+                } else {
+                    Logger.info('WiFi настройки сохранены');
+                }
             } else {
                 Logger.error('Ошибка сохранения WiFi настроек');
             }
@@ -1348,44 +1375,57 @@ class ClassicRobotUI extends BaseRobotUI {
     }
     
     async loadSettings() {
-        // Загружаем WiFi настройки с сервера
+        // Загружаем все настройки с сервера (WiFi + моторы + стики)
         try {
-            const response = await fetch('/api/wifi/current');
+            const response = await fetch('/api/settings/get');
             if (response.ok) {
                 const data = await response.json();
-                const modeEl = document.getElementById('wifiMode');
-                const ssidEl = document.getElementById('wifiSSID');
-                if (modeEl && data.mode) modeEl.value = data.mode;
-                if (ssidEl && data.ssid) ssidEl.value = data.ssid;
-            }
-        } catch (error) {
-            Logger.debug('Не удалось загрузить WiFi настройки:', error);
-        }
-        
-        // Загружаем остальные настройки из localStorage
-        try {
-            const saved = localStorage.getItem('robotSettings');
-            if (saved) {
-                const settings = JSON.parse(saved);
                 
-                // Применяем чувствительность
-                this.speedSensitivity = settings.speedSensitivity || 80;
-                this.turnSensitivity = settings.turnSensitivity || 70;
+                // Применяем WiFi настройки к UI
+                if (data.wifi) {
+                    const ssidEl = document.getElementById('wifiSSID');
+                    const modeEl = document.getElementById('wifiMode');
+                    if (ssidEl) ssidEl.value = data.wifi.ssid || '';
+                    if (modeEl) modeEl.value = data.wifi.mode || 'CLIENT';
+                }
                 
-                // Применяем к UI элементам
+                // Применяем настройки моторов к UI
                 const setChecked = (id, value) => {
                     const el = document.getElementById(id);
                     if (el) el.checked = value || false;
                 };
                 
-                setChecked('motorSwapLeftRight', settings.motorSwapLeftRight);
-                setChecked('motorInvertLeft', settings.motorInvertLeft);
-                setChecked('motorInvertRight', settings.motorInvertRight);
-                setChecked('invertThrottleStick', settings.invertThrottleStick);
-                setChecked('invertSteeringStick', settings.invertSteeringStick);
+                if (data.motors) {
+                    setChecked('motorSwapLeftRight', data.motors.swapLeftRight);
+                    setChecked('motorInvertLeft', data.motors.invertLeft);
+                    setChecked('motorInvertRight', data.motors.invertRight);
+                }
+                
+                if (data.sticks) {
+                    setChecked('invertThrottleStick', data.sticks.invertThrottle);
+                    setChecked('invertSteeringStick', data.sticks.invertSteering);
+                }
             }
         } catch (error) {
             Logger.debug('Не удалось загрузить настройки:', error);
+        }
+        
+        // Загружаем чувствительность из localStorage (локальные настройки UI)
+        try {
+            const saved = localStorage.getItem('robotSettings');
+            if (saved) {
+                const settings = JSON.parse(saved);
+                this.speedSensitivity = settings.speedSensitivity || 80;
+                this.turnSensitivity = settings.turnSensitivity || 70;
+                
+                // Устанавливаем значения в UI
+                const speedEl = document.getElementById('speedSensitivity');
+                const turnEl = document.getElementById('turnSensitivity');
+                if (speedEl) speedEl.value = this.speedSensitivity;
+                if (turnEl) turnEl.value = this.turnSensitivity;
+            }
+        } catch (error) {
+            Logger.debug('Не удалось загрузить настройки чувствительности:', error);
         }
     }
     
@@ -1447,6 +1487,8 @@ class ClassicRobotUI extends BaseRobotUI {
         };
         
         const handleEnd = () => {
+            if (!isDragging) return;  // Защита от повторного вызова
+            
             isDragging = false;
             touchId = null;
             
@@ -1468,49 +1510,70 @@ class ClassicRobotUI extends BaseRobotUI {
         });
         
         document.addEventListener('mousemove', (e) => {
-            if (isDragging) {
+            if (isDragging && touchId === null) {  // Только для мыши (touchId = null)
                 e.preventDefault();
                 handleMove(e.clientX, e.clientY);
             }
         });
         
         document.addEventListener('mouseup', () => {
-            if (isDragging) {
+            if (isDragging && touchId === null) {  // Только для мыши
                 handleEnd();
             }
         });
         
-        // Touch события
+        // Touch события - привязаны к document для отслеживания за пределами элемента
         element.addEventListener('touchstart', (e) => {
             e.preventDefault();
             const touch = e.touches[0];
             handleStart(touch.clientX, touch.clientY, touch.identifier);
-        });
+        }, { passive: false });
         
-        element.addEventListener('touchmove', (e) => {
-            if (!isDragging) return;
-            e.preventDefault();
+        document.addEventListener('touchmove', (e) => {
+            if (!isDragging || touchId === null) return;
             
+            // Ищем наш touch среди всех активных touches
             for (let i = 0; i < e.touches.length; i++) {
                 if (e.touches[i].identifier === touchId) {
+                    e.preventDefault();
                     const touch = e.touches[i];
                     handleMove(touch.clientX, touch.clientY);
-                    break;
+                    return;
                 }
             }
-        });
+            
+            // ВАЖНО: Если наш touchId не найден среди активных touches,
+            // значит палец был убран, но touchend не сработал
+            // Принудительно завершаем
+            Logger.warn(`Touch ${touchId} lost for ${side} joystick, forcing end`);
+            handleEnd();
+        }, { passive: false });
         
-        element.addEventListener('touchend', (e) => {
-            if (!isDragging) return;
-            e.preventDefault();
+        document.addEventListener('touchend', (e) => {
+            if (!isDragging || touchId === null) return;
+            
+            // Проверяем завершенные touches
+            for (let i = 0; i < e.changedTouches.length; i++) {
+                if (e.changedTouches[i].identifier === touchId) {
+                    e.preventDefault();
+                    handleEnd();
+                    return;
+                }
+            }
+        }, { passive: false });
+        
+        // Дополнительная защита: touchcancel
+        document.addEventListener('touchcancel', (e) => {
+            if (!isDragging || touchId === null) return;
             
             for (let i = 0; i < e.changedTouches.length; i++) {
                 if (e.changedTouches[i].identifier === touchId) {
+                    Logger.warn(`Touch ${touchId} cancelled for ${side} joystick`);
                     handleEnd();
-                    break;
+                    return;
                 }
             }
-        });
+        }, { passive: false });
     }
     
     updateMotorFromJoysticks() {
