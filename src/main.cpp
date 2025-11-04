@@ -6,6 +6,9 @@
 #include "WiFiSettings.h"
 #include <Preferences.h>
 #include <ESPAsyncWebServer.h>
+#ifdef USE_EMBEDDED_RESOURCES
+#include "embedded_resources.h"
+#endif
 #include "soc/soc.h"
 #include "soc/rtc_cntl_reg.h"
 
@@ -122,19 +125,38 @@ void setup() {
                             FirmwareUpdate* firmwareUpdate = new FirmwareUpdate();
                             firmwareUpdate->init(server);
                             
-                            // Добавляем простой индикатор статуса
+                            // Возвращаем нормальный UI чтобы клиент мог опрашивать статус
                             server->on("/", HTTP_GET, [](AsyncWebServerRequest *request){
+#ifdef USE_EMBEDDED_RESOURCES
+                                // Возвращаем встроенный UI
+                                AsyncWebServerResponse *response = request->beginResponse_P(200, "text/html; charset=UTF-8", indexHtml, indexHtml_len);
+                                response->addHeader("Cache-Control", "no-cache");
+                                request->send(response);
+#else
+                                // Простая заглушка если нет встроенных ресурсов
                                 request->send(200, "text/html",
                                     "<html><body><h1>OTA Update Mode</h1>"
                                     "<p>Device is in safe mode for firmware update.</p>"
                                     "<p>Please wait while update completes...</p>"
                                     "</body></html>");
+#endif
                             });
                             
                             server->begin();
                             Serial.println("Минимальный веб-сервер запущен");
+                            Serial.println("IP: " + WiFi.localIP().toString());
                             
-                            // Запускаем обновление напрямую
+                            // Небольшая задержка чтобы сервер успел инициализироваться
+                            delay(500);
+                            yield();
+                            
+                            // Устанавливаем флаг обновления и начальное состояние
+                            // чтобы /api/update/status возвращал корректную информацию
+                            firmwareUpdate->setUpdatingState(true, FirmwareUpdate::UpdateState::DOWNLOADING, "Подготовка к загрузке");
+                            
+                            // Теперь запускаем обновление
+                            // downloadAndInstallFirmware() блокирующий, но использует yield() внутри
+                            // что позволяет серверу обрабатывать запросы /api/update/status
                             Serial.println("Запуск загрузки и установки прошивки...");
                             bool success = firmwareUpdate->downloadAndInstallFirmware(updateUrl);
                             
