@@ -175,6 +175,7 @@
                 <div class="settings-tabs">
                     <button class="settings-tab active" data-tab="effects">✨ Эффекты</button>
                     <button class="settings-tab" data-tab="motors">🚗 Моторы</button>
+                    <button class="settings-tab" data-tab="camera">📷 Камера</button>
                     <button class="settings-tab" data-tab="wifi">📶 WiFi</button>
                     <button class="settings-tab" data-tab="updates">🔄 Обновления</button>
                 </div>
@@ -261,6 +262,30 @@
                             </label>
                             
                             <button id="saveMotorConfig" class="btn-primary">💾 Сохранить настройки моторов</button>
+                        </div>
+                    </div>
+
+                    <!-- Вкладка: Камера -->
+                    <div class="tab-pane" id="tab-camera">
+                        <div class="settings-section">
+                            <h3>📷 Настройка камеры</h3>
+                            <p class="settings-help">
+                                Используйте эти настройки, чтобы настроить ориентацию изображения с камеры
+                            </p>
+                            
+                            <h4>Поворот изображения</h4>
+                            <label>
+                                <input type="checkbox" id="cameraHMirror"> Горизонтальное зеркало (отражение слева направо)
+                            </label>
+                            <label>
+                                <input type="checkbox" id="cameraVFlip"> Вертикальный переворот (перевернуть вверх ногами)
+                            </label>
+                            
+                            <p class="settings-help-small">
+                                💡 Изменения будут видны на экране сразу после применения
+                            </p>
+                            
+                            <button id="saveCameraConfig" class="btn-primary">💾 Применить настройки камеры</button>
                         </div>
                     </div>
 
