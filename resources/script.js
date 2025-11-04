@@ -1118,6 +1118,11 @@ class ClassicRobotUI extends BaseRobotUI {
             saveMotorBtn.addEventListener('click', () => this.saveMotorSettings());
         }
         
+        const saveCameraBtn = document.getElementById('saveCameraConfig');
+        if (saveCameraBtn) {
+            saveCameraBtn.addEventListener('click', () => this.saveCameraSettings());
+        }
+        
         const saveWiFiBtn = document.getElementById('saveWiFi');
         if (saveWiFiBtn) {
             saveWiFiBtn.addEventListener('click', () => this.saveWiFiSettings());
@@ -1325,6 +1330,42 @@ class ClassicRobotUI extends BaseRobotUI {
         }
     }
     
+    async saveCameraSettings() {
+        // Собираем настройки камеры
+        const settings = {
+            hMirror: document.getElementById('cameraHMirror')?.checked || false,
+            vFlip: document.getElementById('cameraVFlip')?.checked || false
+        };
+        
+        try {
+            // Сохраняем настройки
+            const saveResponse = await fetch('/api/settings/save', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(settings)
+            });
+            
+            if (saveResponse.ok) {
+                Logger.info('Настройки камеры сохранены');
+                
+                // Применяем настройки без перезагрузки
+                const applyResponse = await fetch('/api/camera/apply', {
+                    method: 'POST'
+                });
+                
+                if (applyResponse.ok) {
+                    Logger.info('Настройки камеры применены. Изменения видны на экране.');
+                } else {
+                    Logger.error('Ошибка применения настроек камеры');
+                }
+            } else {
+                Logger.error('Ошибка сохранения настроек камеры');
+            }
+        } catch (error) {
+            Logger.error('Ошибка сохранения настроек камеры:', error);
+        }
+    }
+    
     async saveWiFiSettings() {
         const mode = document.getElementById('wifiMode')?.value;
         const ssid = document.getElementById('wifiSSID')?.value;
@@ -1404,6 +1445,12 @@ class ClassicRobotUI extends BaseRobotUI {
                 if (data.sticks) {
                     setChecked('invertThrottleStick', data.sticks.invertThrottle);
                     setChecked('invertSteeringStick', data.sticks.invertSteering);
+                }
+                
+                // Применяем настройки камеры к UI
+                if (data.camera) {
+                    setChecked('cameraHMirror', data.camera.hMirror);
+                    setChecked('cameraVFlip', data.camera.vFlip);
                 }
             }
         } catch (error) {
