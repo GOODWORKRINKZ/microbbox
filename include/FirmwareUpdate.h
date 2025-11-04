@@ -54,12 +54,7 @@ public:
     String getUpdateStatus() const { return updateStatus; }
     int getUpdateProgress() const { return currentProgress; }
     
-    // Safe mode для OTA обновлений
-    static bool isOTAPending();
-    static void setOTAPending(bool pending);
-    static void clearOTAPending();
-
-private:
+    // Состояния обновления
     enum class UpdateState {
         IDLE,
         DOWNLOADING,
@@ -67,6 +62,16 @@ private:
         SUCCESS,
         FAILED
     };
+    
+    // Установка состояния обновления (для safe mode)
+    void setUpdatingState(bool isUpdating, UpdateState state = UpdateState::DOWNLOADING, const String& status = "");
+    
+    // Safe mode для OTA обновлений
+    static bool isOTAPending();
+    static void setOTAPending(bool pending);
+    static void clearOTAPending();
+
+private:
 
     // Внутренние методы для обработки загрузки
     void handleUpdateUpload(AsyncWebServerRequest *request, String filename, size_t index, uint8_t *data, size_t len, bool final);
