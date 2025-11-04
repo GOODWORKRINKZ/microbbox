@@ -298,34 +298,7 @@
                                 <p id="releaseName"></p>
                             </div>
                             
-                            <!-- Выбор типа робота -->
-                            <div id="robotTypeSelection" class="robot-type-selection hidden">
-                                <h4>⚙️ Выберите тип устройства для обновления</h4>
-                                <p class="info-text">Доступны разные прошивки для разных типов роботов:</p>
-                                <div class="robot-type-options">
-                                    <label class="robot-type-option">
-                                        <input type="radio" name="robotType" value="classic">
-                                        <div class="robot-type-card">
-                                            <h5>🚗 МикроБокс Классик</h5>
-                                            <p>Полнофункциональный управляемый робот с камерой и веб-интерфейсом</p>
-                                        </div>
-                                    </label>
-                                    <label class="robot-type-option">
-                                        <input type="radio" name="robotType" value="liner">
-                                        <div class="robot-type-card">
-                                            <h5>🛤️ МикроБокс Лайнер</h5>
-                                            <p>Автономный робот следующий по линии с PID-контроллером</p>
-                                        </div>
-                                    </label>
-                                    <label class="robot-type-option">
-                                        <input type="radio" name="robotType" value="brain">
-                                        <div class="robot-type-card">
-                                            <h5>🎮 МикроБокс Брейн</h5>
-                                            <p>Модуль управления для других роботов (PWM/PPM/SBUS)</p>
-                                        </div>
-                                    </label>
-                                </div>
-                            </div>
+
                             
                             <div class="update-actions">
                                 <button id="checkUpdatesBtn" class="btn-secondary">🔍 Проверить обновления</button>
@@ -343,7 +316,19 @@
                                 <details>
                                     <summary>Что нового?</summary>
                                     <pre id="releaseNotes"></pre>
-                                </details>
+                                </details> 
+                                <!-- Выбор типа робота -->
+                                <div id="robotTypeSelection" class="robot-type-selection hidden">
+                                    <label>
+                                        Тип устройства:
+                                        <select id="robotTypeSelect" class="robot-type-select">
+                                            <option value="">-- Выберите тип --</option>
+                                            <option value="classic">🚗 МикроБокс Классик (управляемый робот)</option>
+                                            <option value="liner">🛤️ МикроБокс Лайнер (автономный, следование по линии)</option>
+                                            <option value="brain">🎮 МикроБокс Брейн (модуль управления PWM/PPM/SBUS)</option>
+                                        </select>
+                                    </label>
+                                </div>
                                 <button id="downloadUpdateBtn" class="btn-primary">⬇️ Скачать обновление</button>
                             </div>
                         </div>
