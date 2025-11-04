@@ -37,6 +37,15 @@
         <!-- Видео стрим от камеры -->
         <div class="video-container">
             <img id="cameraStream" src="" alt="Камера робота" class="camera-stream">
+            <!-- Fallback overlay when stream is unavailable -->
+            <div id="streamFallback" class="stream-fallback hidden">
+                <div class="fallback-content">
+                    <div class="fallback-icon">📹</div>
+                    <div class="fallback-text">Видео поток недоступен</div>
+                    <div id="streamFallbackMessage" class="fallback-message">Попытка подключения...</div>
+                    <div class="fallback-spinner"></div>
+                </div>
+            </div>
             <div class="stream-overlay">
                 <div class="crosshair"></div>
             </div>

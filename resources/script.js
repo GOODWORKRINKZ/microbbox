@@ -382,13 +382,100 @@ class BaseRobotUI {
     
     setupCameraStream() {
         const streamImg = document.getElementById('cameraStream');
-        if (streamImg) {
-            // CameraServer работает на порту 81
-            const streamUrl = `${window.location.protocol}//${window.location.hostname}:81/stream`;
-            streamImg.src = streamUrl;
-            streamImg.onerror = () => {
-                Logger.error('Ошибка загрузки видео потока');
-            };
+        const fallbackOverlay = document.getElementById('streamFallback');
+        
+        if (!streamImg) return;
+        
+        // Состояние стрима
+        this.streamState = {
+            isConnected: false,
+            reconnectAttempts: 0,
+            maxReconnectAttempts: 10,
+            reconnectDelay: 2000,
+            reconnectTimeout: null,
+            lastErrorTime: 0,
+            checkInterval: null
+        };
+        
+        // CameraServer работает на порту 81
+        const streamUrl = `${window.location.protocol}//${window.location.hostname}:81/stream`;
+        
+        // Обработчик успешной загрузки
+        streamImg.onload = () => {
+            if (!this.streamState.isConnected) {
+                Logger.info('Видео поток подключен');
+                this.streamState.isConnected = true;
+                this.streamState.reconnectAttempts = 0;
+                this.hideStreamFallback();
+            }
+        };
+        
+        // Обработчик ошибки загрузки
+        streamImg.onerror = () => {
+            const now = Date.now();
+            // Предотвращаем множественные вызовы
+            if (now - this.streamState.lastErrorTime < 1000) {
+                return;
+            }
+            this.streamState.lastErrorTime = now;
+            
+            Logger.error('Ошибка загрузки видео потока');
+            this.streamState.isConnected = false;
+            this.showStreamFallback();
+            this.attemptStreamReconnect();
+        };
+        
+        // Первоначальная загрузка
+        streamImg.src = streamUrl;
+    }
+    
+    attemptStreamReconnect() {
+        // Очищаем предыдущий таймаут если есть
+        if (this.streamState.reconnectTimeout) {
+            clearTimeout(this.streamState.reconnectTimeout);
+        }
+        
+        // Проверяем лимит попыток
+        if (this.streamState.reconnectAttempts >= this.streamState.maxReconnectAttempts) {
+            Logger.error('Превышен лимит попыток переподключения стрима');
+            this.updateFallbackMessage('Не удалось восстановить видео поток. Обновите страницу.');
+            return;
+        }
+        
+        this.streamState.reconnectAttempts++;
+        const delay = this.streamState.reconnectDelay * this.streamState.reconnectAttempts;
+        
+        Logger.info(`Попытка переподключения ${this.streamState.reconnectAttempts}/${this.streamState.maxReconnectAttempts} через ${delay}ms`);
+        this.updateFallbackMessage(`Переподключение... (попытка ${this.streamState.reconnectAttempts}/${this.streamState.maxReconnectAttempts})`);
+        
+        this.streamState.reconnectTimeout = setTimeout(() => {
+            const streamImg = document.getElementById('cameraStream');
+            if (streamImg) {
+                const streamUrl = `${window.location.protocol}//${window.location.hostname}:81/stream`;
+                // Добавляем timestamp чтобы избежать кэширования
+                streamImg.src = `${streamUrl}?t=${Date.now()}`;
+            }
+        }, delay);
+    }
+    
+    showStreamFallback() {
+        const fallbackOverlay = document.getElementById('streamFallback');
+        if (fallbackOverlay) {
+            fallbackOverlay.classList.remove('hidden');
+        }
+    }
+    
+    hideStreamFallback() {
+        const fallbackOverlay = document.getElementById('streamFallback');
+        if (fallbackOverlay) {
+            fallbackOverlay.classList.add('hidden');
+        }
+    }
+    
+    updateFallbackMessage(message) {
+        const messageEl = document.getElementById('streamFallbackMessage');
+        if (messageEl) {
+            messageEl.textContent = message;
         }
     }
     
