@@ -380,62 +380,91 @@ class BaseRobotUI {
         }
     }
     
+    // DRY: Константы для конфигурации стрима
+    get STREAM_CONFIG() {
+        return {
+            PORT: 81,
+            MAX_RECONNECT_ATTEMPTS: 10,
+            BASE_RECONNECT_DELAY: 2000,
+            ERROR_DEBOUNCE: 1000
+        };
+    }
+    
+    // DRY: Единственное место для формирования URL стрима
+    getStreamUrl() {
+        const { PORT } = this.STREAM_CONFIG;
+        return `${window.location.protocol}//${window.location.hostname}:${PORT}/stream`;
+    }
+    
     setupCameraStream() {
         const streamImg = document.getElementById('cameraStream');
-        const fallbackOverlay = document.getElementById('streamFallback');
-        
         if (!streamImg) return;
         
-        // Состояние стрима
+        // Инициализация состояния стрима (Single Responsibility)
+        this.initStreamState();
+        
+        // Установка обработчиков (Single Responsibility)
+        this.setupStreamHandlers(streamImg);
+        
+        // Первоначальная загрузка
+        streamImg.src = this.getStreamUrl();
+    }
+    
+    // Single Responsibility: Только инициализация состояния
+    initStreamState() {
+        const { MAX_RECONNECT_ATTEMPTS, BASE_RECONNECT_DELAY } = this.STREAM_CONFIG;
         this.streamState = {
             isConnected: false,
             reconnectAttempts: 0,
-            maxReconnectAttempts: 10,
-            reconnectDelay: 2000,
+            maxReconnectAttempts: MAX_RECONNECT_ATTEMPTS,
+            reconnectDelay: BASE_RECONNECT_DELAY,
             reconnectTimeout: null,
-            lastErrorTime: 0,
-            checkInterval: null
+            lastErrorTime: 0
         };
-        
-        // CameraServer работает на порту 81
-        const streamUrl = `${window.location.protocol}//${window.location.hostname}:81/stream`;
-        
-        // Обработчик успешной загрузки
-        streamImg.onload = () => {
-            if (!this.streamState.isConnected) {
-                Logger.info('Видео поток подключен');
-                this.streamState.isConnected = true;
-                this.streamState.reconnectAttempts = 0;
-                this.hideStreamFallback();
-            }
-        };
-        
-        // Обработчик ошибки загрузки
-        streamImg.onerror = () => {
-            const now = Date.now();
-            // Предотвращаем множественные вызовы
-            if (now - this.streamState.lastErrorTime < 1000) {
-                return;
-            }
-            this.streamState.lastErrorTime = now;
-            
-            Logger.error('Ошибка загрузки видео потока');
-            this.streamState.isConnected = false;
-            this.showStreamFallback();
-            this.attemptStreamReconnect();
-        };
-        
-        // Первоначальная загрузка
-        streamImg.src = streamUrl;
     }
     
+    // Single Responsibility: Только установка обработчиков
+    setupStreamHandlers(streamImg) {
+        streamImg.onload = () => this.handleStreamConnect();
+        streamImg.onerror = () => this.handleStreamError();
+    }
+    
+    // Single Responsibility: Обработка успешного подключения
+    handleStreamConnect() {
+        if (!this.streamState.isConnected) {
+            Logger.info('Видео поток подключен');
+            this.streamState.isConnected = true;
+            this.streamState.reconnectAttempts = 0;
+            this.toggleStreamFallback(false);
+        }
+    }
+    
+    // Single Responsibility: Обработка ошибки стрима
+    handleStreamError() {
+        const now = Date.now();
+        const { ERROR_DEBOUNCE } = this.STREAM_CONFIG;
+        
+        // KISS: Простая защита от множественных вызовов
+        if (now - this.streamState.lastErrorTime < ERROR_DEBOUNCE) {
+            return;
+        }
+        this.streamState.lastErrorTime = now;
+        
+        Logger.error('Ошибка загрузки видео потока');
+        this.streamState.isConnected = false;
+        this.toggleStreamFallback(true);
+        this.attemptStreamReconnect();
+    }
+    
+    // Single Responsibility: Только логика переподключения
     attemptStreamReconnect() {
-        // Очищаем предыдущий таймаут если есть
+        // Очистка предыдущего таймаута
         if (this.streamState.reconnectTimeout) {
             clearTimeout(this.streamState.reconnectTimeout);
+            this.streamState.reconnectTimeout = null;
         }
         
-        // Проверяем лимит попыток
+        // Проверка лимита попыток
         if (this.streamState.reconnectAttempts >= this.streamState.maxReconnectAttempts) {
             Logger.error('Превышен лимит попыток переподключения стрима');
             this.updateFallbackMessage('Не удалось восстановить видео поток. Обновите страницу.');
@@ -448,30 +477,27 @@ class BaseRobotUI {
         Logger.info(`Попытка переподключения ${this.streamState.reconnectAttempts}/${this.streamState.maxReconnectAttempts} через ${delay}ms`);
         this.updateFallbackMessage(`Переподключение... (попытка ${this.streamState.reconnectAttempts}/${this.streamState.maxReconnectAttempts})`);
         
-        this.streamState.reconnectTimeout = setTimeout(() => {
-            const streamImg = document.getElementById('cameraStream');
-            if (streamImg) {
-                const streamUrl = `${window.location.protocol}//${window.location.hostname}:81/stream`;
-                // Добавляем timestamp чтобы избежать кэширования
-                streamImg.src = `${streamUrl}?t=${Date.now()}`;
-            }
-        }, delay);
+        this.streamState.reconnectTimeout = setTimeout(() => this.reconnectStream(), delay);
     }
     
-    showStreamFallback() {
-        const fallbackOverlay = document.getElementById('streamFallback');
-        if (fallbackOverlay) {
-            fallbackOverlay.classList.remove('hidden');
+    // Single Responsibility: Только переподключение
+    reconnectStream() {
+        const streamImg = document.getElementById('cameraStream');
+        if (streamImg) {
+            // Добавляем timestamp для обхода кэша
+            streamImg.src = `${this.getStreamUrl()}?t=${Date.now()}`;
         }
     }
     
-    hideStreamFallback() {
+    // DRY: Единый метод для показа/скрытия fallback
+    toggleStreamFallback(show) {
         const fallbackOverlay = document.getElementById('streamFallback');
         if (fallbackOverlay) {
-            fallbackOverlay.classList.add('hidden');
+            fallbackOverlay.classList.toggle('hidden', !show);
         }
     }
     
+    // Single Responsibility: Только обновление сообщения
     updateFallbackMessage(message) {
         const messageEl = document.getElementById('streamFallbackMessage');
         if (messageEl) {
