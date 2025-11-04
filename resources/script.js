@@ -909,21 +909,32 @@ class BaseRobotUI {
     
     showRobotTypeSelection(availableTypes) {
         const selectionDiv = document.getElementById('robotTypeSelection');
-        if (!selectionDiv) return;
+        const selectElement = document.getElementById('robotTypeSelect');
         
-        // Показываем только доступные типы
-        const allRadios = document.querySelectorAll('input[name="robotType"]');
-        allRadios.forEach(radio => {
-            const optionDiv = radio.closest('.robot-type-option');
-            if (optionDiv) {
-                if (availableTypes.includes(radio.value)) {
-                    optionDiv.style.display = 'block';
-                } else {
-                    optionDiv.style.display = 'none';
-                }
+        if (!selectionDiv || !selectElement) return;
+        
+        // Очищаем и заполняем select только доступными типами
+        selectElement.innerHTML = '<option value="">-- Выберите тип --</option>';
+        
+        availableTypes.forEach(type => {
+            const option = document.createElement('option');
+            option.value = type;
+            
+            switch(type) {
+                case 'classic':
+                    option.textContent = '🚗 МикроБокс Классик (управляемый робот)';
+                    break;
+                case 'liner':
+                    option.textContent = '🛤️ МикроБокс Лайнер (автономный, следование по линии)';
+                    break;
+                case 'brain':
+                    option.textContent = '🎮 МикроБокс Брейн (модуль управления PWM/PPM/SBUS)';
+                    break;
+                default:
+                    option.textContent = type;
             }
-            // Снимаем выделение
-            radio.checked = false;
+            
+            selectElement.appendChild(option);
         });
         
         selectionDiv.classList.remove('hidden');
@@ -949,16 +960,17 @@ class BaseRobotUI {
         // Если есть выбор типа робота - сначала проверяем что выбрано
         const selectionDiv = document.getElementById('robotTypeSelection');
         if (selectionDiv && !selectionDiv.classList.contains('hidden')) {
-            const selectedRadio = document.querySelector('input[name="robotType"]:checked');
-            if (!selectedRadio) {
+            const selectElement = document.getElementById('robotTypeSelect');
+            const selectedType = selectElement?.value;
+            
+            if (!selectedType) {
                 alert('Выберите тип устройства для обновления');
                 return;
             }
             
             // Формируем URL для выбранного типа
-            const robotType = selectedRadio.value;
-            this.updateDownloadUrl = this.constructDownloadUrl(robotType);
-            Logger.info(`Выбран тип ${robotType}, URL: ${this.updateDownloadUrl}`);
+            this.updateDownloadUrl = this.constructDownloadUrl(selectedType);
+            Logger.info(`Выбран тип ${selectedType}, URL: ${this.updateDownloadUrl}`);
         }
         
         if (!this.updateDownloadUrl) {
