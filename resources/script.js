@@ -1487,6 +1487,8 @@ class ClassicRobotUI extends BaseRobotUI {
         };
         
         const handleEnd = () => {
+            if (!isDragging) return;  // Защита от повторного вызова
+            
             isDragging = false;
             touchId = null;
             
@@ -1508,49 +1510,70 @@ class ClassicRobotUI extends BaseRobotUI {
         });
         
         document.addEventListener('mousemove', (e) => {
-            if (isDragging) {
+            if (isDragging && touchId === null) {  // Только для мыши (touchId = null)
                 e.preventDefault();
                 handleMove(e.clientX, e.clientY);
             }
         });
         
         document.addEventListener('mouseup', () => {
-            if (isDragging) {
+            if (isDragging && touchId === null) {  // Только для мыши
                 handleEnd();
             }
         });
         
-        // Touch события
+        // Touch события - привязаны к document для отслеживания за пределами элемента
         element.addEventListener('touchstart', (e) => {
             e.preventDefault();
             const touch = e.touches[0];
             handleStart(touch.clientX, touch.clientY, touch.identifier);
-        });
+        }, { passive: false });
         
-        element.addEventListener('touchmove', (e) => {
-            if (!isDragging) return;
-            e.preventDefault();
+        document.addEventListener('touchmove', (e) => {
+            if (!isDragging || touchId === null) return;
             
+            // Ищем наш touch среди всех активных touches
             for (let i = 0; i < e.touches.length; i++) {
                 if (e.touches[i].identifier === touchId) {
+                    e.preventDefault();
                     const touch = e.touches[i];
                     handleMove(touch.clientX, touch.clientY);
-                    break;
+                    return;
                 }
             }
-        });
+            
+            // ВАЖНО: Если наш touchId не найден среди активных touches,
+            // значит палец был убран, но touchend не сработал
+            // Принудительно завершаем
+            Logger.warn(`Touch ${touchId} lost for ${side} joystick, forcing end`);
+            handleEnd();
+        }, { passive: false });
         
-        element.addEventListener('touchend', (e) => {
-            if (!isDragging) return;
-            e.preventDefault();
+        document.addEventListener('touchend', (e) => {
+            if (!isDragging || touchId === null) return;
+            
+            // Проверяем завершенные touches
+            for (let i = 0; i < e.changedTouches.length; i++) {
+                if (e.changedTouches[i].identifier === touchId) {
+                    e.preventDefault();
+                    handleEnd();
+                    return;
+                }
+            }
+        }, { passive: false });
+        
+        // Дополнительная защита: touchcancel
+        document.addEventListener('touchcancel', (e) => {
+            if (!isDragging || touchId === null) return;
             
             for (let i = 0; i < e.changedTouches.length; i++) {
                 if (e.changedTouches[i].identifier === touchId) {
+                    Logger.warn(`Touch ${touchId} cancelled for ${side} joystick`);
                     handleEnd();
-                    break;
+                    return;
                 }
             }
-        });
+        }, { passive: false });
     }
     
     updateMotorFromJoysticks() {
