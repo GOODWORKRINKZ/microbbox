@@ -434,8 +434,18 @@ class BaseRobotUI {
         if (!this.streamState.isConnected) {
             Logger.info('Видео поток подключен');
             this.streamState.isConnected = true;
-            this.streamState.reconnectAttempts = 0;
+            this.resetReconnectState();
             this.toggleStreamFallback(false);
+        }
+    }
+    
+    // Single Responsibility: Сброс состояния переподключения (DRY)
+    resetReconnectState() {
+        this.streamState.reconnectAttempts = 0;
+        // Очищаем таймаут если есть
+        if (this.streamState.reconnectTimeout) {
+            clearTimeout(this.streamState.reconnectTimeout);
+            this.streamState.reconnectTimeout = null;
         }
     }
     
@@ -458,12 +468,6 @@ class BaseRobotUI {
     
     // Single Responsibility: Только логика переподключения
     attemptStreamReconnect() {
-        // Очистка предыдущего таймаута
-        if (this.streamState.reconnectTimeout) {
-            clearTimeout(this.streamState.reconnectTimeout);
-            this.streamState.reconnectTimeout = null;
-        }
-        
         // Проверка лимита попыток
         if (this.streamState.reconnectAttempts >= this.streamState.maxReconnectAttempts) {
             Logger.error('Превышен лимит попыток переподключения стрима');
