@@ -107,8 +107,10 @@ void LinerRobot::setupWebHandlers(AsyncWebServer* server) {
         String json = "{\"type\":\"liner\",\"name\":\"MicroBox Liner\"}";
         request->send(200, "application/json", json);
     });
+    
+    // Специфичные для Liner endpoints
+    // (общие /api/settings/*, /api/restart уже в BaseRobot)
 }
-
 bool LinerRobot::initMotors() {
     DEBUG_PRINTLN("Инициализация моторов...");
     
@@ -117,6 +119,11 @@ bool LinerRobot::initMotors() {
     if (!motorController_->init()) {
         DEBUG_PRINTLN("ОШИБКА: Не удалось инициализировать контроллер моторов");
         return false;
+    }
+    
+    // Передаем WiFi настройки для применения инвертирования моторов
+    if (wifiSettings_) {
+        static_cast<MX1508MotorController*>(motorController_)->setWiFiSettings(wifiSettings_);
     }
     
     DEBUG_PRINTLN("Моторы инициализированы");

@@ -4,6 +4,8 @@
 #include "IMotorController.h"
 #include "hardware_config.h"
 
+class WiFiSettings; // Forward declaration
+
 // ═══════════════════════════════════════════════════════════════
 // КОНТРОЛЛЕР МОТОРОВ MX1508
 // ═══════════════════════════════════════════════════════════════
@@ -26,6 +28,9 @@ public:
     void stop() override;
     void getCurrentSpeed(int& leftSpeed, int& rightSpeed) const override;
     bool wasWatchdogTriggered() const override;
+    
+    // Установка WiFi настроек для применения инвертирования моторов
+    void setWiFiSettings(WiFiSettings* settings) { wifiSettings_ = settings; }
 
 private:
     bool initialized_;
@@ -33,6 +38,7 @@ private:
     int currentRightSpeed_;
     unsigned long lastCommandTime_;
     bool watchdogTriggered_;  // Флаг для отслеживания срабатывания watchdog
+    WiFiSettings* wifiSettings_;  // Указатель на настройки для инвертирования моторов
     
     // Внутренние методы
     void applyMotorSpeed(int leftSpeed, int rightSpeed);
