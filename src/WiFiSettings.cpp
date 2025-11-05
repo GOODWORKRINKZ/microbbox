@@ -13,7 +13,8 @@ WiFiSettings::WiFiSettings() :
     invertThrottleStick(false),
     invertSteeringStick(false),
     cameraHMirror(false),
-    cameraVFlip(false)
+    cameraVFlip(false),
+    effectMode(0)
 {
 }
 
@@ -57,6 +58,9 @@ void WiFiSettings::loadDefaults() {
     cameraHMirror = false;
     cameraVFlip = false;
     
+    // По умолчанию эффект normal (0)
+    effectMode = 0;
+    
     DEBUG_PRINTLN("WiFiSettings::loadDefaults()");
     DEBUG_PRINT("  SSID: ");
     DEBUG_PRINTLN(ssid);
@@ -96,6 +100,9 @@ void WiFiSettings::loadFromMemory() {
         cameraHMirror = preferences.getBool("camHMirror", false);
         cameraVFlip = preferences.getBool("camVFlip", false);
         
+        // Загружаем настройки эффектов
+        effectMode = preferences.getInt("effectMode", 0);
+        
         DEBUG_PRINTLN("  Загружены сохраненные настройки:");
         DEBUG_PRINT("    SSID: '"); DEBUG_PRINT(ssid); DEBUG_PRINTLN("'");
         DEBUG_PRINT("    Password length: "); DEBUG_PRINTLN(password.length());
@@ -108,6 +115,7 @@ void WiFiSettings::loadFromMemory() {
         DEBUG_PRINT("    Invert Steering: "); DEBUG_PRINTLN(invertSteeringStick ? "YES" : "NO");
         DEBUG_PRINT("    Camera HMirror: "); DEBUG_PRINTLN(cameraHMirror ? "YES" : "NO");
         DEBUG_PRINT("    Camera VFlip: "); DEBUG_PRINTLN(cameraVFlip ? "YES" : "NO");
+        DEBUG_PRINT("    Effect Mode: "); DEBUG_PRINTLN(effectMode);
         
         // ВАЖНО: Если SSID пустой - это значит старые битые настройки, сбрасываем!
         if (ssid.length() == 0) {
@@ -162,6 +170,10 @@ void WiFiSettings::setCameraVFlip(bool value) {
     cameraVFlip = value;
 }
 
+void WiFiSettings::setEffectMode(int value) {
+    effectMode = value;
+}
+
 bool WiFiSettings::save() {
     DEBUG_PRINTLN("WiFiSettings::save() - начало сохранения");
     DEBUG_PRINT("  SSID: '"); DEBUG_PRINT(ssid); DEBUG_PRINTLN("'");
@@ -175,6 +187,7 @@ bool WiFiSettings::save() {
     DEBUG_PRINT("  Invert Steering: "); DEBUG_PRINTLN(invertSteeringStick ? "YES" : "NO");
     DEBUG_PRINT("  Camera HMirror: "); DEBUG_PRINTLN(cameraHMirror ? "YES" : "NO");
     DEBUG_PRINT("  Camera VFlip: "); DEBUG_PRINTLN(cameraVFlip ? "YES" : "NO");
+    DEBUG_PRINT("  Effect Mode: "); DEBUG_PRINTLN(effectMode);
     
     // Сохраняем все настройки и проверяем результат каждой операции
     size_t w1 = preferences.putBool("initialized", true);
@@ -196,6 +209,9 @@ bool WiFiSettings::save() {
     size_t w11 = preferences.putBool("camHMirror", cameraHMirror);
     size_t w12 = preferences.putBool("camVFlip", cameraVFlip);
     
+    // Сохраняем настройки эффектов
+    size_t w13 = preferences.putInt("effectMode", effectMode);
+    
     DEBUG_PRINT("  Записано байт - initialized: "); DEBUG_PRINTLN(w1);
     DEBUG_PRINT("  Записано байт - ssid: "); DEBUG_PRINTLN(w2);
     DEBUG_PRINT("  Записано байт - password: "); DEBUG_PRINTLN(w3);
@@ -208,6 +224,7 @@ bool WiFiSettings::save() {
     DEBUG_PRINT("  Записано байт - invSteering: "); DEBUG_PRINTLN(w10);
     DEBUG_PRINT("  Записано байт - camHMirror: "); DEBUG_PRINTLN(w11);
     DEBUG_PRINT("  Записано байт - camVFlip: "); DEBUG_PRINTLN(w12);
+    DEBUG_PRINT("  Записано байт - effectMode: "); DEBUG_PRINTLN(w13);
     
     // Принудительно сохраняем изменения (commit)
     bool committed = preferences.putBool("_commit", true);

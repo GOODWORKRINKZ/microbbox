@@ -10,6 +10,7 @@ LinerRobot::LinerRobot() :
     BaseRobot(),
 #ifdef FEATURE_NEOPIXEL
     pixels_(nullptr),
+    currentEffectMode_(EffectMode::NORMAL),
 #endif
     currentMode_(Mode::MANUAL),
     buttonPressed_(false),
@@ -47,6 +48,15 @@ bool LinerRobot::initSpecificComponents() {
     // Инициализация кнопки
     if (!initButton()) {
         DEBUG_PRINTLN("ПРЕДУПРЕЖДЕНИЕ: Не удалось инициализировать кнопку");
+    }
+#endif
+    
+#ifdef FEATURE_NEOPIXEL
+    // Применяем сохраненный эффект
+    if (wifiSettings_) {
+        currentEffectMode_ = static_cast<EffectMode>(wifiSettings_->getEffectMode());
+        DEBUG_PRINT("Применен сохраненный эффект: ");
+        DEBUG_PRINTLN(wifiSettings_->getEffectMode());
     }
 #endif
     
@@ -405,6 +415,12 @@ void LinerRobot::handleCommand(AsyncWebServerRequest* request) {
         targetThrottlePWM_ = constrain(throttle, 1000, 2000);
         targetSteeringPWM_ = constrain(steering, 1000, 2000);
         
+        request->send(200, "text/plain", "OK");
+    } else if (request->hasParam("effect")) {
+        int effect = request->getParam("effect")->value().toInt();
+#ifdef FEATURE_NEOPIXEL
+        currentEffectMode_ = static_cast<EffectMode>(constrain(effect, 0, 4));
+#endif
         request->send(200, "text/plain", "OK");
     } else {
         request->send(400, "text/plain", "Bad Request");

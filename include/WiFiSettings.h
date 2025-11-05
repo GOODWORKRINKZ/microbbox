@@ -39,6 +39,9 @@ public:
     // Получение настроек камеры
     bool getCameraHMirror() const { return cameraHMirror; }
     bool getCameraVFlip() const { return cameraVFlip; }
+    
+    // Получение настроек эффектов
+    int getEffectMode() const { return effectMode; }
 
     // Установка настроек
     void setSSID(const String& value);
@@ -58,6 +61,9 @@ public:
     // Установка настроек камеры
     void setCameraHMirror(bool value);
     void setCameraVFlip(bool value);
+    
+    // Установка настроек эффектов
+    void setEffectMode(int value);
 
     // Сохранение в память
     bool save();
@@ -88,6 +94,9 @@ private:
     // Настройки камеры
     bool cameraHMirror;         // Горизонтальное зеркало камеры
     bool cameraVFlip;           // Вертикальный переворот камеры
+    
+    // Настройки эффектов
+    int effectMode;             // Режим световых эффектов (0-4: normal, police, fire, ambulance, terminator)
 
     void loadDefaults();
     void loadFromMemory();

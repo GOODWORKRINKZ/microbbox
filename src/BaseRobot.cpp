@@ -245,6 +245,11 @@ bool BaseRobot::initWebServer() {
         json += "\"camera\":{";
         json += "\"hMirror\":" + String(wifiSettings_->getCameraHMirror() ? "true" : "false") + ",";
         json += "\"vFlip\":" + String(wifiSettings_->getCameraVFlip() ? "true" : "false");
+        json += "},";
+        
+        // Настройки эффектов
+        json += "\"effects\":{";
+        json += "\"effectMode\":" + String(wifiSettings_->getEffectMode());
         json += "}";
         
         json += "}";
@@ -351,6 +356,18 @@ bool BaseRobot::initWebServer() {
                     wifiSettings_->setCameraVFlip(true);
                 } else if (settingsBody.indexOf("\"vFlip\":false") >= 0) {
                     wifiSettings_->setCameraVFlip(false);
+                }
+                
+                // Настройки эффектов (сохраняются, применение через loadSettings)
+                if (settingsBody.indexOf("\"effectMode\":") >= 0) {
+                    int modeStart = settingsBody.indexOf("\"effectMode\":") + 13;
+                    int modeEnd = settingsBody.indexOf(",", modeStart);
+                    if (modeEnd == -1) modeEnd = settingsBody.indexOf("}", modeStart);
+                    if (modeEnd > modeStart) {
+                        String modeStr = settingsBody.substring(modeStart, modeEnd);
+                        int effectMode = modeStr.toInt();
+                        wifiSettings_->setEffectMode(effectMode);
+                    }
                 }
                 
                 // Сохраняем в NVS
