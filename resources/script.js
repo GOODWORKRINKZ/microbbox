@@ -12,6 +12,131 @@
 'use strict';
 
 // ═══════════════════════════════════════════════════════════════
+// МОДУЛЬ МОДАЛЬНЫХ ДИАЛОГОВ (Single Responsibility)
+// Замена нативных alert() и confirm() на красивые модальные окна
+// ═══════════════════════════════════════════════════════════════
+
+const ModalDialog = {
+    /**
+     * Показывает модальное окно с сообщением (замена alert)
+     * @param {string} message - Текст сообщения
+     * @param {string} title - Заголовок окна (необязательно)
+     * @returns {Promise<void>}
+     */
+    async showAlert(message, title = '⚠️ Уведомление') {
+        return new Promise((resolve) => {
+            // Создаем модальное окно
+            const modal = document.createElement('div');
+            modal.className = 'modal modal-dialog';
+            modal.innerHTML = `
+                <div class="modal-content modal-alert">
+                    <h2>${title}</h2>
+                    <p class="modal-message">${message}</p>
+                    <div class="modal-buttons">
+                        <button class="btn-primary modal-btn-ok">OK</button>
+                    </div>
+                </div>
+            `;
+            
+            document.body.appendChild(modal);
+            
+            // Показываем модальное окно с анимацией
+            requestAnimationFrame(() => {
+                modal.style.display = 'flex';
+            });
+            
+            // Обработчик кнопки OK
+            const okBtn = modal.querySelector('.modal-btn-ok');
+            okBtn.addEventListener('click', () => {
+                modal.remove();
+                resolve();
+            });
+            
+            // Закрытие по клику на фон
+            modal.addEventListener('click', (e) => {
+                if (e.target === modal) {
+                    modal.remove();
+                    resolve();
+                }
+            });
+            
+            // Закрытие по Escape
+            const escapeHandler = (e) => {
+                if (e.key === 'Escape') {
+                    modal.remove();
+                    document.removeEventListener('keydown', escapeHandler);
+                    resolve();
+                }
+            };
+            document.addEventListener('keydown', escapeHandler);
+        });
+    },
+    
+    /**
+     * Показывает модальное окно подтверждения (замена confirm)
+     * @param {string} message - Текст вопроса
+     * @param {string} title - Заголовок окна (необязательно)
+     * @returns {Promise<boolean>} - true если подтвердили, false если отменили
+     */
+    async showConfirm(message, title = '❓ Подтверждение') {
+        return new Promise((resolve) => {
+            // Создаем модальное окно
+            const modal = document.createElement('div');
+            modal.className = 'modal modal-dialog';
+            modal.innerHTML = `
+                <div class="modal-content modal-confirm">
+                    <h2>${title}</h2>
+                    <p class="modal-message">${message}</p>
+                    <div class="modal-buttons">
+                        <button class="btn-secondary modal-btn-cancel">Отмена</button>
+                        <button class="btn-primary modal-btn-confirm">Подтвердить</button>
+                    </div>
+                </div>
+            `;
+            
+            document.body.appendChild(modal);
+            
+            // Показываем модальное окно с анимацией
+            requestAnimationFrame(() => {
+                modal.style.display = 'flex';
+            });
+            
+            // Обработчик кнопки Подтвердить
+            const confirmBtn = modal.querySelector('.modal-btn-confirm');
+            confirmBtn.addEventListener('click', () => {
+                modal.remove();
+                resolve(true);
+            });
+            
+            // Обработчик кнопки Отмена
+            const cancelBtn = modal.querySelector('.modal-btn-cancel');
+            cancelBtn.addEventListener('click', () => {
+                modal.remove();
+                resolve(false);
+            });
+            
+            // Закрытие по клику на фон = отмена
+            modal.addEventListener('click', (e) => {
+                if (e.target === modal) {
+                    modal.remove();
+                    resolve(false);
+                }
+            });
+            
+            // Закрытие по Escape = отмена
+            const escapeHandler = (e) => {
+                if (e.key === 'Escape') {
+                    modal.remove();
+                    document.removeEventListener('keydown', escapeHandler);
+                    resolve(false);
+                }
+            };
+            document.addEventListener('keydown', escapeHandler);
+        });
+    }
+};
+
+// ═══════════════════════════════════════════════════════════════
 // МОДУЛЬ ЛОГИРОВАНИЯ (Single Responsibility)
 // ═══════════════════════════════════════════════════════════════
 
@@ -280,6 +405,7 @@ class BaseRobotUI {
     // Статические константы класса
     static ROBOT_TYPES = ['classic', 'liner', 'brain']; // Доступные типы роботов
     
+    // Конфигурация стрима (DRY) - инициализируется один раз
     constructor() {
         this.GITHUB_REPO = 'GOODWORKRINKZ/microbbox';
         this.robotType = 'unknown';
@@ -298,6 +424,15 @@ class BaseRobotUI {
         // VR
         this.xrSession = null;
         this.controllers = [];
+        
+        // Конфигурация стрима (один раз)
+        this.STREAM_CONFIG = {
+            PORT: 81,
+            MAX_RECONNECT_ATTEMPTS: 10,
+            BASE_RECONNECT_DELAY: 2000,
+            MAX_RECONNECT_DELAY: 30000,  // Максимум 30 секунд
+            ERROR_DEBOUNCE: 1000
+        };
     }
     
     async init() {
@@ -356,7 +491,6 @@ class BaseRobotUI {
         const pcControls = document.getElementById('pcControls');
         const mobileControls = document.getElementById('mobileControls');
         const vrControls = document.getElementById('vrControls');
-        const mobilePanel = document.querySelector('.mobile-panel');
         
         // Скрываем все
         [pcControls, mobileControls, vrControls].forEach(el => {
@@ -367,8 +501,6 @@ class BaseRobotUI {
         switch (this.deviceType) {
             case 'desktop':
                 if (pcControls) pcControls.classList.remove('hidden');
-                // Показываем мобильную панель с кнопками для десктопа тоже
-                if (mobilePanel) mobilePanel.classList.remove('hidden');
                 break;
             case 'mobile':
                 if (mobileControls) mobileControls.classList.remove('hidden');
@@ -380,15 +512,124 @@ class BaseRobotUI {
         }
     }
     
+    // DRY: Единственное место для формирования URL стрима
+    getStreamUrl() {
+        const { PORT } = this.STREAM_CONFIG;
+        return `${window.location.protocol}//${window.location.hostname}:${PORT}/stream`;
+    }
+    
     setupCameraStream() {
         const streamImg = document.getElementById('cameraStream');
+        if (!streamImg) return;
+        
+        // Инициализация состояния стрима (Single Responsibility)
+        this.initStreamState();
+        
+        // Установка обработчиков (Single Responsibility)
+        this.setupStreamHandlers(streamImg);
+        
+        // Первоначальная загрузка
+        streamImg.src = this.getStreamUrl();
+    }
+    
+    // Single Responsibility: Только инициализация состояния
+    initStreamState() {
+        const { MAX_RECONNECT_ATTEMPTS, BASE_RECONNECT_DELAY } = this.STREAM_CONFIG;
+        this.streamState = {
+            isConnected: false,
+            reconnectAttempts: 0,
+            maxReconnectAttempts: MAX_RECONNECT_ATTEMPTS,
+            reconnectDelay: BASE_RECONNECT_DELAY,
+            reconnectTimeout: null,
+            lastErrorTime: 0
+        };
+    }
+    
+    // Single Responsibility: Только установка обработчиков
+    setupStreamHandlers(streamImg) {
+        streamImg.onload = () => this.handleStreamConnect();
+        streamImg.onerror = () => this.handleStreamError();
+    }
+    
+    // Single Responsibility: Обработка успешного подключения
+    handleStreamConnect() {
+        if (!this.streamState.isConnected) {
+            Logger.info('Видео поток подключен');
+            this.streamState.isConnected = true;
+            this.resetReconnectState();
+            this.toggleStreamFallback(false);
+        }
+    }
+    
+    // Single Responsibility: Сброс состояния переподключения (DRY)
+    resetReconnectState() {
+        this.streamState.reconnectAttempts = 0;
+        // Очищаем таймаут если есть
+        if (this.streamState.reconnectTimeout) {
+            clearTimeout(this.streamState.reconnectTimeout);
+            this.streamState.reconnectTimeout = null;
+        }
+    }
+    
+    // Single Responsibility: Обработка ошибки стрима
+    handleStreamError() {
+        const now = Date.now();
+        const { ERROR_DEBOUNCE } = this.STREAM_CONFIG;
+        
+        // KISS: Простая защита от множественных вызовов
+        if (now - this.streamState.lastErrorTime < ERROR_DEBOUNCE) {
+            return;
+        }
+        this.streamState.lastErrorTime = now;
+        
+        Logger.error('Ошибка загрузки видео потока');
+        this.streamState.isConnected = false;
+        this.toggleStreamFallback(true);
+        this.attemptStreamReconnect();
+    }
+    
+    // Single Responsibility: Только логика переподключения
+    attemptStreamReconnect() {
+        // Проверка лимита попыток
+        if (this.streamState.reconnectAttempts >= this.streamState.maxReconnectAttempts) {
+            Logger.error('Превышен лимит попыток переподключения стрима');
+            this.updateFallbackMessage('Не удалось восстановить видео поток. Обновите страницу.');
+            return;
+        }
+        
+        this.streamState.reconnectAttempts++;
+        // Экспоненциальная задержка с ограничением максимума (KISS)
+        const calculatedDelay = this.streamState.reconnectDelay * this.streamState.reconnectAttempts;
+        const delay = Math.min(calculatedDelay, this.STREAM_CONFIG.MAX_RECONNECT_DELAY);
+        
+        Logger.info(`Попытка переподключения ${this.streamState.reconnectAttempts}/${this.streamState.maxReconnectAttempts} через ${delay}ms`);
+        this.updateFallbackMessage(`Переподключение... (попытка ${this.streamState.reconnectAttempts}/${this.streamState.maxReconnectAttempts})`);
+        
+        this.streamState.reconnectTimeout = setTimeout(() => this.reconnectStream(), delay);
+    }
+    
+    // Single Responsibility: Только переподключение
+    reconnectStream() {
+        const streamImg = document.getElementById('cameraStream');
         if (streamImg) {
-            // CameraServer работает на порту 81
-            const streamUrl = `${window.location.protocol}//${window.location.hostname}:81/stream`;
-            streamImg.src = streamUrl;
-            streamImg.onerror = () => {
-                Logger.error('Ошибка загрузки видео потока');
-            };
+            // Добавляем timestamp для обхода кэша браузера
+            streamImg.src = `${this.getStreamUrl()}?_cb=${Date.now()}`;
+        }
+    }
+    
+    // DRY: Единый метод для показа/скрытия fallback
+    toggleStreamFallback(show) {
+        const fallbackOverlay = document.getElementById('streamFallback');
+        if (fallbackOverlay) {
+            fallbackOverlay.classList.toggle('hidden', !show);
+        }
+    }
+    
+    // Single Responsibility: Только обновление сообщения
+    updateFallbackMessage(message) {
+        const messageEl = document.getElementById('streamFallbackMessage');
+        if (messageEl) {
+            messageEl.textContent = message;
         }
     }
     
@@ -451,6 +692,17 @@ class BaseRobotUI {
         if (helpBtn) {
             helpBtn.addEventListener('click', () => this.openHelp());
         }
+        
+        // Десктопные кнопки настроек и справки
+        const pcSettingsBtn = document.getElementById('pcSettings');
+        if (pcSettingsBtn) {
+            pcSettingsBtn.addEventListener('click', () => this.openSettings());
+        }
+        
+        const pcHelpBtn = document.getElementById('pcHelp');
+        if (pcHelpBtn) {
+            pcHelpBtn.addEventListener('click', () => this.openHelp());
+        }
     }
     
     setupSettingsModal() {
@@ -460,6 +712,14 @@ class BaseRobotUI {
         
         if (closeBtn) {
             closeBtn.addEventListener('click', () => this.closeSettings());
+        }
+        
+        // Настройка модального окна справки (DRY - один метод для всех модальных окон)
+        const helpModal = document.getElementById('helpModal');
+        const helpCloseBtn = helpModal?.querySelector('.help-close');
+        
+        if (helpCloseBtn) {
+            helpCloseBtn.addEventListener('click', () => this.closeHelp());
         }
         
         // Табы
@@ -543,6 +803,13 @@ class BaseRobotUI {
         const modal = document.getElementById('helpModal');
         if (modal) {
             modal.classList.remove('hidden');
+        }
+    }
+    
+    closeHelp() {
+        const modal = document.getElementById('helpModal');
+        if (modal) {
+            modal.classList.add('hidden');
         }
     }
     
@@ -662,7 +929,8 @@ class BaseRobotUI {
                 
                 if (data.hasUpdate) {
                     const message = `Доступна новая версия ${data.version}. Обновить сейчас?`;
-                    if (confirm(message)) {
+                    const confirmed = await ModalDialog.showConfirm(message, 'ℹ️ Доступно обновление');
+                    if (confirmed) {
                         // Открываем настройки на вкладке обновлений
                         setTimeout(() => {
                             this.openSettings();
@@ -828,11 +1096,11 @@ class BaseRobotUI {
                 });
             } else {
                 if (updateAvailableDiv) updateAvailableDiv.classList.add('hidden');
-                alert('У вас установлена последняя версия прошивки!');
+                await ModalDialog.showAlert('У вас установлена последняя версия прошивки!', 'ℹ️ Информация');
             }
         } catch (error) {
             Logger.error('Ошибка проверки обновлений:', error);
-            alert('Ошибка при проверке обновлений: ' + error.message);
+            await ModalDialog.showAlert('Ошибка при проверке обновлений: ' + error.message, '❌ Ошибка');
         } finally {
             if (checkBtn) {
                 checkBtn.disabled = false;
@@ -964,7 +1232,7 @@ class BaseRobotUI {
             const selectedType = selectElement?.value;
             
             if (!selectedType) {
-                alert('Выберите тип устройства для обновления');
+                await ModalDialog.showAlert('Выберите тип устройства для обновления', '⚠️ Внимание');
                 return;
             }
             
@@ -974,11 +1242,11 @@ class BaseRobotUI {
         }
         
         if (!this.updateDownloadUrl) {
-            alert('URL для скачивания не найден');
+            await ModalDialog.showAlert('URL для скачивания не найден', '❌ Ошибка');
             return;
         }
         
-        const confirmed = confirm('Начать обновление прошивки?\nУстройство перезагрузится после завершения загрузки.');
+        const confirmed = await ModalDialog.showConfirm('Начать обновление прошивки?\nУстройство перезагрузится после завершения загрузки.', '⚠️ Обновление прошивки');
         if (!confirmed) return;
         
         try {
@@ -1028,7 +1296,7 @@ class BaseRobotUI {
                             
                             if (reconnectAttempts >= maxReconnectAttempts) {
                                 clearInterval(checkConnection);
-                                alert('Не удалось переподключиться к устройству после перезагрузки');
+                                await ModalDialog.showAlert('Не удалось переподключиться к устройству после перезагрузки', '❌ Ошибка');
                                 this.hideFirmwareUpdateOverlay();
                             }
                         }
@@ -1040,12 +1308,12 @@ class BaseRobotUI {
                     this.pollFirmwareStatus();
                 }
             } else {
-                alert('Ошибка запуска обновления');
+                await ModalDialog.showAlert('Ошибка запуска обновления', '❌ Ошибка');
                 this.hideFirmwareUpdateOverlay();
             }
         } catch (error) {
             Logger.error('Ошибка загрузки обновления:', error);
-            alert('Ошибка подключения к устройству');
+            await ModalDialog.showAlert('Ошибка подключения к устройству', '❌ Ошибка');
             this.hideFirmwareUpdateOverlay();
         }
     }
@@ -1085,7 +1353,7 @@ class BaseRobotUI {
                 } else if (status.state === 4) { // FAILED
                     clearInterval(pollInterval);
                     if (statusEl) statusEl.textContent = 'Ошибка обновления: ' + (status.status || 'Неизвестная ошибка');
-                    alert('Ошибка обновления прошивки');
+                    await ModalDialog.showAlert('Ошибка обновления прошивки', '❌ Ошибка');
                     setTimeout(() => {
                         this.hideFirmwareUpdateOverlay();
                     }, 3000);
@@ -1383,10 +1651,13 @@ class ClassicRobotUI extends BaseRobotUI {
     
     async saveSettings() {
         // Собираем настройки эффектов и чувствительности
+        const effectMode = document.querySelector('input[name="effectMode"]:checked')?.value || 'normal';
+        const effectId = this.effectMap[effectMode] || 0;
+        
         const settings = {
             speedSensitivity: parseInt(document.getElementById('speedSensitivity')?.value) || 80,
             turnSensitivity: parseInt(document.getElementById('turnSensitivity')?.value) || 70,
-            effectMode: document.querySelector('input[name="effectMode"]:checked')?.value || 'normal'
+            effectMode: effectId
         };
         
         // Применяем локально
@@ -1394,15 +1665,26 @@ class ClassicRobotUI extends BaseRobotUI {
         this.turnSensitivity = settings.turnSensitivity;
         
         // Сохраняем в localStorage
-        localStorage.setItem('robotSettings', JSON.stringify(settings));
-        
-        // Отправляем эффект на сервер
-        const effectId = this.effectMap[settings.effectMode] || 0;
+        localStorage.setItem('robotSettings', JSON.stringify({
+            speedSensitivity: settings.speedSensitivity,
+            turnSensitivity: settings.turnSensitivity,
+            effectMode: effectMode
+        }));
         
         try {
-            await fetch(`/cmd?effect=${effectId}`);
-            await this.setEffectMode(settings.effectMode);
-            Logger.info('Настройки сохранены');
+            // Сохраняем настройки через API
+            const response = await fetch('/api/settings/save', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(settings)
+            });
+            
+            if (response.ok) {
+                await this.setEffectMode(effectMode);
+                Logger.info('Настройки сохранены');
+            } else {
+                Logger.error('Ошибка сохранения настроек');
+            }
         } catch (error) {
             Logger.error('Ошибка сохранения настроек:', error);
         }
@@ -1495,7 +1777,8 @@ class ClassicRobotUI extends BaseRobotUI {
                 if (result.needRestart) {
                     Logger.info('WiFi настройки сохранены. Требуется перезагрузка.');
                     // Можно предложить перезагрузку
-                    if (confirm('Для применения WiFi настроек требуется перезагрузка. Перезагрузить сейчас?')) {
+                    const shouldRestart = await ModalDialog.showConfirm('Для применения WiFi настроек требуется перезагрузка. Перезагрузить сейчас?', '🔄 Требуется перезагрузка');
+                    if (shouldRestart) {
                         this.restartDevice();
                     }
                 } else {
@@ -1510,7 +1793,8 @@ class ClassicRobotUI extends BaseRobotUI {
     }
     
     async restartDevice() {
-        if (!confirm('Вы уверены, что хотите перезагрузить устройство?')) {
+        const confirmed = await ModalDialog.showConfirm('Вы уверены, что хотите перезагрузить устройство?', '🔄 Перезагрузка устройства');
+        if (!confirmed) {
             return;
         }
         

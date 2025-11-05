@@ -50,6 +50,15 @@ bool ClassicRobot::initSpecificComponents() {
     }
 #endif
     
+#if defined(FEATURE_NEOPIXEL) || defined(FEATURE_BUZZER)
+    // Применяем сохраненный эффект
+    if (wifiSettings_) {
+        currentEffectMode_ = static_cast<EffectMode>(wifiSettings_->getEffectMode());
+        DEBUG_PRINT("Применен сохраненный эффект: ");
+        DEBUG_PRINTLN(wifiSettings_->getEffectMode());
+    }
+#endif
+    
     DEBUG_PRINTLN("=== Classic робот готов ===");
     return true;
 }
