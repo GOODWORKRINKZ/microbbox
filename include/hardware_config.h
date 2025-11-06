@@ -42,7 +42,7 @@
     #define NEOPIXEL_PIN 2          // Адресные светодиоды на пин 2
     #define NEOPIXEL_LED_CHANNEL 7  // PWM канал 7
     #ifdef TARGET_LINER
-        #define NEOPIXEL_COUNT 8        // Для Liner: 8 светодиодов (по 4 на каждую сторону)
+        #define NEOPIXEL_COUNT 16       // Для Liner: 16 светодиодов (по 8 на каждую сторону)
     #else
         #define NEOPIXEL_COUNT 3        // Для Classic/Brain: 3 светодиода (2 сзади, 1 спереди)
     #endif
