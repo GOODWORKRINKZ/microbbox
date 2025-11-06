@@ -243,19 +243,21 @@ def detect_line_position(image_path):
     - 4 вертикальные линии (20%, 40%, 60%, 80% ширины) для точного определения T-пересечений
     - Вычисляет максимальный тренд между любыми двумя горизонтальными линиями
     - Сильно увеличивает влияние тренда для крутых поворотов (|тренд| > 0.7)
+    - Различает два типа окончаний: обрыв линии и T-образное пересечение
     
     Args:
         image_path: путь к изображению
     
     Returns:
         dict: {
-            'position': float,      # -1.0 (линия слева) до 1.0 (линия справа) относительно центра камеры
-            'detected': bool,       # найдена ли линия
-            'width_percent': float, # % ширины кадра занятый линией
-            'is_terminate': bool,   # T-пересечение или обрыв
-            'horizontal_scans': list  # результаты горизонтального сканирования (4 линии)
-            'vertical_scans': list    # результаты вертикального сканирования (4 линии)
-            'direction_trend': float  # максимальный тренд направления (для предсказания траектории)
+            'position': float,         # -1.0 (линия слева) до 1.0 (линия справа) относительно центра камеры
+            'detected': bool,          # найдена ли линия
+            'width_percent': float,    # % ширины кадра занятый линией
+            'is_terminate': bool,      # окончание линии (обрыв или T-пересечение)
+            'terminate_type': str,     # 'gap' (обрыв), 't_junction' (T-образное) или None
+            'horizontal_scans': list,  # результаты горизонтального сканирования (4 линии)
+            'vertical_scans': list,    # результаты вертикального сканирования (4 линии)
+            'direction_trend': float   # максимальный тренд направления (для предсказания траектории)
         }
     """
     # Загрузка изображения
@@ -367,6 +369,7 @@ def detect_line_position(image_path):
         'detected': False,
         'width_percent': 0.0,
         'is_terminate': False,
+        'terminate_type': None,  # 'gap' (обрыв) или 't_junction' (Т-образное)
         'horizontal_scans': horizontal_results,
         'vertical_scans': vertical_results,
         'direction_trend': 0.0
@@ -376,8 +379,9 @@ def detect_line_position(image_path):
     detected_horizontal = [r for r in horizontal_results if r['position'] is not None]
     
     if len(detected_horizontal) == 0:
-        # Линия не найдена ни на одной горизонтальной линии (обрыв)
+        # Линия не найдена ни на одной горизонтальной линии - это ОБРЫВ
         result['is_terminate'] = True
+        result['terminate_type'] = 'gap'
         return result
     
     # Средняя ширина линии по горизонтальным сканам
@@ -385,19 +389,52 @@ def detect_line_position(image_path):
     avg_width_percent = total_width / len(horizontal_results)
     result['width_percent'] = avg_width_percent
     
-    # === ПРОВЕРКА НА T-ПЕРЕСЕЧЕНИЕ ===
-    # 1. Если линия очень широкая на горизонтальных сканах (занимает > 70% ширины)
+    # === УЛУЧШЕННАЯ ПРОВЕРКА НА T-ПЕРЕСЕЧЕНИЕ ===
+    # 
+    # Два типа окончаний:
+    # 1. ОБРЫВ (gap) - линия просто заканчивается, на нижних уровнях её нет
+    # 2. T-ПЕРЕСЕЧЕНИЕ (t_junction) - линия становится широкой, образуя перпендикуляр
+    
+    # Анализ 1: Широкие горизонтальные линии (>70% ширины)
     wide_horizontal = sum(1 for r in horizontal_results if r['width_percent'] > LINE_T_JUNCTION_THRESHOLD)
     
-    # 2. Если на 3 или 4 вертикальных сканах линия занимает много высоты (> 50%)
-    #    это означает что линия идет вертикально (T-образное пересечение)
+    # Анализ 2: Высокие вертикальные сегменты (>50% высоты)
     tall_vertical = sum(1 for r in vertical_results if r['height_percent'] > 0.5)
     
-    # T-пересечение определяется по:
-    # - Широкой горизонтальной линии на 2+ уровнях
-    # - Или высокой вертикальной линии на 3+ позициях
-    if wide_horizontal >= 2 or tall_vertical >= 3:
+    # Анализ 3: Очень широкая линия на верхних уровнях (признак T-пересечения)
+    # Проверяем первые две горизонтальные линии (25%, 50%)
+    wide_at_top = sum(1 for r in horizontal_results[:2] if r['width_percent'] > 0.8)
+    
+    # Анализ 4: Паттерн T-пересечения по вертикальным сканам
+    # Если линия есть по краям (X=20%, X=80%) но отсутствует в центре (X=40%, X=60%)
+    # это характерно для T-пересечения
+    # НО: нужно отличить от обычной вертикальной линии (которая идет через весь кадр)
+    edge_vertical = (vertical_results[0]['height_percent'] > 0.5 and  # X=20%
+                     vertical_results[-1]['height_percent'] > 0.5)     # X=80%
+    center_vertical = (vertical_results[1]['height_percent'] < 0.1 and  # X=40%
+                       vertical_results[2]['height_percent'] < 0.1)     # X=60%
+    
+    # Дополнительная проверка: если линия на краях слишком высокая (>75%),
+    # это скорее всего обычная вертикальная линия, а не T
+    # Также требуем чтобы оба края были примерно одинаково заполнены (оба >50%)
+    too_tall = (vertical_results[0]['height_percent'] > 0.75 or
+                vertical_results[-1]['height_percent'] > 0.75)
+    
+    # Для настоящего T-пересечения оба края должны быть умеренно заполнены (50-75%)
+    moderate_edges = (0.5 < vertical_results[0]['height_percent'] < 0.75 and
+                      0.5 < vertical_results[-1]['height_percent'] < 0.75)
+    
+    t_pattern = edge_vertical and center_vertical and not too_tall and moderate_edges
+    
+    # Анализ 5: Линия исчезает на нижних уровнях (признак обрыва)
+    # Проверяем нижнюю линию (90%)
+    missing_at_bottom = horizontal_results[-1]['position'] is None
+    
+    # Определяем тип окончания
+    if wide_horizontal >= 2 or tall_vertical >= 3 or wide_at_top >= 1 or t_pattern:
+        # T-ПЕРЕСЕЧЕНИЕ: линия широкая и/или есть вертикальные сегменты
         result['is_terminate'] = True
+        result['terminate_type'] = 't_junction'
         return result
     
     # Линия найдена
@@ -595,7 +632,18 @@ def visualize_detection(image_path, result, output_path=None):
     info_text += f"Тренд: {result.get('direction_trend', 0.0):.3f}\n"
     info_text += f"Обнаружена: {'ДА' if result['detected'] else 'НЕТ'}\n"
     info_text += f"Ширина: {result['width_percent']*100:.1f}%\n"
-    info_text += f"Конец/T: {'ДА' if result['is_terminate'] else 'НЕТ'}"
+    
+    # Показываем тип окончания если есть
+    if result['is_terminate']:
+        term_type = result.get('terminate_type', 'unknown')
+        if term_type == 'gap':
+            info_text += f"Окончание: ОБРЫВ"
+        elif term_type == 't_junction':
+            info_text += f"Окончание: T-ПЕРЕСЕЧЕНИЕ"
+        else:
+            info_text += f"Окончание: ДА"
+    else:
+        info_text += f"Окончание: НЕТ"
     
     ax3.text(5, LINE_CAMERA_HEIGHT - 5, info_text, color='white', fontsize=10,
             bbox=dict(boxstyle='round', facecolor='black', alpha=0.85),
@@ -664,11 +712,18 @@ def test_category(category_path, expected_range, visualize=False):
             print(f"   Сканы: верх={pos_top:+.3f}, низ={pos_bot:+.3f}")
         
         print(f"   Terminate: {result['is_terminate']}")
+        if result['is_terminate'] and result.get('terminate_type'):
+            term_type = result['terminate_type']
+            if term_type == 'gap':
+                print(f"   Тип окончания: ОБРЫВ (линия исчезает)")
+            elif term_type == 't_junction':
+                print(f"   Тип окончания: T-ПЕРЕСЕЧЕНИЕ (линия широкая)")
         
         # Проверка ожиданий
         if expected_range == 'terminate':
             if result['is_terminate']:
-                print("   ✅ PASS - Правильно определен конец линии")
+                term_info = f" ({result.get('terminate_type', 'неизвестно')})"
+                print(f"   ✅ PASS - Правильно определен конец линии{term_info}")
             else:
                 print("   ❌ FAIL - Ожидался конец линии, но линия обнаружена")
         else:
