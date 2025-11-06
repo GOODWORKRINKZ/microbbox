@@ -49,6 +49,36 @@ def apply_camera_transforms(image, h_mirror=True, v_flip=True):
     return img_array
 
 
+def normalize_image(img_array):
+    """
+    Адаптивная нормализация изображения для улучшения обнаружения линии.
+    
+    Проблема: изображения с камеры робота имеют низкую яркость (max 138-144 вместо 255),
+    из-за чего при фиксированном пороге LINE_THRESHOLD=128 линия не обнаруживается.
+    
+    Решение: применяем нормализацию контраста для растяжения гистограммы яркости
+    до полного диапазона [0, 255].
+    
+    Args:
+        img_array: numpy массив изображения в grayscale
+    
+    Returns:
+        numpy массив с нормализованными значениями [0, 255]
+    """
+    # Находим минимум и максимум яркости в изображении
+    min_val = img_array.min()
+    max_val = img_array.max()
+    
+    # Если изображение полностью однородное, возвращаем как есть
+    if max_val == min_val:
+        return img_array
+    
+    # Нормализация: растягиваем диапазон [min_val, max_val] до [0, 255]
+    normalized = ((img_array.astype(np.float32) - min_val) / (max_val - min_val) * 255.0).astype(np.uint8)
+    
+    return normalized
+
+
 def detect_line_position(image_path, camera_config):
     """
     Реализация алгоритма detectLinePosition() из LinerRobot.cpp
@@ -76,12 +106,11 @@ def detect_line_position(image_path, camera_config):
     if img.size != (LINE_CAMERA_WIDTH, LINE_CAMERA_HEIGHT):
         img = img.resize((LINE_CAMERA_WIDTH, LINE_CAMERA_HEIGHT), Image.Resampling.LANCZOS)
     
-    # Применяем трансформации камеры
-    img_array = apply_camera_transforms(
-        img, 
-        camera_config.get('hMirror', True),
-        camera_config.get('vFlip', True)
-    )
+    # Конвертируем в numpy array (трансформации камеры НЕ нужны - изображения уже правильно отражены)
+    img_array = np.array(img)
+    
+    # Применяем адаптивную нормализацию для компенсации низкой яркости
+    img_array = normalize_image(img_array)
     
     # Параметры сканирования
     width = img_array.shape[1]
@@ -146,27 +175,31 @@ def visualize_detection(image_path, result, camera_config, output_path=None):
     if img.size != (LINE_CAMERA_WIDTH, LINE_CAMERA_HEIGHT):
         img = img.resize((LINE_CAMERA_WIDTH, LINE_CAMERA_HEIGHT), Image.Resampling.LANCZOS)
     
-    # Применяем трансформации камеры
-    img_array = apply_camera_transforms(
-        img,
-        camera_config.get('hMirror', True),
-        camera_config.get('vFlip', True)
-    )
+    # Конвертируем в numpy array (трансформации камеры НЕ нужны - изображения уже правильно отражены)
+    img_array = np.array(img)
     
-    # Создание визуализации
-    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(12, 5))
+    # Применяем нормализацию (как в алгоритме детекции)
+    img_normalized = normalize_image(img_array)
+    
+    # Создание визуализации с 3 панелями
+    fig, (ax1, ax2, ax3) = plt.subplots(1, 3, figsize=(18, 5))
     
     # Исходное изображение
-    ax1.imshow(img_array, cmap='gray')
-    ax1.set_title(f'Original (after camera transforms)\n{os.path.basename(image_path)}')
+    ax1.imshow(img_array, cmap='gray', vmin=0, vmax=255)
+    ax1.set_title(f'Original\n{os.path.basename(image_path)}\nMin: {img_array.min()}, Max: {img_array.max()}')
     ax1.axis('off')
     
+    # Нормализованное изображение
+    ax2.imshow(img_normalized, cmap='gray', vmin=0, vmax=255)
+    ax2.set_title(f'Normalized\nMin: {img_normalized.min()}, Max: {img_normalized.max()}')
+    ax2.axis('off')
+    
     # Изображение с детекцией
-    ax2.imshow(img_array, cmap='gray')
+    ax3.imshow(img_normalized, cmap='gray')
     
     # Линия сканирования
     scan_line = result['scan_line']
-    ax2.axhline(y=scan_line, color='red', linestyle='--', linewidth=1, label='Scan line')
+    ax3.axhline(y=scan_line, color='red', linestyle='--', linewidth=1, label='Scan line')
     
     # Отображение позиции линии
     if result['detected']:
@@ -174,13 +207,13 @@ def visualize_detection(image_path, result, camera_config, output_path=None):
         position_normalized = result['position']
         position_pixel = (position_normalized + 1.0) * LINE_CAMERA_WIDTH / 2.0
         
-        ax2.axvline(x=position_pixel, color='green', linewidth=2, label=f'Line center: {position_normalized:.2f}')
+        ax3.axvline(x=position_pixel, color='green', linewidth=2, label=f'Line center: {position_normalized:.2f}')
         
         # Стрелка направления
         if abs(position_normalized) > 0.1:
             direction = 'LEFT' if position_normalized < 0 else 'RIGHT'
             color = 'yellow' if position_normalized < 0 else 'cyan'
-            ax2.text(position_pixel, scan_line - 10, f'← {direction}' if position_normalized < 0 else f'{direction} →',
+            ax3.text(position_pixel, scan_line - 10, f'← {direction}' if position_normalized < 0 else f'{direction} →',
                     color=color, fontsize=12, fontweight='bold',
                     ha='center', va='bottom')
     
@@ -190,13 +223,13 @@ def visualize_detection(image_path, result, camera_config, output_path=None):
     info_text += f"Width: {result['width_percent']*100:.1f}%\n"
     info_text += f"Terminate: {result['is_terminate']}"
     
-    ax2.text(5, 5, info_text, color='white', fontsize=10,
+    ax3.text(5, 5, info_text, color='white', fontsize=10,
             bbox=dict(boxstyle='round', facecolor='black', alpha=0.7),
             verticalalignment='top')
     
-    ax2.set_title('Line Detection Result')
-    ax2.legend(loc='upper right')
-    ax2.axis('off')
+    ax3.set_title('Line Detection Result')
+    ax3.legend(loc='upper right')
+    ax3.axis('off')
     
     plt.tight_layout()
     
