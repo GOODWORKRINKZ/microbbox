@@ -375,10 +375,17 @@ bool FirmwareUpdate::checkForUpdates(ReleaseInfo& releaseInfo, FirmwareChannel c
         
         if (parseGitHubRelease(payload, releaseInfo, channel)) {
             String currentVersion = GIT_VERSION;
-            // Для dev канала всегда показываем как "новую" версию, если она найдена
+            // Для dev канала сравниваем версии, чтобы не предлагать ту же самую
             if (channel == FirmwareChannel::DEV) {
-                releaseInfo.isNewer = true;
-                DEBUG_PRINTF("Найден dev релиз: %s\n", releaseInfo.version.c_str());
+                // Проверяем, не та же ли это dev версия
+                if (releaseInfo.version != currentVersion) {
+                    releaseInfo.isNewer = true;
+                    DEBUG_PRINTF("Найден новый dev релиз: %s (текущий: %s)\n", 
+                                releaseInfo.version.c_str(), currentVersion.c_str());
+                } else {
+                    releaseInfo.isNewer = false;
+                    DEBUG_PRINTF("Dev релиз совпадает с текущей версией: %s\n", currentVersion.c_str());
+                }
             } else {
                 releaseInfo.isNewer = isVersionNewer(currentVersion, releaseInfo.version);
             }
@@ -444,18 +451,33 @@ bool FirmwareUpdate::parseGitHubRelease(const String& json, ReleaseInfo& release
     // Для dev канала ищем первый prerelease с меткой "dev-"
     if (channel == FirmwareChannel::DEV) {
         // JSON содержит массив релизов, ищем первый dev prerelease
+        // Паттерн для поиска начала релиза в массиве
+        const char* RELEASE_START_PATTERN = "{\"url\":\"https://api.github.com/repos/";
+        const int PATTERN_LEN = strlen(RELEASE_START_PATTERN);
+        
         int searchPos = 0;
-        while (true) {
+        int maxIterations = 50; // Защита от бесконечного цикла
+        int iteration = 0;
+        
+        while (iteration < maxIterations) {
+            iteration++;
+            
             // Ищем начало следующего релиза в массиве
-            int releaseStart = json.indexOf("{\"url\":\"https://api.github.com/repos/", searchPos);
+            int releaseStart = json.indexOf(RELEASE_START_PATTERN, searchPos);
             if (releaseStart < 0) {
                 DEBUG_PRINTLN("Dev релизы не найдены");
                 return false;
             }
             
             // Ищем конец этого релиза (упрощенно - ищем следующий или конец массива)
-            int releaseEnd = json.indexOf("{\"url\":\"https://api.github.com/repos/", releaseStart + 10);
+            int releaseEnd = json.indexOf(RELEASE_START_PATTERN, releaseStart + PATTERN_LEN);
             if (releaseEnd < 0) releaseEnd = json.length();
+            
+            // Проверяем, что интервал валиден
+            if (releaseEnd <= releaseStart) {
+                DEBUG_PRINTLN("Некорректная структура JSON");
+                return false;
+            }
             
             String releaseSection = json.substring(releaseStart, releaseEnd);
             
@@ -487,13 +509,22 @@ bool FirmwareUpdate::parseGitHubRelease(const String& json, ReleaseInfo& release
                 if (assetsPos >= 0) {
                     String assetsSection = releaseSection.substring(assetsPos);
                     
+                    // Константа для поиска URL скачивания
+                    const char* URL_KEY = "\"browser_download_url\":\"";
+                    const int URL_KEY_LEN = strlen(URL_KEY);
+                    
                     // Ищем browser_download_url в assets
                     int urlSearchPos = 0;
-                    while (true) {
-                        int urlPos = assetsSection.indexOf("\"browser_download_url\":\"", urlSearchPos);
+                    int maxUrlSearches = 20; // Защита от бесконечного цикла
+                    int urlIteration = 0;
+                    
+                    while (urlIteration < maxUrlSearches) {
+                        urlIteration++;
+                        
+                        int urlPos = assetsSection.indexOf(URL_KEY, urlSearchPos);
                         if (urlPos < 0) break;
                         
-                        int urlStart = urlPos + 24;
+                        int urlStart = urlPos + URL_KEY_LEN;
                         int urlEnd = assetsSection.indexOf("\"", urlStart);
                         if (urlEnd < 0) break;
                         
