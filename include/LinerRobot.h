@@ -56,6 +56,9 @@ private:
     void updateMotors();
     void updateStatusLED();
     
+    // Анимация LED
+    void playStartupAnimation();
+    
     // Веб-обработчики
     void handleCommand(AsyncWebServerRequest* request);
     void handleStatus(AsyncWebServerRequest* request);

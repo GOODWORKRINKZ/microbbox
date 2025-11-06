@@ -70,10 +70,10 @@ bool LinerRobot::initSpecificComponents() {
 }
 
 void LinerRobot::updateSpecificComponents() {
-    // ДИАГНОСТИКА: Выводим текущий режим каждые 5 секунд
+    // ДИАГНОСТИКА: Выводим текущий режим периодически
     static unsigned long lastModePrint = 0;
-    unsigned long now = millis();
-    if (now - lastModePrint > 5000) {
+    if (millis() - lastModePrint > MODE_DIAG_INTERVAL_MS) {
+        unsigned long now = millis();
         DEBUG_PRINT("[MODE_DIAG] Текущий режим: ");
         DEBUG_PRINTLN(currentMode_ == Mode::AUTONOMOUS ? "АВТОНОМНЫЙ (следование по линии)" : "РУЧНОЙ");
         lastModePrint = now;
@@ -168,6 +168,11 @@ bool LinerRobot::initLEDs() {
     pixels_->show();
     
     DEBUG_PRINTLN("NeoPixel LED инициализированы");
+    
+    // Красивая анимация запуска
+    DEBUG_PRINTLN("Запуск анимации LED...");
+    playStartupAnimation();
+    
     return true;
 #else
     return true;
@@ -209,9 +214,9 @@ void LinerRobot::updateButton() {
     int rawPinValue = digitalRead(BUTTON_PIN);
     bool currentButtonState = (rawPinValue == LOW);
     
-    // ДИАГНОСТИКА: Выводим состояние каждые 2 секунды
+    // ДИАГНОСТИКА: Выводим состояние периодически
     static unsigned long lastDiagPrint = 0;
-    if (now - lastDiagPrint > 2000) {
+    if (now - lastDiagPrint > BUTTON_DIAG_INTERVAL_MS) {
         DEBUG_PRINT("[BUTTON_DIAG] Pin ");
         DEBUG_PRINT(BUTTON_PIN);
         DEBUG_PRINT(" = ");
@@ -407,6 +412,118 @@ void LinerRobot::handleMotorCommand(int throttlePWM, int steeringPWM) {
         }
     }
     // В автономном режиме игнорируем команды управления
+}
+
+void LinerRobot::playStartupAnimation() {
+#ifdef FEATURE_NEOPIXEL
+    if (!pixels_) return;
+    
+    const int leftStart = 0;    // Первые 8 LED - левая сторона
+    const int leftEnd = 7;
+    const int rightStart = 8;   // Следующие 8 LED - правая сторона  
+    const int rightEnd = 15;
+    
+    // Эффект 1: Радуга слева направо и справа налево
+    DEBUG_PRINTLN("Анимация: Радужная волна");
+    for (int j = 0; j < 256; j += 8) {
+        for (int i = leftStart; i <= leftEnd; i++) {
+            uint32_t color = pixels_->ColorHSV((j + i * 32) % 65536, 255, 200);
+            pixels_->setPixelColor(i, color);
+        }
+        for (int i = rightStart; i <= rightEnd; i++) {
+            uint32_t color = pixels_->ColorHSV((j + (rightEnd - i) * 32) % 65536, 255, 200);
+            pixels_->setPixelColor(i, color);
+        }
+        pixels_->show();
+        delay(15);
+    }
+    
+    // Эффект 2: Заполнение от центра к краям
+    DEBUG_PRINTLN("Анимация: Заполнение от центра");
+    pixels_->clear();
+    pixels_->show();
+    delay(100);
+    
+    // Красный цвет заполняет от центра к краям
+    for (int i = 0; i < 8; i++) {
+        int leftIdx = 7 - i;      // Левая сторона: от центра (7) к краю (0)
+        int rightIdx = 8 + i;     // Правая сторона: от центра (8) к краю (15)
+        
+        pixels_->setPixelColor(leftIdx, pixels_->Color(255, 0, 0));
+        pixels_->setPixelColor(rightIdx, pixels_->Color(255, 0, 0));
+        pixels_->show();
+        delay(60);
+    }
+    
+    delay(200);
+    
+    // Эффект 3: Смена цветов синхронно
+    DEBUG_PRINTLN("Анимация: Цветовая последовательность");
+    uint32_t colors[] = {
+        pixels_->Color(255, 0, 0),    // Красный
+        pixels_->Color(255, 128, 0),  // Оранжевый
+        pixels_->Color(255, 255, 0),  // Желтый
+        pixels_->Color(0, 255, 0),    // Зеленый
+        pixels_->Color(0, 0, 255),    // Синий
+        pixels_->Color(128, 0, 255)   // Фиолетовый
+    };
+    
+    for (int c = 0; c < 6; c++) {
+        for (int i = 0; i < NEOPIXEL_COUNT; i++) {
+            pixels_->setPixelColor(i, colors[c]);
+        }
+        pixels_->show();
+        delay(150);
+    }
+    
+    // Эффект 4: "Бегущие огни" навстречу друг другу
+    DEBUG_PRINTLN("Анимация: Бегущие огни");
+    for (int lap = 0; lap < 2; lap++) {
+        for (int i = 0; i < 8; i++) {
+            pixels_->clear();
+            
+            // Левая сторона: бежит слева направо (0->7)
+            pixels_->setPixelColor(i, pixels_->Color(0, 255, 255));
+            if (i > 0) pixels_->setPixelColor(i - 1, pixels_->Color(0, 128, 128));
+            
+            // Правая сторона: бежит справа налево (15->8)
+            pixels_->setPixelColor(rightEnd - i, pixels_->Color(255, 0, 255));
+            if (i > 0) pixels_->setPixelColor(rightEnd - i + 1, pixels_->Color(128, 0, 128));
+            
+            pixels_->show();
+            delay(80);
+        }
+    }
+    
+    // Эффект 5: Финальная вспышка
+    DEBUG_PRINTLN("Анимация: Финальная вспышка");
+    for (int brightness = 0; brightness < 255; brightness += 15) {
+        for (int i = 0; i < NEOPIXEL_COUNT; i++) {
+            pixels_->setPixelColor(i, pixels_->Color(brightness, brightness, brightness));
+        }
+        pixels_->show();
+        delay(10);
+    }
+    
+    delay(100);
+    
+    for (int brightness = 255; brightness >= 0; brightness -= 15) {
+        for (int i = 0; i < NEOPIXEL_COUNT; i++) {
+            pixels_->setPixelColor(i, pixels_->Color(brightness, brightness, brightness));
+        }
+        pixels_->show();
+        delay(10);
+    }
+    
+    // Переход к начальному состоянию (синий = ручной режим)
+    delay(200);
+    for (int i = 0; i < NEOPIXEL_COUNT; i++) {
+        pixels_->setPixelColor(i, pixels_->Color(0, 0, 255));
+    }
+    pixels_->show();
+    
+    DEBUG_PRINTLN("Анимация завершена!");
+#endif
 }
 
 void LinerRobot::updateStatusLED() {

@@ -62,6 +62,7 @@
 #ifdef FEATURE_BUTTON
     #define BUTTON_PIN 4            // Кнопка на пин 4 (GPIO4, безопасный пин)
     #define BUTTON_DEBOUNCE_MS 50   // Время антидребезга
+    #define BUTTON_DIAG_INTERVAL_MS 2000  // Интервал вывода диагностики кнопки
 #endif
 
 #ifdef FEATURE_MOTORS
@@ -158,6 +159,9 @@
 enum class ControlMode {
     DIFFERENTIAL = 0  // Дифференциальный (правый стик = скорость, левый стик = поворот)
 };
+
+// Диагностика
+#define MODE_DIAG_INTERVAL_MS 5000  // Интервал вывода диагностики режима работы
 
 #if defined(FEATURE_NEOPIXEL) || defined(FEATURE_BUZZER)
 // Эффекты и режимы
