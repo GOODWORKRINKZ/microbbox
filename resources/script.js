@@ -755,6 +755,7 @@ class BaseRobotUI {
         // Чекбоксы настроек обновлений
         const autoUpdateCheck = document.getElementById('autoUpdate');
         const dontOfferCheck = document.getElementById('dontOfferUpdates');
+        const channelSelect = document.getElementById('updateChannel');
         
         if (autoUpdateCheck) {
             autoUpdateCheck.addEventListener('change', () => this.saveUpdateSettings());
@@ -762,6 +763,13 @@ class BaseRobotUI {
         
         if (dontOfferCheck) {
             dontOfferCheck.addEventListener('change', () => this.saveUpdateSettings());
+        }
+        
+        if (channelSelect) {
+            channelSelect.addEventListener('change', () => {
+                this.updateChannelDescription();
+                this.saveUpdateSettings();
+            });
         }
         
         // Проверяем при открытии вкладки обновлений
@@ -969,11 +977,33 @@ class BaseRobotUI {
                 const settings = await settingsResponse.json();
                 const autoUpdateCheck = document.getElementById('autoUpdate');
                 const dontOfferCheck = document.getElementById('dontOfferUpdates');
+                const channelSelect = document.getElementById('updateChannel');
+                
                 if (autoUpdateCheck) autoUpdateCheck.checked = settings.autoUpdate;
                 if (dontOfferCheck) dontOfferCheck.checked = settings.dontOffer;
+                if (channelSelect && settings.channel) {
+                    channelSelect.value = settings.channel;
+                    this.updateChannelDescription();
+                }
             }
         } catch (error) {
             Logger.error('Ошибка загрузки информации об обновлениях:', error);
+        }
+    }
+    
+    updateChannelDescription() {
+        const channelSelect = document.getElementById('updateChannel');
+        const channelDescription = document.getElementById('channelDescription');
+        
+        if (!channelSelect || !channelDescription) return;
+        
+        const channel = channelSelect.value;
+        if (channel === 'dev') {
+            channelDescription.textContent = '⚠️ Development сборки - могут содержать баги. Только для тестирования!';
+            channelDescription.style.color = 'rgba(255, 136, 0, 0.9)';
+        } else {
+            channelDescription.textContent = 'Стабильные релизы для production использования';
+            channelDescription.style.color = 'rgba(0, 255, 136, 0.7)';
         }
     }
     
@@ -1373,13 +1403,15 @@ class BaseRobotUI {
     async saveUpdateSettings() {
         const autoUpdate = document.getElementById('autoUpdate')?.checked || false;
         const dontOffer = document.getElementById('dontOfferUpdates')?.checked || false;
+        const channel = document.getElementById('updateChannel')?.value || 'stable';
         
         try {
             await fetch('/api/update/settings', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ autoUpdate, dontOffer })
+                body: JSON.stringify({ autoUpdate, dontOffer, channel })
             });
+            Logger.log(`Настройки обновлений сохранены (канал: ${channel})`);
         } catch (error) {
             Logger.error('Ошибка сохранения настроек обновлений:', error);
         }
