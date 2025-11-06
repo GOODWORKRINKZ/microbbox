@@ -1,0 +1,23 @@
+{
+    "wifi": {
+        "ssid": "KRIKZ",
+        "mode": "CLIENT",
+        "deviceName": "MICROBBOX-D9D2F4"
+    },
+    "motors": {
+        "swapLeftRight": true,
+        "invertLeft": true,
+        "invertRight": false
+    },
+    "sticks": {
+        "invertThrottle": false,
+        "invertSteering": false
+    },
+    "camera": {
+        "hMirror": true,
+        "vFlip": true
+    },
+    "effects": {
+        "effectMode": 0
+    }
+}
