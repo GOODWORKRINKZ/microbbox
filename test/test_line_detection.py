@@ -36,16 +36,9 @@ def load_camera_config(config_path='data/camera_config.json'):
     return {'hMirror': True, 'vFlip': True}
 
 
-def apply_camera_transforms(image, h_mirror=True, v_flip=True):
+def apply_camera_transforms(image):
     """Применяет трансформации камеры (отражения)"""
-    img_array = np.array(image)
-    
-    if h_mirror:
-        img_array = np.fliplr(img_array)
-    
-    if v_flip:
-        img_array = np.flipud(img_array)
-    
+    img_array = np.array(image)    
     return img_array
 
 
