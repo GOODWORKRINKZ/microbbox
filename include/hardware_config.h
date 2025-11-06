@@ -150,6 +150,7 @@
     #define LINE_CAMERA_WIDTH 96        // Ширина изображения
     #define LINE_CAMERA_HEIGHT 96       // Высота изображения
     #define LINE_THRESHOLD 128          // Порог для ЧБ изображения
+    #define LINE_T_JUNCTION_THRESHOLD 0.7f  // Порог детектирования T-пересечения (70% ширины)
     #define LINE_PID_KP 1.0            // Пропорциональный коэффициент PID
     #define LINE_PID_KI 0.0            // Интегральный коэффициент PID
     #define LINE_PID_KD 0.1            // Дифференциальный коэффициент PID

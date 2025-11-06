@@ -355,13 +355,13 @@ float LinerRobot::detectLinePosition() {
     esp_camera_fb_return(fb);
     
     if (count == 0) {
-        // Линия не найдена
+        // Линия не найдена (обрыв)
         lineDetected_ = false;
         lineNotDetectedCount_++;
         
         // Если линия не найдена 10+ кадров подряд - считаем что конец линии
         if (lineNotDetectedCount_ >= 10 && !lineEndAnimationPlayed_) {
-            DEBUG_PRINTLN("!!! КОНЕЦ ЛИНИИ ОБНАРУЖЕН !!!");
+            DEBUG_PRINTLN("!!! КОНЕЦ ЛИНИИ: ОБРЫВ !!!");
             lineEndAnimationPlayed_ = true;
 #ifdef FEATURE_NEOPIXEL
             playLineEndAnimation();
@@ -373,6 +373,24 @@ float LinerRobot::detectLinePosition() {
         }
         
         DEBUG_PRINTLN("ПРЕДУПРЕЖДЕНИЕ: Линия не обнаружена");
+        return 0.0f;
+    }
+    
+    // Проверка на T-образное пересечение или разветвление
+    // Если линия занимает больше порогового значения ширины кадра - это пересечение/разветвление
+    float lineWidthPercent = (float)count / (float)width;
+    if (lineWidthPercent > LINE_T_JUNCTION_THRESHOLD && !lineEndAnimationPlayed_) {
+        DEBUG_PRINTF("!!! КОНЕЦ ЛИНИИ: T-ОБРАЗНОЕ ПЕРЕСЕЧЕНИЕ (ширина линии %.0f%%) !!!\n", lineWidthPercent * 100);
+        lineEndAnimationPlayed_ = true;
+#ifdef FEATURE_NEOPIXEL
+        playLineEndAnimation();
+#endif
+        // Остановка моторов
+        if (motorController_) {
+            motorController_->stop();
+        }
+        
+        // Возвращаем центр, чтобы не было резких движений перед остановкой
         return 0.0f;
     }
     
