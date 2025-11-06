@@ -46,9 +46,14 @@ bool LinerRobot::initSpecificComponents() {
     
 #ifdef FEATURE_BUTTON
     // Инициализация кнопки
+    DEBUG_PRINTLN("FEATURE_BUTTON определен, инициализируем кнопку...");
     if (!initButton()) {
         DEBUG_PRINTLN("ПРЕДУПРЕЖДЕНИЕ: Не удалось инициализировать кнопку");
+    } else {
+        DEBUG_PRINTLN("✓ Кнопка успешно инициализирована!");
     }
+#else
+    DEBUG_PRINTLN("ВНИМАНИЕ: FEATURE_BUTTON НЕ определен! Кнопка не будет работать!");
 #endif
     
 #ifdef FEATURE_NEOPIXEL
@@ -65,6 +70,15 @@ bool LinerRobot::initSpecificComponents() {
 }
 
 void LinerRobot::updateSpecificComponents() {
+    // ДИАГНОСТИКА: Выводим текущий режим каждые 5 секунд
+    static unsigned long lastModePrint = 0;
+    unsigned long now = millis();
+    if (now - lastModePrint > 5000) {
+        DEBUG_PRINT("[MODE_DIAG] Текущий режим: ");
+        DEBUG_PRINTLN(currentMode_ == Mode::AUTONOMOUS ? "АВТОНОМНЫЙ (следование по линии)" : "РУЧНОЙ");
+        lastModePrint = now;
+    }
+    
     // Обновление кнопки
 #ifdef FEATURE_BUTTON
     updateButton();
@@ -166,6 +180,14 @@ bool LinerRobot::initButton() {
     
     pinMode(BUTTON_PIN, INPUT_PULLUP);
     
+    // Читаем начальное состояние
+    bool initialState = digitalRead(BUTTON_PIN);
+    DEBUG_PRINT("Кнопка на пине ");
+    DEBUG_PRINT(BUTTON_PIN);
+    DEBUG_PRINT(", начальное состояние: ");
+    DEBUG_PRINTLN(initialState == HIGH ? "HIGH (не нажата)" : "LOW (нажата)");
+    DEBUG_PRINTLN("Кнопка настроена с INPUT_PULLUP, нажатие = LOW (замыкание на GND)");
+    
     DEBUG_PRINTLN("Кнопка инициализирована");
     return true;
 #else
@@ -184,52 +206,66 @@ void LinerRobot::updateButton() {
     // Читаем состояние кнопки
     // HIGH = не нажата (подтянута к VCC через pull-up)
     // LOW = нажата (замкнута на GND)
-    bool buttonState = digitalRead(BUTTON_PIN) == LOW;
+    int rawPinValue = digitalRead(BUTTON_PIN);
+    bool currentButtonState = (rawPinValue == LOW);
     
-    // Обнаруживаем переход из HIGH в LOW (нажатие)
-    // Игнорируем если кнопка была LOW при старте (LED на пине)
-    static bool firstRead = true;
-    static bool initialState = HIGH;
-    
-    if (firstRead) {
-        initialState = !buttonState; // Инвертируем, чтобы игнорировать LED
-        firstRead = false;
-        buttonPressed_ = buttonState;
-        return; // Пропускаем первое чтение
+    // ДИАГНОСТИКА: Выводим состояние каждые 2 секунды
+    static unsigned long lastDiagPrint = 0;
+    if (now - lastDiagPrint > 2000) {
+        DEBUG_PRINT("[BUTTON_DIAG] Pin ");
+        DEBUG_PRINT(BUTTON_PIN);
+        DEBUG_PRINT(" = ");
+        DEBUG_PRINT(rawPinValue);
+        DEBUG_PRINT(" (");
+        DEBUG_PRINT(rawPinValue == HIGH ? "HIGH/не_нажата" : "LOW/нажата");
+        DEBUG_PRINT("), buttonPressed_ = ");
+        DEBUG_PRINTLN(buttonPressed_ ? "true" : "false");
+        lastDiagPrint = now;
     }
     
-    if (buttonState && !buttonPressed_) {
-        // Кнопка нажата (переход HIGH->LOW)
+    // Детектируем переход из не нажатого состояния в нажатое (фронт нажатия)
+    if (currentButtonState && !buttonPressed_) {
+        // Кнопка только что нажата (переход с HIGH на LOW)
         buttonPressed_ = true;
         onButtonPressed();
-    } else if (!buttonState && buttonPressed_) {
-        // Кнопка отпущена (переход LOW->HIGH)
+        DEBUG_PRINTLN("Кнопка: переход в НАЖАТО, вызов onButtonPressed()");
+    } else if (!currentButtonState && buttonPressed_) {
+        // Кнопка отпущена (переход с LOW на HIGH)
         buttonPressed_ = false;
+        DEBUG_PRINTLN("Кнопка: переход в ОТПУЩЕНО");
     }
 #endif
 }
 
 void LinerRobot::onButtonPressed() {
-    DEBUG_PRINTLN("Кнопка нажата!");
+    DEBUG_PRINTLN("==================================================");
+    DEBUG_PRINTLN("КНОПКА НАЖАТА!");
+    DEBUG_PRINT("Текущий режим: ");
+    DEBUG_PRINTLN(currentMode_ == Mode::MANUAL ? "РУЧНОЙ" : "АВТОНОМНЫЙ");
     
     // Переключение режима
     if (currentMode_ == Mode::MANUAL) {
         currentMode_ = Mode::AUTONOMOUS;
-        DEBUG_PRINTLN("Переход в АВТОНОМНЫЙ режим");
+        DEBUG_PRINTLN(">>> ПЕРЕХОД В АВТОНОМНЫЙ РЕЖИМ <<<");
+        DEBUG_PRINTLN(">>> НАЧАТО АВТОСЛЕДОВАНИЕ ПО ЛИНИИ <<<");
         
         // Сброс PID контроллера
         pidError_ = 0.0f;
         pidLastError_ = 0.0f;
         pidIntegral_ = 0.0f;
+        DEBUG_PRINTLN("PID контроллер сброшен");
     } else {
         currentMode_ = Mode::MANUAL;
-        DEBUG_PRINTLN("Переход в РУЧНОЙ режим");
+        DEBUG_PRINTLN(">>> ПЕРЕХОД В РУЧНОЙ РЕЖИМ <<<");
+        DEBUG_PRINTLN(">>> АВТОСЛЕДОВАНИЕ ОСТАНОВЛЕНО <<<");
         
         // Остановка моторов
         if (motorController_) {
             motorController_->stop();
+            DEBUG_PRINTLN("Моторы остановлены");
         }
     }
+    DEBUG_PRINTLN("==================================================");
 }
 
 void LinerRobot::updateLineFollowing() {

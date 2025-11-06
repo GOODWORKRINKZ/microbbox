@@ -41,7 +41,11 @@
 #ifdef FEATURE_NEOPIXEL
     #define NEOPIXEL_PIN 2          // Адресные светодиоды на пин 2
     #define NEOPIXEL_LED_CHANNEL 7  // PWM канал 7
-    #define NEOPIXEL_COUNT 3        // Всего 3 светодиода (2 сзади, 1 спереди)
+    #ifdef TARGET_LINER
+        #define NEOPIXEL_COUNT 8        // Для Liner: 8 светодиодов (по 4 на каждую сторону)
+    #else
+        #define NEOPIXEL_COUNT 3        // Для Classic/Brain: 3 светодиода (2 сзади, 1 спереди)
+    #endif
     #define LED_BRIGHTNESS_DEFAULT 128   // Яркость по умолчанию (50%)
     #define LED_BRIGHTNESS_MAX 255       // Максимальная яркость
 #endif
