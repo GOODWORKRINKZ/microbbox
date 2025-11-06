@@ -12,7 +12,8 @@ FirmwareUpdate::FirmwareUpdate() :
     shouldReboot(false),
     rebootScheduledTime(0),
     autoUpdateEnabled(false),
-    dontOfferUpdates(false)
+    dontOfferUpdates(false),
+    firmwareChannel(FirmwareChannel::STABLE)
 {
     DEBUG_PRINTLN("FirmwareUpdate конструктор");
     
@@ -42,6 +43,12 @@ bool FirmwareUpdate::init(AsyncWebServer* server) {
     preferences.begin("firmware", false);
     autoUpdateEnabled = preferences.getBool("autoUpdate", false);
     dontOfferUpdates = preferences.getBool("dontOffer", false);
+    
+    // Загрузка канала обновлений (по умолчанию STABLE)
+    uint8_t channelValue = preferences.getUChar("channel", static_cast<uint8_t>(FirmwareChannel::STABLE));
+    firmwareChannel = static_cast<FirmwareChannel>(channelValue);
+    
+    DEBUG_PRINTF("Канал обновлений: %s\n", getChannelName());
     
     // Регистрация обработчиков
     if (server) {
@@ -128,6 +135,7 @@ void FirmwareUpdate::registerUpdateHandlers(AsyncWebServer* server) {
                 // Парсим JSON более надежно
                 bool enabled = false;
                 bool dontOffer = false;
+                FirmwareChannel channel = firmwareChannel; // По умолчанию текущий канал
                 
                 int autoUpdatePos = body.indexOf("\"autoUpdate\"");
                 if (autoUpdatePos >= 0) {
@@ -157,8 +165,30 @@ void FirmwareUpdate::registerUpdateHandlers(AsyncWebServer* server) {
                     setDontOfferUpdates(dontOffer);
                 }
                 
+                // Парсим канал обновлений
+                int channelPos = body.indexOf("\"channel\"");
+                if (channelPos >= 0) {
+                    int colonPos = body.indexOf(":", channelPos);
+                    if (colonPos >= 0) {
+                        int quoteStart = body.indexOf("\"", colonPos);
+                        if (quoteStart >= 0) {
+                            int quoteEnd = body.indexOf("\"", quoteStart + 1);
+                            if (quoteEnd >= 0) {
+                                String channelValue = body.substring(quoteStart + 1, quoteEnd);
+                                if (channelValue == "dev" || channelValue == "DEV") {
+                                    channel = FirmwareChannel::DEV;
+                                } else {
+                                    channel = FirmwareChannel::STABLE;
+                                }
+                                setFirmwareChannel(channel);
+                            }
+                        }
+                    }
+                }
+                
                 String response = "{\"status\":\"ok\",\"autoUpdate\":" + String(autoUpdateEnabled ? "true" : "false") + 
-                                ",\"dontOffer\":" + String(dontOfferUpdates ? "true" : "false") + "}";
+                                ",\"dontOffer\":" + String(dontOfferUpdates ? "true" : "false") +
+                                ",\"channel\":\"" + String(getChannelName()) + "\"}";
                 request->send(200, "application/json", response);
                 body = "";
             }
@@ -167,7 +197,8 @@ void FirmwareUpdate::registerUpdateHandlers(AsyncWebServer* server) {
     // API получения настроек
     server->on("/api/update/settings", HTTP_GET, [this](AsyncWebServerRequest *request) {
         String response = "{\"autoUpdate\":" + String(autoUpdateEnabled ? "true" : "false") + 
-                        ",\"dontOffer\":" + String(dontOfferUpdates ? "true" : "false") + "}";
+                        ",\"dontOffer\":" + String(dontOfferUpdates ? "true" : "false") +
+                        ",\"channel\":\"" + String(getChannelName()) + "\"}";
         AsyncWebServerResponse *resp = request->beginResponse(200, "application/json", response);
         resp->addHeader("Access-Control-Allow-Origin", "*");
         request->send(resp);
@@ -264,11 +295,23 @@ void FirmwareUpdate::handleUpdateStatus(AsyncWebServerRequest *request) {
 }
 
 void FirmwareUpdate::handleCheckUpdates(AsyncWebServerRequest *request) {
+    // Проверяем, запрошен ли конкретный канал через параметр
+    FirmwareChannel checkChannel = firmwareChannel; // По умолчанию текущий
+    if (request->hasParam("channel")) {
+        String channelParam = request->getParam("channel")->value();
+        if (channelParam == "dev" || channelParam == "DEV") {
+            checkChannel = FirmwareChannel::DEV;
+        } else {
+            checkChannel = FirmwareChannel::STABLE;
+        }
+    }
+    
     ReleaseInfo releaseInfo;
-    bool hasUpdate = checkForUpdates(releaseInfo);
+    bool hasUpdate = checkForUpdates(releaseInfo, checkChannel);
     
     String json = "{";
     json += "\"hasUpdate\":" + String(hasUpdate ? "true" : "false") + ",";
+    json += "\"channel\":\"" + String(checkChannel == FirmwareChannel::DEV ? "dev" : "stable") + "\",";
     if (hasUpdate) {
         json += "\"version\":\"" + releaseInfo.version + "\",";
         json += "\"releaseName\":\"" + releaseInfo.releaseName + "\",";
@@ -298,13 +341,28 @@ void FirmwareUpdate::handleCurrentVersion(AsyncWebServerRequest *request) {
 }
 
 bool FirmwareUpdate::checkForUpdates(ReleaseInfo& releaseInfo) {
+    return checkForUpdates(releaseInfo, firmwareChannel);
+}
+
+bool FirmwareUpdate::checkForUpdates(ReleaseInfo& releaseInfo, FirmwareChannel channel) {
     if (WiFi.status() != WL_CONNECTED) {
         DEBUG_PRINTLN("WiFi не подключен, невозможно проверить обновления");
         return false;
     }
     
     HTTPClient http;
-    String url = "https://api.github.com/repos/" + String(GITHUB_REPO_URL) + "/releases/latest";
+    String url;
+    
+    if (channel == FirmwareChannel::DEV) {
+        // Для dev канала получаем все релизы и ищем последний prerelease
+        url = "https://api.github.com/repos/" + String(GITHUB_REPO_URL) + "/releases";
+        DEBUG_PRINTLN("Проверка dev канала: получаем список всех релизов");
+    } else {
+        // Для stable канала получаем только latest release
+        url = "https://api.github.com/repos/" + String(GITHUB_REPO_URL) + "/releases/latest";
+        DEBUG_PRINTLN("Проверка stable канала: получаем последний релиз");
+    }
+    
     http.begin(url);
     http.addHeader("Accept", "application/vnd.github.v3+json");
     http.addHeader("User-Agent", "MicroBox-Firmware-Updater");
@@ -315,9 +373,16 @@ bool FirmwareUpdate::checkForUpdates(ReleaseInfo& releaseInfo) {
         String payload = http.getString();
         DEBUG_PRINTLN("Получен ответ от GitHub API");
         
-        if (parseGitHubRelease(payload, releaseInfo)) {
+        if (parseGitHubRelease(payload, releaseInfo, channel)) {
             String currentVersion = GIT_VERSION;
-            releaseInfo.isNewer = isVersionNewer(currentVersion, releaseInfo.version);
+            // Для dev канала всегда показываем как "новую" версию, если она найдена
+            if (channel == FirmwareChannel::DEV) {
+                releaseInfo.isNewer = true;
+                DEBUG_PRINTF("Найден dev релиз: %s\n", releaseInfo.version.c_str());
+            } else {
+                releaseInfo.isNewer = isVersionNewer(currentVersion, releaseInfo.version);
+            }
+            releaseInfo.channel = channel;
             http.end();
             return releaseInfo.isNewer;
         }
@@ -357,13 +422,110 @@ bool FirmwareUpdate::isDontOfferUpdates() const {
     return dontOfferUpdates;
 }
 
+void FirmwareUpdate::setFirmwareChannel(FirmwareChannel channel) {
+    firmwareChannel = channel;
+    preferences.putUChar("channel", static_cast<uint8_t>(channel));
+    DEBUG_PRINTF("Канал обновлений изменен на: %s\n", getChannelName());
+}
+
+FirmwareChannel FirmwareUpdate::getFirmwareChannel() const {
+    return firmwareChannel;
+}
+
+const char* FirmwareUpdate::getChannelName() const {
+    return firmwareChannel == FirmwareChannel::DEV ? "dev" : "stable";
+}
+
 bool FirmwareUpdate::parseGitHubRelease(const String& json, ReleaseInfo& releaseInfo) {
+    return parseGitHubRelease(json, releaseInfo, FirmwareChannel::STABLE);
+}
+
+bool FirmwareUpdate::parseGitHubRelease(const String& json, ReleaseInfo& releaseInfo, FirmwareChannel channel) {
+    // Для dev канала ищем первый prerelease с меткой "dev-"
+    if (channel == FirmwareChannel::DEV) {
+        // JSON содержит массив релизов, ищем первый dev prerelease
+        int searchPos = 0;
+        while (true) {
+            // Ищем начало следующего релиза в массиве
+            int releaseStart = json.indexOf("{\"url\":\"https://api.github.com/repos/", searchPos);
+            if (releaseStart < 0) {
+                DEBUG_PRINTLN("Dev релизы не найдены");
+                return false;
+            }
+            
+            // Ищем конец этого релиза (упрощенно - ищем следующий или конец массива)
+            int releaseEnd = json.indexOf("{\"url\":\"https://api.github.com/repos/", releaseStart + 10);
+            if (releaseEnd < 0) releaseEnd = json.length();
+            
+            String releaseSection = json.substring(releaseStart, releaseEnd);
+            
+            // Проверяем, это prerelease и dev версия?
+            String prerelease = extractJsonValue(releaseSection, "prerelease");
+            String tagName = extractJsonValue(releaseSection, "tag_name");
+            String draft = extractJsonValue(releaseSection, "draft");
+            
+            // Ищем dev релиз: prerelease=true, не draft, tag начинается с "dev-"
+            if (prerelease == "true" && draft != "true" && tagName.startsWith("dev-")) {
+                DEBUG_PRINTF("Найден dev релиз: %s\n", tagName.c_str());
+                
+                // Парсим этот релиз
+                releaseInfo.version = tagName;
+                releaseInfo.releaseName = extractJsonValue(releaseSection, "name");
+                releaseInfo.releaseNotes = extractJsonValue(releaseSection, "body");
+                releaseInfo.publishedAt = extractJsonValue(releaseSection, "published_at");
+                releaseInfo.robotType = robotType_;
+                releaseInfo.channel = channel;
+                
+                // Получаем строковое представление типа робота (lowercase)
+                String robotTypeStr = robotTypeToLowerString(robotType_);
+                
+                // Ищем URL для скачивания dev .bin файла
+                // Формат: microbox-{type}-dev-*.bin
+                String targetPattern = "microbox-" + robotTypeStr + "-dev-";
+                
+                int assetsPos = releaseSection.indexOf("\"assets\":");
+                if (assetsPos >= 0) {
+                    String assetsSection = releaseSection.substring(assetsPos);
+                    
+                    // Ищем browser_download_url в assets
+                    int urlSearchPos = 0;
+                    while (true) {
+                        int urlPos = assetsSection.indexOf("\"browser_download_url\":\"", urlSearchPos);
+                        if (urlPos < 0) break;
+                        
+                        int urlStart = urlPos + 24;
+                        int urlEnd = assetsSection.indexOf("\"", urlStart);
+                        if (urlEnd < 0) break;
+                        
+                        String url = assetsSection.substring(urlStart, urlEnd);
+                        
+                        // Проверяем, содержит ли URL наш паттерн dev прошивки
+                        if (url.indexOf(targetPattern) >= 0 && url.endsWith(".bin")) {
+                            releaseInfo.downloadUrl = url;
+                            DEBUG_PRINTF("Найден dev бинарник для %s: %s\n", robotTypeStr.c_str(), url.c_str());
+                            return true;
+                        }
+                        
+                        urlSearchPos = urlEnd;
+                    }
+                }
+                
+                DEBUG_PRINTLN("Dev релиз найден, но подходящий бинарник не найден");
+                return false;
+            }
+            
+            searchPos = releaseEnd;
+        }
+    }
+    
+    // Для stable канала - старая логика (один релиз)
     // Простой парсинг JSON без библиотеки для экономии памяти
     releaseInfo.version = extractJsonValue(json, "tag_name");
     releaseInfo.releaseName = extractJsonValue(json, "name");
     releaseInfo.releaseNotes = extractJsonValue(json, "body");
     releaseInfo.publishedAt = extractJsonValue(json, "published_at");
     releaseInfo.robotType = robotType_;
+    releaseInfo.channel = channel;
     
     // Получаем строковое представление типа робота (lowercase)
     String robotTypeStr = robotTypeToLowerString(robotType_);
