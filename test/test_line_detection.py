@@ -297,10 +297,12 @@ def detect_line_position(image_path):
         count = 0
         
         # Сканируем горизонтально
+        # ВАЖНО: После бинаризации ЧЕРНАЯ линия имеет значение 0 (темная), белый фон = 255 (светлый)
+        # Нужно искать ТЕМНЫЕ пиксели (линию), а не светлые (фон)
         for x in range(width):
             pixel = img_array[scan_y, x]
             
-            if pixel > LINE_THRESHOLD:
+            if pixel < LINE_THRESHOLD:  # Ищем ТЕМНЫЕ пиксели (черная линия)
                 sum_position += float(x)
                 count += 1
         
@@ -337,10 +339,12 @@ def detect_line_position(image_path):
         count = 0
         
         # Сканируем вертикально
+        # ВАЖНО: После бинаризации ЧЕРНАЯ линия имеет значение 0 (темная), белый фон = 255 (светлый)
+        # Нужно искать ТЕМНЫЕ пиксели (линию), а не светлые (фон)
         for y in range(height):
             pixel = img_array[y, scan_x]
             
-            if pixel > LINE_THRESHOLD:
+            if pixel < LINE_THRESHOLD:  # Ищем ТЕМНЫЕ пиксели (черная линия)
                 sum_position += float(y)
                 count += 1
         
@@ -430,9 +434,17 @@ def detect_line_position(image_path):
     # Проверяем нижнюю линию (90%)
     missing_at_bottom = horizontal_results[-1]['position'] is None
     
+    # Анализ 6: Если линия на нижнем уровне имеет четкую позицию (не в центре),
+    # это обычная широкая линия (например, поворот), а не T-пересечение
+    # T-пересечение обычно центрировано (позиция близка к 0)
+    bottom_position = horizontal_results[-1]['position']
+    has_clear_direction = (bottom_position is not None and abs(bottom_position) > 0.15)
+    
     # Определяем тип окончания
-    if wide_horizontal >= 2 or tall_vertical >= 3 or wide_at_top >= 1 or t_pattern:
-        # T-ПЕРЕСЕЧЕНИЕ: линия широкая и/или есть вертикальные сегменты
+    # ВАЖНО: Широкие линии (wide_horizontal >= 2) могут быть обычными поворотами!
+    # Проверяем: если есть четкое направление на нижнем уровне, это не T-пересечение
+    if not has_clear_direction and (wide_horizontal >= 2 or tall_vertical >= 3 or wide_at_top >= 1 or t_pattern):
+        # T-ПЕРЕСЕЧЕНИЕ: линия широкая БЕЗ четкого направления, и/или есть вертикальные сегменты
         result['is_terminate'] = True
         result['terminate_type'] = 't_junction'
         return result
