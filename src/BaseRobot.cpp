@@ -401,8 +401,12 @@ bool BaseRobot::initWebServer() {
 #ifdef FEATURE_CAMERA
         sensor_t* s = esp_camera_sensor_get();
         if (s != nullptr && wifiSettings_ != nullptr) {
-            s->set_hmirror(s, wifiSettings_->getCameraHMirror() ? 1 : 0);
-            s->set_vflip(s, wifiSettings_->getCameraVFlip() ? 1 : 0);
+            bool hMirror = wifiSettings_->getCameraHMirror();
+            bool vFlip = wifiSettings_->getCameraVFlip();
+            DEBUG_PRINTF("API: Применение настроек камеры: hMirror=%s, vFlip=%s\n",
+                         hMirror ? "true" : "false", vFlip ? "true" : "false");
+            s->set_hmirror(s, hMirror ? 1 : 0);
+            s->set_vflip(s, vFlip ? 1 : 0);
             request->send(200, "application/json", "{\"status\":\"ok\",\"message\":\"Настройки камеры применены\"}");
         } else {
             request->send(500, "application/json", "{\"status\":\"error\",\"message\":\"Камера не инициализирована\"}");
@@ -576,8 +580,15 @@ bool BaseRobot::initCamera() {
         s->set_wpc(s, 1);            // 0 = disable , 1 = enable
         s->set_raw_gma(s, 1);        // 0 = disable , 1 = enable
         s->set_lenc(s, 1);           // 0 = disable , 1 = enable
-        s->set_hmirror(s, wifiSettings_->getCameraHMirror() ? 1 : 0);  // Горизонтальное зеркало
-        s->set_vflip(s, wifiSettings_->getCameraVFlip() ? 1 : 0);      // Вертикальный переворот
+        
+        // Применение настроек ориентации камеры из WiFiSettings
+        bool hMirror = wifiSettings_->getCameraHMirror();
+        bool vFlip = wifiSettings_->getCameraVFlip();
+        DEBUG_PRINTF("Применение настроек камеры: hMirror=%s, vFlip=%s\n", 
+                     hMirror ? "true" : "false", vFlip ? "true" : "false");
+        s->set_hmirror(s, hMirror ? 1 : 0);  // Горизонтальное зеркало
+        s->set_vflip(s, vFlip ? 1 : 0);      // Вертикальный переворот
+        
         s->set_dcw(s, 1);            // 0 = disable , 1 = enable
         s->set_colorbar(s, 0);       // 0 = disable , 1 = enable
     }
