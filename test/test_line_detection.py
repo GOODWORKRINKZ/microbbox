@@ -26,16 +26,6 @@ LINE_CAMERA_HEIGHT = 120
 LINE_THRESHOLD = 128
 LINE_T_JUNCTION_THRESHOLD = 0.7
 
-
-def load_camera_config(config_path='data/camera_config.json'):
-    """Загрузка настроек камеры из конфигурации"""
-    if os.path.exists(config_path):
-        with open(config_path, 'r') as f:
-            config = json.load(f)
-            return config.get('camera', {})
-    return {'hMirror': True, 'vFlip': True}
-
-
 def apply_camera_transforms(image):
     """Применяет трансформации камеры (отражения)"""
     img_array = np.array(image)    
@@ -190,13 +180,12 @@ def calculate_otsu_threshold(img_array):
     return best_threshold
 
 
-def detect_line_position(image_path, camera_config):
+def detect_line_position(image_path):
     """
     Реализация алгоритма detectLinePosition() из LinerRobot.cpp
     
     Args:
         image_path: путь к изображению
-        camera_config: настройки камеры {hMirror, vFlip}
     
     Returns:
         dict: {
@@ -220,9 +209,7 @@ def detect_line_position(image_path, camera_config):
     # Применяем трансформации камеры согласно конфигурации
     # Эти трансформации нужны для правильной интерпретации направления движения
     img_array = apply_camera_transforms(
-        img, 
-        camera_config.get('hMirror', True),
-        camera_config.get('vFlip', True)
+        img
     )
     
     # Применяем обработку изображения: усиление контраста, edge detection, бинаризацию
@@ -280,7 +267,7 @@ def detect_line_position(image_path, camera_config):
     return result
 
 
-def visualize_detection(image_path, result, camera_config, output_path=None):
+def visualize_detection(image_path, result, output_path=None):
     """Визуализация результата детекции"""
     import matplotlib.pyplot as plt
     
@@ -293,9 +280,7 @@ def visualize_detection(image_path, result, camera_config, output_path=None):
     
     # Применяем трансформации камеры для правильной ориентации
     img_array = apply_camera_transforms(
-        img,
-        camera_config.get('hMirror', True),
-        camera_config.get('vFlip', True)
+        img
     )
     
     # Применяем нормализацию (как в алгоритме детекции)
@@ -362,14 +347,13 @@ def visualize_detection(image_path, result, camera_config, output_path=None):
     plt.close()
 
 
-def test_category(category_path, expected_range, camera_config, visualize=False):
+def test_category(category_path, expected_range, visualize=False):
     """
     Тестирование категории изображений
     
     Args:
         category_path: путь к папке с изображениями
         expected_range: ожидаемый диапазон (min, max) или 'terminate'
-        camera_config: настройки камеры
         visualize: создавать ли визуализацию
     """
     category_name = os.path.basename(category_path)
@@ -393,7 +377,7 @@ def test_category(category_path, expected_range, camera_config, visualize=False)
         img_path = os.path.join(category_path, img_file)
         print(f"\n📷 {img_file}:")
         
-        result = detect_line_position(img_path, camera_config)
+        result = detect_line_position(img_path)
         results.append(result)
         
         print(f"   Position: {result['position']:+.3f}")
@@ -419,7 +403,7 @@ def test_category(category_path, expected_range, camera_config, visualize=False)
             output_dir = os.path.join('test', 'output', category_name)
             os.makedirs(output_dir, exist_ok=True)
             output_path = os.path.join(output_dir, f'{os.path.splitext(img_file)[0]}_result.png')
-            visualize_detection(img_path, result, camera_config, output_path)
+            visualize_detection(img_path, result, output_path)
     
     return results
 
@@ -431,13 +415,6 @@ def main():
     print("МикРоББокс Лайнер")
     print("="*60)
     
-    # Загрузка конфигурации камеры
-    config_path = os.path.join('data', 'camera_config.json')
-    camera_config = load_camera_config(config_path)
-    
-    print(f"\n📷 Настройки камеры:")
-    print(f"   H-Mirror: {camera_config.get('hMirror', True)}")
-    print(f"   V-Flip: {camera_config.get('vFlip', True)}")
     
     # Проверяем наличие matplotlib для визуализации
     visualize = True
@@ -460,7 +437,7 @@ def main():
     # Тестирование каждой категории
     all_results = {}
     for cat_name, (cat_path, expected_range) in categories.items():
-        results = test_category(cat_path, expected_range, camera_config, visualize)
+        results = test_category(cat_path, expected_range, visualize)
         all_results[cat_name] = results
     
     # Итоговая статистика
