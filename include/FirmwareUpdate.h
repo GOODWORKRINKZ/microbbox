@@ -11,6 +11,12 @@
 #include "target_config.h"
 #include "RobotType.h"
 
+// Каналы обновлений
+enum class FirmwareChannel : uint8_t {
+    STABLE = 0,     // Стабильные релизы из main
+    DEV = 1         // Development сборки из develop/feature веток
+};
+
 // Структура для информации о релизе
 struct ReleaseInfo {
     String version;
@@ -20,6 +26,7 @@ struct ReleaseInfo {
     String publishedAt;
     bool isNewer;
     RobotType robotType;  // Тип робота как enum
+    FirmwareChannel channel;  // Канал откуда получен релиз
 };
 
 class FirmwareUpdate {
@@ -37,6 +44,7 @@ public:
 
     // Проверка обновлений
     bool checkForUpdates(ReleaseInfo& releaseInfo);
+    bool checkForUpdates(ReleaseInfo& releaseInfo, FirmwareChannel channel);
     ReleaseInfo getCurrentVersionInfo();
     
     // Настройки автообновления
@@ -44,6 +52,11 @@ public:
     bool isAutoUpdateEnabled() const;
     void setDontOfferUpdates(bool dontOffer);
     bool isDontOfferUpdates() const;
+    
+    // Настройки канала обновлений
+    void setFirmwareChannel(FirmwareChannel channel);
+    FirmwareChannel getFirmwareChannel() const;
+    const char* getChannelName() const;
     
     // Обновление
     void registerUpdateHandlers(AsyncWebServer* server);
@@ -82,6 +95,7 @@ private:
     
     // Парсинг GitHub API
     bool parseGitHubRelease(const String& json, ReleaseInfo& releaseInfo);
+    bool parseGitHubRelease(const String& json, ReleaseInfo& releaseInfo, FirmwareChannel channel);
     String extractJsonValue(const String& json, const String& key);
     bool isVersionNewer(const String& current, const String& latest);
 
@@ -109,6 +123,7 @@ private:
     Preferences preferences;
     bool autoUpdateEnabled;
     bool dontOfferUpdates;
+    FirmwareChannel firmwareChannel;
 };
 
 #endif // FIRMWARE_UPDATE_H
