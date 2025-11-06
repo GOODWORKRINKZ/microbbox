@@ -148,8 +148,9 @@
 
 #ifdef TARGET_LINER
     // Настройки камеры для следования по линии
-    #define LINE_CAMERA_WIDTH 96        // Ширина изображения
-    #define LINE_CAMERA_HEIGHT 96       // Высота изображения
+    // FRAMESIZE_QQVGA = 160x120 (увеличено для захвата большего пространства по бокам)
+    #define LINE_CAMERA_WIDTH 160       // Ширина изображения
+    #define LINE_CAMERA_HEIGHT 120      // Высота изображения
     #define LINE_THRESHOLD 128          // Порог для ЧБ изображения
     #define LINE_T_JUNCTION_THRESHOLD 0.7f  // Порог детектирования T-пересечения (70% ширины)
     #define LINE_PID_KP 1.0            // Пропорциональный коэффициент PID
