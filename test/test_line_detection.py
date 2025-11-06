@@ -10,7 +10,7 @@ data/
   img_straight/  - линия прямо (ожидается ~0.0)
   img_left/      - линия слева (ожидается < 0)
   img_right/     - линия справа (ожидается > 0)
-  img terminate/ - конец линии (T-пересечение или обрыв)
+  img_terminate/ - конец линии (T-пересечение или обрыв)
 
 Физические параметры робота:
   Камера расположена на расстоянии 81.62 мм впереди центра оси вращения колес.
@@ -772,7 +772,7 @@ def main():
         'straight': (os.path.join(data_dir, 'img_straight'), (-0.2, 0.2)),
         'left': (os.path.join(data_dir, 'img_left'), (-1.0, -0.1)),
         'right': (os.path.join(data_dir, 'img_right'), (0.1, 1.0)),
-        'terminate': (os.path.join(data_dir, 'img terminate'), 'terminate')
+        'terminate': (os.path.join(data_dir, 'img_terminate'), 'terminate')
     }
     
     # Тестирование каждой категории
