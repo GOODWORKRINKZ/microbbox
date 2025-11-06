@@ -196,15 +196,19 @@ bool LinerRobot::initButton() {
 #ifdef FEATURE_BUTTON
     DEBUG_PRINTLN("Инициализация кнопки...");
     
-    pinMode(BUTTON_PIN, INPUT_PULLUP);
+    // ВАЖНО: На GPIO4 есть нагрузка (LED?), которая тянет пин вниз
+    // Внутренний pull-up (~45кОм) слишком слабый, пин всегда в LOW (~0.14V)
+    // РЕШЕНИЕ: Используем INPUT без pullup, кнопка замыкает на VCC (+3.3V)
+    pinMode(BUTTON_PIN, INPUT);
     
     // Читаем начальное состояние
     bool initialState = digitalRead(BUTTON_PIN);
     DEBUG_PRINT("Кнопка на пине ");
     DEBUG_PRINT(BUTTON_PIN);
     DEBUG_PRINT(", начальное состояние: ");
-    DEBUG_PRINTLN(initialState == HIGH ? "HIGH (не нажата)" : "LOW (нажата)");
-    DEBUG_PRINTLN("Кнопка настроена с INPUT_PULLUP, нажатие = LOW (замыкание на GND)");
+    DEBUG_PRINTLN(initialState == HIGH ? "HIGH (нажата)" : "LOW (не нажата)");
+    DEBUG_PRINTLN("⚠️ ИНВЕРТИРОВАННАЯ ЛОГИКА: Кнопка замыкает на +3.3V, нажатие = HIGH");
+    DEBUG_PRINTLN("   Причина: на GPIO4 есть нагрузка, pull-up не работает (пин ~0.14V)");
     
     // Устанавливаем задержку перед первой проверкой кнопки
     // Это предотвращает ложные срабатывания при загрузке из-за нестабильных сигналов
@@ -221,62 +225,72 @@ bool LinerRobot::initButton() {
 void LinerRobot::updateButton() {
 #ifdef FEATURE_BUTTON
     unsigned long now = millis();
+    
+    // КРИТИЧНО: Проверяем, прошла ли начальная задержка после инициализации
+    // lastButtonCheck_ был установлен в initButton() как millis() + BUTTON_INIT_DELAY_MS
+    if (now < lastButtonCheck_) {
+        // Еще не прошла начальная задержка - игнорируем кнопку
+        static unsigned long lastSkipLog = 0;
+        if (now - lastSkipLog > 500) {
+            DEBUG_PRINTF("[%lu ms] [BUTTON] Пропуск проверки, ожидание до %lu мс\n", now, lastButtonCheck_);
+            lastSkipLog = now;
+        }
+        return;
+    }
+    
     if (now - lastButtonCheck_ < BUTTON_DEBOUNCE_MS) {
         return; // Антидребезг
     }
     lastButtonCheck_ = now;
     
     // Читаем состояние кнопки
-    // HIGH = не нажата (подтянута к VCC через pull-up)
-    // LOW = нажата (замкнута на GND)
+    // ⚠️ ИНВЕРТИРОВАННАЯ ЛОГИКА (кнопка замыкает на +3.3V):
+    // HIGH = нажата (замкнута на VCC)
+    // LOW = не нажата (нагрузка на пине тянет вниз)
     int rawPinValue = digitalRead(BUTTON_PIN);
-    bool currentButtonState = (rawPinValue == LOW);
+    bool currentButtonState = (rawPinValue == HIGH);  // HIGH = нажата
     
     // ДИАГНОСТИКА: Выводим состояние периодически
     static unsigned long lastDiagPrint = 0;
     if (now - lastDiagPrint > BUTTON_DIAG_INTERVAL_MS) {
-        DEBUG_PRINT("[BUTTON_DIAG] Pin ");
-        DEBUG_PRINT(BUTTON_PIN);
-        DEBUG_PRINT(" = ");
-        DEBUG_PRINT(rawPinValue);
-        DEBUG_PRINT(" (");
-        DEBUG_PRINT(rawPinValue == HIGH ? "HIGH/не_нажата" : "LOW/нажата");
-        DEBUG_PRINT("), buttonPressed_ = ");
-        DEBUG_PRINTLN(buttonPressed_ ? "true" : "false");
+        DEBUG_PRINTF("[%lu ms] [BUTTON_DIAG] Pin %d = %d (%s), buttonPressed_ = %s\n",
+                     now, BUTTON_PIN, rawPinValue,
+                     rawPinValue == HIGH ? "HIGH/НАЖАТА" : "LOW/не_нажата",
+                     buttonPressed_ ? "true" : "false");
         lastDiagPrint = now;
     }
     
     // Детектируем переход из не нажатого состояния в нажатое (фронт нажатия)
     if (currentButtonState && !buttonPressed_) {
-        // Кнопка только что нажата (переход с HIGH на LOW)
+        // Кнопка только что нажата (переход с LOW на HIGH)
         buttonPressed_ = true;
+        DEBUG_PRINTF("[%lu ms] Кнопка: переход в НАЖАТО, вызов onButtonPressed()\n", now);
         onButtonPressed();
-        DEBUG_PRINTLN("Кнопка: переход в НАЖАТО, вызов onButtonPressed()");
     } else if (!currentButtonState && buttonPressed_) {
-        // Кнопка отпущена (переход с LOW на HIGH)
+        // Кнопка отпущена (переход с HIGH на LOW)
         buttonPressed_ = false;
-        DEBUG_PRINTLN("Кнопка: переход в ОТПУЩЕНО");
+        DEBUG_PRINTF("[%lu ms] Кнопка: переход в ОТПУЩЕНО\n", now);
     }
 #endif
 }
 
 void LinerRobot::onButtonPressed() {
-    DEBUG_PRINTLN("==================================================");
-    DEBUG_PRINTLN("КНОПКА НАЖАТА!");
-    DEBUG_PRINT("Текущий режим: ");
-    DEBUG_PRINTLN(currentMode_ == Mode::MANUAL ? "РУЧНОЙ" : "АВТОНОМНЫЙ");
+    unsigned long now = millis();
+    DEBUG_PRINTF("[%lu ms] ==================================================\n", now);
+    DEBUG_PRINTF("[%lu ms] КНОПКА НАЖАТА!\n", now);
+    DEBUG_PRINTF("[%lu ms] Текущий режим: %s\n", now, currentMode_ == Mode::MANUAL ? "РУЧНОЙ" : "АВТОНОМНЫЙ");
     
     // Переключение режима
     if (currentMode_ == Mode::MANUAL) {
         currentMode_ = Mode::AUTONOMOUS;
-        DEBUG_PRINTLN(">>> ПЕРЕХОД В АВТОНОМНЫЙ РЕЖИМ <<<");
-        DEBUG_PRINTLN(">>> НАЧАТО АВТОСЛЕДОВАНИЕ ПО ЛИНИИ <<<");
+        DEBUG_PRINTF("[%lu ms] >>> ПЕРЕХОД В АВТОНОМНЫЙ РЕЖИМ <<<\n", now);
+        DEBUG_PRINTF("[%lu ms] >>> НАЧАТО АВТОСЛЕДОВАНИЕ ПО ЛИНИИ <<<\n", now);
         
         // Сброс PID контроллера
         pidError_ = 0.0f;
         pidLastError_ = 0.0f;
         pidIntegral_ = 0.0f;
-        DEBUG_PRINTLN("PID контроллер сброшен");
+        DEBUG_PRINTF("[%lu ms] PID контроллер сброшен\n", now);
         
         // Сброс счетчиков линии
         lineDetected_ = false;
@@ -285,20 +299,22 @@ void LinerRobot::onButtonPressed() {
         
         // Анимация начала следования по линии
 #ifdef FEATURE_NEOPIXEL
+        DEBUG_PRINTF("[%lu ms] >>> АНИМАЦИЯ СТАРТА СЛЕДОВАНИЯ ПО ЛИНИИ <<<\n", now);
         playLineFollowStartAnimation();
+        DEBUG_PRINTF("[%lu ms] Анимация старта завершена!\n", millis());
 #endif
     } else {
         currentMode_ = Mode::MANUAL;
-        DEBUG_PRINTLN(">>> ПЕРЕХОД В РУЧНОЙ РЕЖИМ <<<");
-        DEBUG_PRINTLN(">>> АВТОСЛЕДОВАНИЕ ОСТАНОВЛЕНО <<<");
+        DEBUG_PRINTF("[%lu ms] >>> ПЕРЕХОД В РУЧНОЙ РЕЖИМ <<<\n", now);
+        DEBUG_PRINTF("[%lu ms] >>> АВТОСЛЕДОВАНИЕ ОСТАНОВЛЕНО <<<\n", now);
         
         // Остановка моторов
         if (motorController_) {
             motorController_->stop();
-            DEBUG_PRINTLN("Моторы остановлены");
+            DEBUG_PRINTF("[%lu ms] Моторы остановлены\n", now);
         }
     }
-    DEBUG_PRINTLN("==================================================");
+    DEBUG_PRINTF("[%lu ms] ==================================================\n", now);
 }
 
 void LinerRobot::updateLineFollowing() {
