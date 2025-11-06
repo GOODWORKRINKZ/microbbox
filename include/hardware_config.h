@@ -62,7 +62,8 @@
 
 #ifdef FEATURE_BUTTON
     #define BUTTON_PIN 4            // Кнопка на пин 4 (GPIO4, безопасный пин)
-    #define BUTTON_DEBOUNCE_MS 50   // Время антидребезга
+    #define BUTTON_DEBOUNCE_MS 200  // Время антидребезга (увеличено для предотвращения ложных срабатываний при загрузке)
+    #define BUTTON_INIT_DELAY_MS 2000  // Задержка перед первой проверкой кнопки после инициализации
     #define BUTTON_DIAG_INTERVAL_MS 2000  // Интервал вывода диагностики кнопки
 #endif
 

@@ -206,6 +206,11 @@ bool LinerRobot::initButton() {
     DEBUG_PRINTLN(initialState == HIGH ? "HIGH (не нажата)" : "LOW (нажата)");
     DEBUG_PRINTLN("Кнопка настроена с INPUT_PULLUP, нажатие = LOW (замыкание на GND)");
     
+    // Устанавливаем задержку перед первой проверкой кнопки
+    // Это предотвращает ложные срабатывания при загрузке из-за нестабильных сигналов
+    lastButtonCheck_ = millis() + BUTTON_INIT_DELAY_MS;
+    DEBUG_PRINTF("Первая проверка кнопки будет через %d мс\n", BUTTON_INIT_DELAY_MS);
+    
     DEBUG_PRINTLN("Кнопка инициализирована");
     return true;
 #else
@@ -422,19 +427,28 @@ void LinerRobot::applyPIDControl(float linePosition) {
     // Ограничение интегральной составляющей (anti-windup)
     pidIntegral_ = constrain(pidIntegral_, -100.0f, 100.0f);
     
-    // Применение к моторам
-    int baseSpeed = LINE_BASE_SPEED;
-    int steering = (int)(control * 100.0f);
+    // Преобразование в PWM сигналы (1000-2000)
+    // Базовая скорость движения вперед
+    int baseSpeed = LINE_BASE_SPEED;  // 0-100%
+    int steering = (int)(control * 100.0f);  // -100 до +100
     
-    int leftSpeed = baseSpeed - steering;
-    int rightSpeed = baseSpeed + steering;
+    // Преобразуем baseSpeed в throttle PWM (1500 = стоп, 2000 = полный вперед)
+    int throttlePWM = map(baseSpeed, 0, 100, 1500, 2000);
     
+    // Преобразуем steering в steering PWM (1500 = прямо)
+    int steeringPWM = map(steering, -100, 100, 1000, 2000);
+    
+    DEBUG_PRINTF("Line: %.2f, Control: %.2f, Throttle PWM: %d, Steering PWM: %d\n", 
+                 linePosition, control, throttlePWM, steeringPWM);
+    
+    // Используем setMotorPWM() - это автоматически применит все настройки:
+    // - Инверсию левого мотора
+    // - Инверсию правого мотора
+    // - Своп моторов
+    // Гарантируется одинаковое поведение в ручном и автономном режимах!
     if (motorController_) {
-        motorController_->setSpeed(leftSpeed, rightSpeed);
+        motorController_->setMotorPWM(throttlePWM, steeringPWM);
     }
-    
-    DEBUG_PRINTF("Line: %.2f, Control: %.2f, L: %d, R: %d\n", 
-                 linePosition, control, leftSpeed, rightSpeed);
 }
 
 void LinerRobot::updateMotors() {
