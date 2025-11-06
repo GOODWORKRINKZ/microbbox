@@ -80,11 +80,13 @@ def normalize_image(img_array, use_edge_detection=True, use_binarization=True):
     
     # 2. Детекция границ (опционально)
     if use_edge_detection:
-        # Простой Sobel фильтр для детекции границ
-        # Вертикальные границы (выделяют вертикальные края линии)
+        # Фильтр Собеля для детекции границ линии
+        # Помогает выделить края линии на фоне
         edges = apply_sobel_filter(img_contrast)
         
         # Комбинируем исходное изображение с границами
+        # np.maximum берет максимум из двух значений, что позволяет
+        # сохранить яркие области исходного изображения и добавить выделенные границы
         img_result = np.maximum(img_contrast, edges)
     else:
         img_result = img_contrast
@@ -102,7 +104,12 @@ def normalize_image(img_array, use_edge_detection=True, use_binarization=True):
 def apply_sobel_filter(img_array):
     """
     Применение фильтра Собеля для детекции границ.
-    Реализация без использования scipy.
+    
+    Примечание: Реализация использует циклы для простоты и отсутствия зависимостей.
+    Для больших изображений или production использования рекомендуется
+    использовать scipy.ndimage.convolve или cv2.filter2D для лучшей производительности.
+    
+    Для текущих изображений 160x120 производительность приемлема.
     """
     img_float = img_array.astype(np.float32)
     height, width = img_float.shape
@@ -146,6 +153,10 @@ def calculate_otsu_threshold(img_array):
     Вычисление оптимального порога бинаризации методом Otsu.
     Автоматически находит порог, который лучше всего разделяет
     темный фон и светлую линию.
+    
+    Примечание: Для оптимизации можно использовать готовые реализации
+    из opencv (cv2.threshold с THRESH_OTSU) или skimage.filters.threshold_otsu.
+    Текущая реализация не требует дополнительных зависимостей.
     """
     # Построение гистограммы
     hist, bin_edges = np.histogram(img_array.flatten(), bins=256, range=(0, 256))
@@ -169,11 +180,12 @@ def calculate_otsu_threshold(img_array):
         w0 = cumsum[t]
         w1 = 1.0 - w0
         
+        # Пропускаем случаи когда один из классов пуст
         if w0 == 0 or w1 == 0:
             continue
         
-        mean0 = cumsum_mean[t] / w0 if w0 > 0 else 0
-        mean1 = (global_mean - cumsum_mean[t]) / w1 if w1 > 0 else 0
+        mean0 = cumsum_mean[t] / w0
+        mean1 = (global_mean - cumsum_mean[t]) / w1
         
         # Межклассовая дисперсия
         variance = w0 * w1 * (mean0 - mean1) ** 2
