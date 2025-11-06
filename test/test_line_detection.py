@@ -49,34 +49,140 @@ def apply_camera_transforms(image, h_mirror=True, v_flip=True):
     return img_array
 
 
-def normalize_image(img_array):
+def normalize_image(img_array, use_edge_detection=True, use_binarization=True):
     """
-    Адаптивная нормализация изображения для улучшения обнаружения линии.
+    Обработка изображения с усилением контраста, детекцией границ и бинаризацией.
     
-    Проблема: изображения с камеры робота имеют низкую яркость (max 138-144 вместо 255),
-    из-за чего при фиксированном пороге LINE_THRESHOLD=128 линия не обнаруживается.
+    Проблема: изображения с камеры робота имеют низкую яркость и плохой контраст,
+    из-за чего линия плохо различима на фоне.
     
-    Решение: применяем нормализацию контраста для растяжения гистограммы яркости
-    до полного диапазона [0, 255].
+    Решение: 
+    1. Усиление контраста (растяжение гистограммы)
+    2. Edge detection (детекция границ) для выделения линии
+    3. Бинаризация для получения четкого черно-белого изображения
     
     Args:
         img_array: numpy массив изображения в grayscale
+        use_edge_detection: применять ли детекцию границ
+        use_binarization: применять ли бинаризацию
     
     Returns:
-        numpy массив с нормализованными значениями [0, 255]
+        numpy массив обработанного изображения [0, 255]
     """
-    # Находим минимум и максимум яркости в изображении
+    # 1. Растяжение контраста (нормализация гистограммы)
     min_val = img_array.min()
     max_val = img_array.max()
     
-    # Если изображение полностью однородное, возвращаем как есть
-    if max_val == min_val:
-        return img_array
+    if max_val > min_val:
+        img_contrast = ((img_array.astype(np.float32) - min_val) / (max_val - min_val) * 255.0).astype(np.uint8)
+    else:
+        img_contrast = img_array
     
-    # Нормализация: растягиваем диапазон [min_val, max_val] до [0, 255]
-    normalized = ((img_array.astype(np.float32) - min_val) / (max_val - min_val) * 255.0).astype(np.uint8)
+    # 2. Детекция границ (опционально)
+    if use_edge_detection:
+        # Простой Sobel фильтр для детекции границ
+        # Вертикальные границы (выделяют вертикальные края линии)
+        edges = apply_sobel_filter(img_contrast)
+        
+        # Комбинируем исходное изображение с границами
+        img_result = np.maximum(img_contrast, edges)
+    else:
+        img_result = img_contrast
     
-    return normalized
+    # 3. Бинаризация (приведение к черно-белому)
+    if use_binarization:
+        # Используем адаптивный порог (метод Otsu)
+        # Находим оптимальный порог автоматически
+        threshold = calculate_otsu_threshold(img_result)
+        img_result = np.where(img_result > threshold, 255, 0).astype(np.uint8)
+    
+    return img_result
+
+
+def apply_sobel_filter(img_array):
+    """
+    Применение фильтра Собеля для детекции границ.
+    Реализация без использования scipy.
+    """
+    img_float = img_array.astype(np.float32)
+    height, width = img_float.shape
+    
+    # Sobel ядра для горизонтальных и вертикальных границ
+    sobel_x = np.array([[-1, 0, 1],
+                        [-2, 0, 2],
+                        [-1, 0, 1]], dtype=np.float32)
+    
+    sobel_y = np.array([[-1, -2, -1],
+                        [ 0,  0,  0],
+                        [ 1,  2,  1]], dtype=np.float32)
+    
+    # Результирующее изображение
+    edges = np.zeros_like(img_float)
+    
+    # Применяем свертку вручную (только для внутренних пикселей)
+    for y in range(1, height - 1):
+        for x in range(1, width - 1):
+            # Извлекаем окрестность 3x3
+            region = img_float[y-1:y+2, x-1:x+2]
+            
+            # Вычисляем градиенты
+            gx = np.sum(region * sobel_x)
+            gy = np.sum(region * sobel_y)
+            
+            # Величина градиента
+            edges[y, x] = np.sqrt(gx**2 + gy**2)
+    
+    # Нормализуем результат
+    if edges.max() > 0:
+        edges = (edges / edges.max() * 255.0).astype(np.uint8)
+    else:
+        edges = edges.astype(np.uint8)
+    
+    return edges
+
+
+def calculate_otsu_threshold(img_array):
+    """
+    Вычисление оптимального порога бинаризации методом Otsu.
+    Автоматически находит порог, который лучше всего разделяет
+    темный фон и светлую линию.
+    """
+    # Построение гистограммы
+    hist, bin_edges = np.histogram(img_array.flatten(), bins=256, range=(0, 256))
+    
+    # Нормализация гистограммы
+    hist = hist.astype(np.float32)
+    hist_norm = hist / hist.sum()
+    
+    # Вычисление кумулятивных сумм
+    cumsum = np.cumsum(hist_norm)
+    cumsum_mean = np.cumsum(hist_norm * np.arange(256))
+    
+    # Полная средняя яркость
+    global_mean = cumsum_mean[-1]
+    
+    # Вычисление межклассовой дисперсии для каждого порога
+    max_variance = 0
+    best_threshold = 128
+    
+    for t in range(1, 255):
+        w0 = cumsum[t]
+        w1 = 1.0 - w0
+        
+        if w0 == 0 or w1 == 0:
+            continue
+        
+        mean0 = cumsum_mean[t] / w0 if w0 > 0 else 0
+        mean1 = (global_mean - cumsum_mean[t]) / w1 if w1 > 0 else 0
+        
+        # Межклассовая дисперсия
+        variance = w0 * w1 * (mean0 - mean1) ** 2
+        
+        if variance > max_variance:
+            max_variance = variance
+            best_threshold = t
+    
+    return best_threshold
 
 
 def detect_line_position(image_path, camera_config):
@@ -106,10 +212,15 @@ def detect_line_position(image_path, camera_config):
     if img.size != (LINE_CAMERA_WIDTH, LINE_CAMERA_HEIGHT):
         img = img.resize((LINE_CAMERA_WIDTH, LINE_CAMERA_HEIGHT), Image.Resampling.LANCZOS)
     
-    # Конвертируем в numpy array (трансформации камеры НЕ нужны - изображения уже правильно отражены)
-    img_array = np.array(img)
+    # Применяем трансформации камеры согласно конфигурации
+    # Эти трансформации нужны для правильной интерпретации направления движения
+    img_array = apply_camera_transforms(
+        img, 
+        camera_config.get('hMirror', True),
+        camera_config.get('vFlip', True)
+    )
     
-    # Применяем адаптивную нормализацию для компенсации низкой яркости
+    # Применяем обработку изображения: усиление контраста, edge detection, бинаризацию
     img_array = normalize_image(img_array)
     
     # Параметры сканирования
@@ -175,8 +286,12 @@ def visualize_detection(image_path, result, camera_config, output_path=None):
     if img.size != (LINE_CAMERA_WIDTH, LINE_CAMERA_HEIGHT):
         img = img.resize((LINE_CAMERA_WIDTH, LINE_CAMERA_HEIGHT), Image.Resampling.LANCZOS)
     
-    # Конвертируем в numpy array (трансформации камеры НЕ нужны - изображения уже правильно отражены)
-    img_array = np.array(img)
+    # Применяем трансформации камеры для правильной ориентации
+    img_array = apply_camera_transforms(
+        img,
+        camera_config.get('hMirror', True),
+        camera_config.get('vFlip', True)
+    )
     
     # Применяем нормализацию (как в алгоритме детекции)
     img_normalized = normalize_image(img_array)
@@ -186,12 +301,12 @@ def visualize_detection(image_path, result, camera_config, output_path=None):
     
     # Исходное изображение
     ax1.imshow(img_array, cmap='gray', vmin=0, vmax=255)
-    ax1.set_title(f'Original\n{os.path.basename(image_path)}\nMin: {img_array.min()}, Max: {img_array.max()}')
+    ax1.set_title(f'After Camera Transforms\n{os.path.basename(image_path)}\nMin: {img_array.min()}, Max: {img_array.max()}')
     ax1.axis('off')
     
     # Нормализованное изображение
     ax2.imshow(img_normalized, cmap='gray', vmin=0, vmax=255)
-    ax2.set_title(f'Normalized\nMin: {img_normalized.min()}, Max: {img_normalized.max()}')
+    ax2.set_title(f'Processed (edges + binary)\nMin: {img_normalized.min()}, Max: {img_normalized.max()}')
     ax2.axis('off')
     
     # Изображение с детекцией
