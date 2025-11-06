@@ -182,13 +182,12 @@ def calculate_otsu_threshold(img_array):
 
 def detect_line_position(image_path):
     """
-    Реализация алгоритма detectLinePosition() с использованием 3 горизонтальных 
-    и 2 вертикальных сканирующих линий для точного определения направления,
-    включая крутые повороты на 90 градусов.
+    Реализация алгоритма detectLinePosition() с использованием 4 горизонтальных 
+    и 4 вертикальных сканирующих линий для максимально точного определения направления.
     
     Улучшения:
-    - 3 горизонтальные линии (33%, 60%, 85% высоты) для определения крутых поворотов
-    - 2 вертикальные линии (30%, 70% ширины) для определения T-пересечений
+    - 4 горизонтальные линии (25%, 50%, 75%, 90% высоты) для точного определения траектории
+    - 4 вертикальные линии (20%, 40%, 60%, 80% ширины) для точного определения T-пересечений
     - Вычисляет максимальный тренд между любыми двумя горизонтальными линиями
     - Сильно увеличивает влияние тренда для крутых поворотов (|тренд| > 0.7)
     
@@ -227,12 +226,13 @@ def detect_line_position(image_path):
     width = img_array.shape[1]
     height = img_array.shape[0]
     
-    # === 1. ТРИ ГОРИЗОНТАЛЬНЫЕ СКАНИРУЮЩИЕ ЛИНИИ ===
-    # Для определения крутых поворотов нужно больше точек сканирования
+    # === 1. ЧЕТЫРЕ ГОРИЗОНТАЛЬНЫЕ СКАНИРУЮЩИЕ ЛИНИИ ===
+    # Для точного определения крутых поворотов и направления движения
     horizontal_scan_heights = [
-        int(height * 0.33),  # 33% - верхняя (дальняя часть пути)
-        int(height * 0.60),  # 60% - средняя
-        int(height * 0.85),  # 85% - нижняя, ближе к роботу
+        int(height * 0.25),  # 25% - верхняя (самая дальняя)
+        int(height * 0.50),  # 50% - средняя-верхняя
+        int(height * 0.75),  # 75% - средняя-нижняя
+        int(height * 0.90),  # 90% - нижняя (самая близкая к роботу)
     ]
     
     horizontal_results = []
@@ -266,11 +266,13 @@ def detect_line_position(image_path):
             'width_percent': width_percent
         })
     
-    # === 2. ДВЕ ВЕРТИКАЛЬНЫЕ СКАНИРУЮЩИЕ ЛИНИИ ===
-    # Левая и правая для определения T-пересечений
+    # === 2. ЧЕТЫРЕ ВЕРТИКАЛЬНЫЕ СКАНИРУЮЩИЕ ЛИНИИ ===
+    # Для более точного определения T-пересечений и ширины линии
     vertical_scan_positions = [
-        int(width * 0.30),   # 30% - левая
-        int(width * 0.70),   # 70% - правая
+        int(width * 0.20),   # 20% - левая
+        int(width * 0.40),   # 40% - средняя-левая
+        int(width * 0.60),   # 60% - средняя-правая
+        int(width * 0.80),   # 80% - правая
     ]
     
     vertical_results = []
@@ -331,14 +333,17 @@ def detect_line_position(image_path):
     result['width_percent'] = avg_width_percent
     
     # === ПРОВЕРКА НА T-ПЕРЕСЕЧЕНИЕ ===
-    # 1. Если линия очень широкая на горизонтальных сканах
+    # 1. Если линия очень широкая на горизонтальных сканах (занимает > 70% ширины)
     wide_horizontal = sum(1 for r in horizontal_results if r['width_percent'] > LINE_T_JUNCTION_THRESHOLD)
     
-    # 2. Если на обоих вертикальных сканах линия занимает много высоты (высокая вертикальная линия)
+    # 2. Если на 3 или 4 вертикальных сканах линия занимает много высоты (> 50%)
+    #    это означает что линия идет вертикально (T-образное пересечение)
     tall_vertical = sum(1 for r in vertical_results if r['height_percent'] > 0.5)
     
-    # T-пересечение: широкая горизонтальная линия или высокие вертикальные сегменты
-    if wide_horizontal >= 1 or tall_vertical >= 2:
+    # T-пересечение определяется по:
+    # - Широкой горизонтальной линии на 2+ уровнях
+    # - Или высокой вертикальной линии на 3+ позициях
+    if wide_horizontal >= 2 or tall_vertical >= 3:
         result['is_terminate'] = True
         return result
     
@@ -412,7 +417,7 @@ def detect_line_position(image_path):
 
 
 def visualize_detection(image_path, result, output_path=None):
-    """Визуализация результата детекции с 3 горизонтальными и 2 вертикальными сканирующими линиями"""
+    """Визуализация результата детекции с 4 горизонтальными и 4 вертикальными сканирующими линиями"""
     import matplotlib.pyplot as plt
     
     # Загрузка изображения
@@ -444,10 +449,10 @@ def visualize_detection(image_path, result, output_path=None):
     # Изображение с детекцией
     ax3.imshow(img_normalized, cmap='gray')
     
-    # === ГОРИЗОНТАЛЬНЫЕ СКАНИРУЮЩИЕ ЛИНИИ ===
+    # === ЧЕТЫРЕ ГОРИЗОНТАЛЬНЫЕ СКАНИРУЮЩИЕ ЛИНИИ ===
     if 'horizontal_scans' in result:
-        h_colors = ['cyan', 'yellow', 'red']
-        h_labels = ['33% (далеко)', '60% (средне)', '85% (близко)']
+        h_colors = ['cyan', 'yellow', 'orange', 'red']
+        h_labels = ['25%', '50%', '75%', '90%']
         
         for i, scan_info in enumerate(result['horizontal_scans']):
             scan_y = scan_info['y']
@@ -455,19 +460,19 @@ def visualize_detection(image_path, result, output_path=None):
             label = h_labels[i]
             
             # Горизонтальная линия сканирования
-            ax3.axhline(y=scan_y, color=color, linestyle='--', linewidth=2, 
-                       alpha=0.8, label=f'Гориз. {label}')
+            ax3.axhline(y=scan_y, color=color, linestyle='--', linewidth=1.5, 
+                       alpha=0.8, label=f'Г-{label}')
             
             # Если на этой линии найдена позиция, отмечаем её
             if scan_info['position'] is not None:
                 position_pixel = scan_info['pixel_position']
                 ax3.plot(position_pixel, scan_y, 'o', color=color, 
-                        markersize=10, markeredgecolor='white', markeredgewidth=2)
+                        markersize=8, markeredgecolor='white', markeredgewidth=1.5)
     
-    # === ВЕРТИКАЛЬНЫЕ СКАНИРУЮЩИЕ ЛИНИИ ===
+    # === ЧЕТЫРЕ ВЕРТИКАЛЬНЫЕ СКАНИРУЮЩИЕ ЛИНИИ ===
     if 'vertical_scans' in result:
-        v_colors = ['cyan', 'magenta']
-        v_labels = ['30% (лево)', '70% (право)']
+        v_colors = ['cyan', 'lightblue', 'pink', 'magenta']
+        v_labels = ['20%', '40%', '60%', '80%']
         
         for i, scan_info in enumerate(result['vertical_scans']):
             scan_x = scan_info['x']
@@ -475,14 +480,14 @@ def visualize_detection(image_path, result, output_path=None):
             label = v_labels[i]
             
             # Вертикальная линия сканирования
-            ax3.axvline(x=scan_x, color=color, linestyle=':', linewidth=2, 
-                       alpha=0.6, label=f'Верт. {label}')
+            ax3.axvline(x=scan_x, color=color, linestyle=':', linewidth=1.5, 
+                       alpha=0.6, label=f'В-{label}')
             
             # Если на этой линии найдена позиция, отмечаем её
             if scan_info['position'] is not None:
                 position_pixel = scan_info['pixel_position']
                 ax3.plot(scan_x, position_pixel, 's', color=color, 
-                        markersize=8, markeredgecolor='white', markeredgewidth=1)
+                        markersize=6, markeredgecolor='white', markeredgewidth=1)
     
     # === ИТОГОВАЯ ПОЗИЦИЯ ЛИНИИ ===
     if result['detected']:
@@ -496,13 +501,21 @@ def visualize_detection(image_path, result, output_path=None):
         # Стрелка направления с учетом тренда
         trend = result.get('direction_trend', 0.0)
         
-        if abs(trend) > 0.5:
-            # Крутой поворот
+        if abs(trend) > 0.7:
+            # Очень крутой поворот (90 градусов)
             if trend > 0:
-                direction = '⟹ КРУТОЙ ПОВОРОТ ВПРАВО'
+                direction = '⟹ ПОВОРОТ 90° ВПРАВО'
                 color = 'cyan'
             else:
-                direction = '⟸ КРУТОЙ ПОВОРОТ ВЛЕВО'
+                direction = '⟸ ПОВОРОТ 90° ВЛЕВО'
+                color = 'yellow'
+        elif abs(trend) > 0.4:
+            # Крутой поворот
+            if trend > 0:
+                direction = '→ КРУТОЙ ВПРАВО'
+                color = 'cyan'
+            else:
+                direction = '← КРУТОЙ ВЛЕВО'
                 color = 'yellow'
         elif abs(position_normalized) > 0.15:
             if position_normalized < 0:
@@ -516,7 +529,7 @@ def visualize_detection(image_path, result, output_path=None):
             color = 'lime'
         
         ax3.text(position_pixel, 15, direction,
-                color=color, fontsize=16, fontweight='bold',
+                color=color, fontsize=14, fontweight='bold',
                 ha='center', va='top',
                 bbox=dict(boxstyle='round', facecolor='black', alpha=0.8))
     
@@ -527,12 +540,12 @@ def visualize_detection(image_path, result, output_path=None):
     info_text += f"Ширина: {result['width_percent']*100:.1f}%\n"
     info_text += f"Конец/T: {'ДА' if result['is_terminate'] else 'НЕТ'}"
     
-    ax3.text(5, LINE_CAMERA_HEIGHT - 5, info_text, color='white', fontsize=11,
+    ax3.text(5, LINE_CAMERA_HEIGHT - 5, info_text, color='white', fontsize=10,
             bbox=dict(boxstyle='round', facecolor='black', alpha=0.85),
             verticalalignment='bottom', fontfamily='monospace')
     
-    ax3.set_title('Результат (3 гориз. + 2 верт. линии)')
-    ax3.legend(loc='upper right', fontsize=7, framealpha=0.9)
+    ax3.set_title('Детекция (4×4 линии)')
+    ax3.legend(loc='upper right', fontsize=6, framealpha=0.9, ncol=2)
     ax3.axis('off')
     
     plt.tight_layout()
