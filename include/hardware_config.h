@@ -43,7 +43,7 @@
     #define NEOPIXEL_LED_CHANNEL 7  // PWM канал 7
     #ifdef TARGET_LINER
         #define NEOPIXEL_COUNT 16       // Для Liner: 16 светодиодов (по 8 на каждую сторону)
-        #define LED_BRIGHTNESS_LINER_MAX 100  // Максимальная яркость для Liner (экономия батареи)
+        #define LED_BRIGHTNESS_LINER_MAX 15  // Максимальная яркость для Liner (экономия батареи)
     #else
         #define NEOPIXEL_COUNT 3        // Для Classic/Brain: 3 светодиода (2 сзади, 1 спереди)
     #endif
