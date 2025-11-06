@@ -1,185 +1,328 @@
 #!/usr/bin/env python3
 """
-Генератор карты трассы из датасета изображений.
+Генератор карты трассы с черной линией.
 
 Создает:
-1. JSON-файл с метаданными трассы
-2. Визуальную карту трассы (сшитые изображения в одну картинку)
-
-Функции:
-- Последовательность изображений (путь по трассе)
-- Правильные ответы для каждого кадра (straight/left/right/terminate)
-- Сшивка изображений в единую визуальную карту
+1. Генерирует изображение трассы (3000×3000 пикселей) с черной линией на белом фоне
+2. Извлекает последовательные кадры 160×120, двигаясь вдоль линии
+3. JSON-файл с метаданными (правильные ответы для каждого кадра)
 """
 
 import os
 import json
 import random
+import math
 from pathlib import Path
 from PIL import Image, ImageDraw, ImageFont
 import numpy as np
 
 # Константы
-DATA_DIR = Path(__file__).parent.parent / 'data'
 OUTPUT_DIR = Path(__file__).parent / 'output'
 TRACK_MAP_FILE = OUTPUT_DIR / 'track_map.json'
-TRACK_MAP_IMAGE = OUTPUT_DIR / 'track_map_stitched.png'
+TRACK_MAP_IMAGE = OUTPUT_DIR / 'track_map_full.png'
+TRACK_PREVIEW_IMAGE = OUTPUT_DIR / 'track_map_preview.png'
 
-# Параметры сшивки
-IMAGE_WIDTH = 160
-IMAGE_HEIGHT = 120
-OVERLAP_ROWS = 20  # Количество строк для плавного перехода
+# Параметры трассы
+TRACK_SIZE = 3000  # Размер поля трассы (пиксели)
+LINE_WIDTH = 20    # Ширина черной линии (примерно 20 мм)
 
-def load_images_from_category(category_name):
-    """Загружает список изображений из категории."""
-    category_dir = DATA_DIR / category_name
-    if not category_dir.exists():
-        return []
-    
-    images = []
-    for img_file in sorted(category_dir.glob('*.jpg')) + sorted(category_dir.glob('*.jpeg')):
-        images.append({
-            'path': str(img_file.relative_to(DATA_DIR.parent)),
-            'filename': img_file.name,
-            'category': category_name
-        })
-    return images
+# Параметры камеры робота
+CAMERA_WIDTH = 160
+CAMERA_HEIGHT = 120
 
+# Параметры генерации линии
+MIN_SEGMENT_LENGTH = 150
+MAX_SEGMENT_LENGTH = 400
 
-def generate_track_sequence():
+def generate_line_path():
     """
-    Генерирует реалистичную последовательность кадров трассы.
+    Генерирует путь черной линии на трассе.
     
-    Логика:
-    - Прямая линия: может перейти в любое направление
-    - Поворот: после поворота обычно идет прямая линия
-    - Terminate: конечная точка, после нее новый старт
+    Returns:
+        list: Список точек [(x, y), ...] пути линии
     """
+    path = []
     
-    # Загружаем все изображения по категориям
-    straight_images = load_images_from_category('img_straight')
-    left_images = load_images_from_category('img_left')
-    right_images = load_images_from_category('img_right')
-    terminate_images = load_images_from_category('img_terminate')
+    # Стартовая позиция (левый нижний угол)
+    current_x = 200
+    current_y = TRACK_SIZE - 500
+    current_angle = 0  # Направление вправо (0° = вправо, 90° = вверх, 180° = влево, 270° = вниз)
     
-    print(f"📊 Загружено изображений:")
-    print(f"  - STRAIGHT: {len(straight_images)}")
-    print(f"  - LEFT: {len(left_images)}")
-    print(f"  - RIGHT: {len(right_images)}")
-    print(f"  - TERMINATE: {len(terminate_images)}")
+    path.append((current_x, current_y))
     
-    # Создаем последовательность кадров
-    track_sequence = []
-    current_state = 'straight'
-    
-    # Параметры генерации
-    MIN_STRAIGHT_BEFORE_TURN = 2
-    MAX_STRAIGHT_BEFORE_TURN = 5
-    MIN_TURN_FRAMES = 1
-    MAX_TURN_FRAMES = 3
-    
-    # Копии для случайного выбора без повторений
-    available = {
-        'straight': straight_images.copy(),
-        'left': left_images.copy(),
-        'right': right_images.copy(),
-        'terminate': terminate_images.copy()
-    }
-    
-    def get_random_image(category):
-        """Получает случайное изображение из категории без повторений."""
-        if not available[category]:
-            # Если закончились, перезагружаем
-            available[category] = load_images_from_category(f'img_{category}').copy()
-            random.shuffle(available[category])
-        
-        return available[category].pop()
-    
-    # Генерируем трассу
-    frame_id = 0
+    # Генерируем путь
     segments_count = 0
-    max_segments = 20  # Максимум сегментов на трассе
+    max_segments = 25
     
     while segments_count < max_segments:
-        if current_state == 'straight':
-            # Прямой участок
-            num_frames = random.randint(MIN_STRAIGHT_BEFORE_TURN, MAX_STRAIGHT_BEFORE_TURN)
-            for _ in range(num_frames):
-                img = get_random_image('straight')
-                track_sequence.append({
-                    'frame_id': frame_id,
-                    'image': img['path'],
-                    'expected_action': 'straight',
-                    'category': 'img_straight',
-                    'segment_id': segments_count
-                })
-                frame_id += 1
-            
-            # Решаем, что будет дальше
-            next_options = ['left', 'right', 'terminate', 'straight']
-            weights = [0.3, 0.3, 0.1, 0.3]  # Веса вероятностей
-            current_state = random.choices(next_options, weights=weights)[0]
-            segments_count += 1
-            
-        elif current_state in ['left', 'right']:
-            # Поворот
-            num_frames = random.randint(MIN_TURN_FRAMES, MAX_TURN_FRAMES)
-            for _ in range(num_frames):
-                img = get_random_image(current_state)
-                track_sequence.append({
-                    'frame_id': frame_id,
-                    'image': img['path'],
-                    'expected_action': current_state,
-                    'category': f'img_{current_state}',
-                    'segment_id': segments_count
-                })
-                frame_id += 1
-            
-            # После поворота обычно идет прямая
-            current_state = 'straight'
-            segments_count += 1
-            
-        elif current_state == 'terminate':
-            # T-пересечение или конец линии
-            img = get_random_image('terminate')
-            track_sequence.append({
-                'frame_id': frame_id,
-                'image': img['path'],
-                'expected_action': 'terminate',
-                'category': 'img_terminate',
-                'segment_id': segments_count
-            })
-            frame_id += 1
-            
-            # После terminate начинаем новый сегмент с прямой
-            current_state = 'straight'
-            segments_count += 1
+        # Длина следующего сегмента
+        segment_length = random.randint(MIN_SEGMENT_LENGTH, MAX_SEGMENT_LENGTH)
+        
+        # Вычисляем следующую точку
+        next_x = current_x + segment_length * math.cos(math.radians(current_angle))
+        next_y = current_y + segment_length * math.sin(math.radians(current_angle))
+        
+        # Проверяем границы
+        margin = 200
+        if next_x < margin or next_x > TRACK_SIZE - margin or \
+           next_y < margin or next_y > TRACK_SIZE - margin:
+            # Достигли границы, корректируем угол
+            if next_x < margin:
+                current_angle = random.uniform(-45, 45)  # Поворот вправо
+            elif next_x > TRACK_SIZE - margin:
+                current_angle = random.uniform(135, 225)  # Поворот влево
+            elif next_y < margin:
+                current_angle = random.uniform(45, 135)  # Поворот вниз
+            elif next_y > TRACK_SIZE - margin:
+                current_angle = random.uniform(-135, -45)  # Поворот вверх
+            continue
+        
+        path.append((next_x, next_y))
+        current_x, current_y = next_x, next_y
+        
+        # Решаем, куда повернуть дальше
+        turn_choice = random.choices(['straight', 'left', 'right'], 
+                                     weights=[0.5, 0.25, 0.25])[0]
+        
+        if turn_choice == 'straight':
+            # Небольшое отклонение для реализма
+            current_angle += random.uniform(-5, 5)
+        elif turn_choice == 'left':
+            # Поворот влево (против часовой стрелки)
+            current_angle += random.uniform(20, 60)
+        elif turn_choice == 'right':
+            # Поворот вправо (по часовой стрелке)
+            current_angle -= random.uniform(20, 60)
+        
+        segments_count += 1
     
-    return track_sequence
+    return path
 
 
-def save_track_map(track_sequence):
-    """Сохраняет карту трассы в JSON."""
+def draw_track_map(path):
+    """
+    Рисует карту трассы с черной линией на белом фоне.
+    
+    Args:
+        path: Список точек пути
+    
+    Returns:
+        PIL.Image: Изображение трассы
+    """
+    # Создаем белое поле
+    track_image = Image.new('RGB', (TRACK_SIZE, TRACK_SIZE), (255, 255, 255))
+    draw = ImageDraw.Draw(track_image)
+    
+    # Рисуем черную линию
+    if len(path) > 1:
+        draw.line(path, fill=(0, 0, 0), width=LINE_WIDTH, joint='curve')
+    
+    # Добавляем маркеры старта и финиша
+    start_x, start_y = path[0]
+    end_x, end_y = path[-1]
+    
+    # Стартовая точка (зеленый круг)
+    marker_size = 40
+    draw.ellipse([start_x - marker_size, start_y - marker_size, 
+                  start_x + marker_size, start_y + marker_size], 
+                 fill=(0, 255, 0), outline=(0, 128, 0), width=5)
+    
+    # Финишная точка (красный круг)
+    draw.ellipse([end_x - marker_size, end_y - marker_size, 
+                  end_x + marker_size, end_y + marker_size], 
+                 fill=(255, 0, 0), outline=(128, 0, 0), width=5)
+    
+    return track_image
+
+
+def extract_camera_frames(track_image, path, step_size=30):
+    """
+    Извлекает кадры камеры, двигаясь вдоль пути.
+    
+    Args:
+        track_image: Полное изображение трассы
+        path: Путь линии
+        step_size: Шаг между кадрами (пиксели)
+    
+    Returns:
+        list: Список кадров с метаданными
+    """
+    frames = []
+    frame_id = 0
+    
+    # Интерполируем путь для плавного движения
+    interpolated_path = []
+    for i in range(len(path) - 1):
+        x1, y1 = path[i]
+        x2, y2 = path[i + 1]
+        
+        distance = math.sqrt((x2 - x1)**2 + (y2 - y1)**2)
+        num_steps = max(int(distance / step_size), 1)
+        
+        for j in range(num_steps):
+            t = j / num_steps
+            x = x1 + (x2 - x1) * t
+            y = y1 + (y2 - y1) * t
+            
+            # Вычисляем направление движения
+            if i < len(path) - 1:
+                dx = x2 - x1
+                dy = y2 - y1
+                angle = math.degrees(math.atan2(dy, dx))
+            else:
+                angle = 0
+            
+            interpolated_path.append((x, y, angle))
+    
+    # Добавляем последнюю точку
+    if len(path) > 1:
+        x1, y1 = path[-2]
+        x2, y2 = path[-1]
+        angle = math.degrees(math.atan2(y2 - y1, x2 - x1))
+        interpolated_path.append((x2, y2, angle))
+    
+    print(f"📍 Интерполированный путь: {len(interpolated_path)} точек")
+    
+    # Извлекаем кадры
+    for cx, cy, direction_angle in interpolated_path:
+        # Камера находится в точке (cx, cy)
+        # Берем область вокруг этой точки
+        
+        left = int(cx - CAMERA_WIDTH // 2)
+        top = int(cy - CAMERA_HEIGHT // 2)
+        right = left + CAMERA_WIDTH
+        bottom = top + CAMERA_HEIGHT
+        
+        # Проверяем границы
+        if left < 0 or top < 0 or right > TRACK_SIZE or bottom > TRACK_SIZE:
+            continue
+        
+        # Извлекаем кадр
+        frame_img = track_image.crop((left, top, right, bottom))
+        
+        # Анализируем кадр для определения категории
+        expected_action = analyze_frame(frame_img)
+        
+        # Сохраняем кадр
+        frame_path = OUTPUT_DIR / 'frames' / f'frame_{frame_id:04d}.jpg'
+        frame_path.parent.mkdir(parents=True, exist_ok=True)
+        frame_img.save(frame_path, quality=90)
+        
+        frames.append({
+            'frame_id': frame_id,
+            'position': {'x': int(cx), 'y': int(cy)},
+            'direction_angle': float(direction_angle),
+            'image': str(frame_path.relative_to(OUTPUT_DIR.parent)),
+            'expected_action': expected_action
+        })
+        
+        frame_id += 1
+    
+    return frames
+
+
+def analyze_frame(frame_img):
+    """
+    Анализирует кадр для определения ожидаемого действия.
+    
+    Args:
+        frame_img: PIL.Image кадра
+    
+    Returns:
+        str: 'straight', 'left', 'right', или 'terminate'
+    """
+    # Конвертируем в numpy array
+    img_array = np.array(frame_img.convert('L'))  # Grayscale
+    
+    # Ищем черные пиксели (линия)
+    threshold = 128
+    line_pixels = img_array < threshold
+    
+    if np.sum(line_pixels) < 50:
+        return 'terminate'  # Линия не найдена или слишком мало пикселей
+    
+    # Разделяем на три горизонтальные секции (верх, середина, низ)
+    height = img_array.shape[0]
+    top_section = line_pixels[:height//3, :]
+    mid_section = line_pixels[height//3:2*height//3, :]
+    bottom_section = line_pixels[2*height//3:, :]
+    
+    # Вычисляем центр масс линии в каждой секции
+    def center_of_mass(section):
+        if np.sum(section) == 0:
+            return None
+        y_coords, x_coords = np.where(section)
+        return np.mean(x_coords) if len(x_coords) > 0 else None
+    
+    top_center = center_of_mass(top_section)
+    mid_center = center_of_mass(mid_section)
+    bottom_center = center_of_mass(bottom_section)
+    
+    # Определяем тренд движения линии
+    width = img_array.shape[1]
+    center = width // 2
+    
+    # Если есть центры в двух секциях, вычисляем тренд
+    if bottom_center is not None and top_center is not None:
+        trend = (top_center - bottom_center) / width
+        
+        if abs(trend) < 0.15:
+            return 'straight'
+        elif trend > 0:
+            return 'left'  # Линия уходит влево (вверх кадра)
+        else:
+            return 'right'  # Линия уходит вправо (вверх кадра)
+    
+    # Если есть только нижний центр, смотрим на положение
+    if bottom_center is not None:
+        offset = (bottom_center - center) / width
+        
+        if abs(offset) < 0.2:
+            return 'straight'
+        elif offset < 0:
+            return 'left'
+        else:
+            return 'right'
+    
+    return 'straight'
+
+
+def save_track_map(frames, track_image):
+    """Сохраняет карту трассы и метаданные."""
     OUTPUT_DIR.mkdir(exist_ok=True)
     
+    # Сохраняем полное изображение трассы
+    track_image.save(TRACK_MAP_IMAGE)
+    print(f"✅ Полная карта трассы: {TRACK_MAP_IMAGE}")
+    
+    # Создаем превью (уменьшенное изображение)
+    preview = track_image.copy()
+    preview.thumbnail((800, 800))
+    preview.save(TRACK_PREVIEW_IMAGE)
+    print(f"✅ Превью карты: {TRACK_PREVIEW_IMAGE}")
+    
+    # Сохраняем метаданные
     track_map = {
-        'version': '1.0',
-        'description': 'Карта трассы для тестирования алгоритма распознавания линии',
-        'total_frames': len(track_sequence),
-        'frames': track_sequence,
+        'version': '2.0',
+        'description': 'Карта трассы с сгенерированной черной линией на белом фоне',
+        'track_size': TRACK_SIZE,
+        'line_width': LINE_WIDTH,
+        'camera_resolution': {'width': CAMERA_WIDTH, 'height': CAMERA_HEIGHT},
+        'total_frames': len(frames),
+        'frames': frames,
         'statistics': {
-            'straight': sum(1 for f in track_sequence if f['expected_action'] == 'straight'),
-            'left': sum(1 for f in track_sequence if f['expected_action'] == 'left'),
-            'right': sum(1 for f in track_sequence if f['expected_action'] == 'right'),
-            'terminate': sum(1 for f in track_sequence if f['expected_action'] == 'terminate')
+            'straight': sum(1 for f in frames if f['expected_action'] == 'straight'),
+            'left': sum(1 for f in frames if f['expected_action'] == 'left'),
+            'right': sum(1 for f in frames if f['expected_action'] == 'right'),
+            'terminate': sum(1 for f in frames if f['expected_action'] == 'terminate')
         }
     }
     
     with open(TRACK_MAP_FILE, 'w', encoding='utf-8') as f:
         json.dump(track_map, f, indent=2, ensure_ascii=False)
     
-    print(f"\n✅ Карта трассы сохранена: {TRACK_MAP_FILE}")
-    print(f"📊 Статистика:")
+    print(f"\n✅ Метаданные сохранены: {TRACK_MAP_FILE}")
+    print(f"📊 Статистика кадров:")
     print(f"  - Всего кадров: {track_map['total_frames']}")
     print(f"  - STRAIGHT: {track_map['statistics']['straight']}")
     print(f"  - LEFT: {track_map['statistics']['left']}")
@@ -189,188 +332,34 @@ def save_track_map(track_sequence):
     return track_map
 
 
-def stitch_images_smooth(image_paths, labels):
-    """
-    Сшивает изображения в одну длинную картинку с плавными переходами.
-    
-    Args:
-        image_paths: список путей к изображениям
-        labels: список меток (straight/left/right/terminate)
-    
-    Returns:
-        PIL.Image: сшитое изображение
-    """
-    if not image_paths:
-        return None
-    
-    # Загружаем все изображения
-    images = []
-    for img_path in image_paths:
-        try:
-            img = Image.open(img_path).convert('RGB')
-            images.append(img)
-        except Exception as e:
-            print(f"⚠️ Не удалось загрузить {img_path}: {e}")
-            # Создаем черное изображение вместо отсутствующего
-            images.append(Image.new('RGB', (IMAGE_WIDTH, IMAGE_HEIGHT), (0, 0, 0)))
-    
-    if not images:
-        return None
-    
-    # Вычисляем размеры итогового изображения
-    # Каждое изображение добавляет (HEIGHT - OVERLAP_ROWS) высоты
-    total_height = IMAGE_HEIGHT + (len(images) - 1) * (IMAGE_HEIGHT - OVERLAP_ROWS)
-    total_width = IMAGE_WIDTH
-    
-    # Создаем результирующее изображение
-    result = Image.new('RGB', (total_width, total_height), (255, 255, 255))
-    
-    # Цвета для меток
-    label_colors = {
-        'straight': (0, 255, 0),      # Зеленый
-        'left': (0, 100, 255),         # Синий
-        'right': (255, 150, 0),        # Оранжевый
-        'terminate': (255, 0, 0)       # Красный
-    }
-    
-    # Сшиваем изображения с плавными переходами
-    current_y = 0
-    
-    for i, (img, label) in enumerate(zip(images, labels)):
-        if i == 0:
-            # Первое изображение вставляем целиком
-            result.paste(img, (0, 0))
-            current_y = IMAGE_HEIGHT - OVERLAP_ROWS
-        else:
-            # Для остальных делаем плавный переход
-            # Берем нижнюю часть предыдущего изображения
-            prev_img = images[i - 1]
-            prev_bottom = np.array(prev_img.crop((0, IMAGE_HEIGHT - OVERLAP_ROWS, IMAGE_WIDTH, IMAGE_HEIGHT)))
-            
-            # Берем верхнюю часть текущего изображения
-            curr_top = np.array(img.crop((0, 0, IMAGE_WIDTH, OVERLAP_ROWS)))
-            
-            # Создаем плавный переход
-            blended = np.zeros_like(prev_bottom)
-            for row in range(OVERLAP_ROWS):
-                alpha = row / OVERLAP_ROWS  # От 0 до 1
-                blended[row] = (prev_bottom[row] * (1 - alpha) + curr_top[row] * alpha).astype(np.uint8)
-            
-            # Вставляем переход
-            blend_img = Image.fromarray(blended)
-            result.paste(blend_img, (0, current_y))
-            
-            # Вставляем остальную часть текущего изображения
-            curr_rest = img.crop((0, OVERLAP_ROWS, IMAGE_WIDTH, IMAGE_HEIGHT))
-            result.paste(curr_rest, (0, current_y + OVERLAP_ROWS))
-            
-            current_y += IMAGE_HEIGHT - OVERLAP_ROWS
-        
-        # Добавляем цветную метку сбоку
-        draw = ImageDraw.Draw(result)
-        y_pos = current_y - (IMAGE_HEIGHT - OVERLAP_ROWS) // 2
-        color = label_colors.get(label, (128, 128, 128))
-        
-        # Рисуем цветную полоску
-        draw.rectangle([IMAGE_WIDTH - 10, max(0, y_pos - 30), IMAGE_WIDTH, y_pos + 30], 
-                      fill=color, outline=(0, 0, 0), width=1)
-    
-    return result
-
-
-def visualize_track_map(track_map):
-    """Создает визуальную карту трассы путем сшивки изображений."""
-    frames = track_map['frames']
-    
-    print(f"\n🖼️ Создание визуальной карты трассы (сшивка {len(frames)} изображений)...")
-    
-    # Собираем пути к изображениям и метки
-    image_paths = []
-    labels = []
-    
-    for frame in frames:
-        img_path = Path(__file__).parent.parent / frame['image']
-        image_paths.append(img_path)
-        labels.append(frame['expected_action'])
-    
-    # Сшиваем изображения
-    stitched_image = stitch_images_smooth(image_paths, labels)
-    
-    if stitched_image:
-        # Добавляем легенду
-        legend_height = 80
-        final_image = Image.new('RGB', 
-                                (stitched_image.width + 200, stitched_image.height + legend_height),
-                                (255, 255, 255))
-        final_image.paste(stitched_image, (0, legend_height))
-        
-        # Рисуем заголовок и легенду
-        draw = ImageDraw.Draw(final_image)
-        
-        # Заголовок
-        try:
-            font_large = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", 20)
-            font_small = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", 14)
-        except:
-            font_large = ImageFont.load_default()
-            font_small = ImageFont.load_default()
-        
-        draw.text((10, 10), f"Карта трассы: {len(frames)} кадров", fill=(0, 0, 0), font=font_large)
-        
-        # Легенда
-        legend_items = [
-            ("STRAIGHT", (0, 255, 0)),
-            ("LEFT", (0, 100, 255)),
-            ("RIGHT", (255, 150, 0)),
-            ("TERMINATE", (255, 0, 0))
-        ]
-        
-        x_start = 10
-        y_legend = 45
-        for label, color in legend_items:
-            draw.rectangle([x_start, y_legend, x_start + 20, y_legend + 20], 
-                          fill=color, outline=(0, 0, 0), width=1)
-            draw.text((x_start + 30, y_legend + 3), label, fill=(0, 0, 0), font=font_small)
-            x_start += 150
-        
-        # Статистика справа
-        stats_x = stitched_image.width + 10
-        draw.text((stats_x, legend_height + 20), "Статистика:", fill=(0, 0, 0), font=font_large)
-        
-        stats_text = [
-            f"Всего: {len(frames)}",
-            f"STRAIGHT: {track_map['statistics']['straight']}",
-            f"LEFT: {track_map['statistics']['left']}",
-            f"RIGHT: {track_map['statistics']['right']}",
-            f"TERMINATE: {track_map['statistics']['terminate']}"
-        ]
-        
-        y_pos = legend_height + 50
-        for text in stats_text:
-            draw.text((stats_x, y_pos), text, fill=(0, 0, 0), font=font_small)
-            y_pos += 25
-        
-        # Сохраняем
-        final_image.save(TRACK_MAP_IMAGE)
-        print(f"✅ Визуальная карта сохранена: {TRACK_MAP_IMAGE}")
-        print(f"   Размер: {final_image.width}x{final_image.height} пикселей")
-    else:
-        print(f"⚠️ Не удалось создать визуальную карту")
-
-
 if __name__ == '__main__':
-    print("🏁 Генерация карты трассы из датасета...\n")
+    print("🏁 Генерация карты трассы с черной линией...\n")
     
-    # Генерируем последовательность
-    track_sequence = generate_track_sequence()
+    print(f"📐 Параметры трассы:")
+    print(f"  - Размер поля: {TRACK_SIZE}×{TRACK_SIZE} пикселей")
+    print(f"  - Ширина линии: {LINE_WIDTH} пикселей (~20 мм)")
+    print(f"  - Разрешение камеры: {CAMERA_WIDTH}×{CAMERA_HEIGHT}\n")
     
-    # Сохраняем карту
-    track_map = save_track_map(track_sequence)
+    # Генерируем путь линии
+    print("🎨 Генерация пути линии...")
+    path = generate_line_path()
+    print(f"✅ Путь создан: {len(path)} ключевых точек")
     
-    # Визуализация
-    try:
-        visualize_track_map(track_map)
-    except Exception as e:
-        print(f"⚠️ Не удалось создать визуализацию: {e}")
+    # Рисуем карту трассы
+    print("\n🖼️ Рисование карты трассы...")
+    track_image = draw_track_map(path)
+    print(f"✅ Карта нарисована")
+    
+    # Извлекаем кадры камеры
+    print("\n📹 Извлечение кадров камеры вдоль пути...")
+    frames = extract_camera_frames(track_image, path, step_size=25)
+    print(f"✅ Извлечено кадров: {len(frames)}")
+    
+    # Сохраняем
+    print("\n💾 Сохранение...")
+    track_map = save_track_map(frames, track_image)
     
     print("\n✅ Готово! Используйте track_simulator.py для прохождения трассы.")
+    print(f"   Полная карта: {TRACK_MAP_IMAGE}")
+    print(f"   Превью: {TRACK_PREVIEW_IMAGE}")
+    print(f"   Метаданные: {TRACK_MAP_FILE}")

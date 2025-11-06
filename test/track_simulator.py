@@ -172,7 +172,7 @@ def run_simulation(track_map, use_filter=True):
     
     for i, frame in enumerate(frames):
         frame_id = frame['frame_id']
-        image_path = Path(__file__).parent.parent / frame['image']
+        image_path = OUTPUT_DIR / 'frames' / Path(frame['image']).name
         expected_action = frame['expected_action']
         
         # Запускаем алгоритм распознавания
