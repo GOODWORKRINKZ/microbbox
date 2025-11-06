@@ -524,12 +524,13 @@ bool BaseRobot::initCamera() {
     // Параметры для разных типов роботов
 #ifdef TARGET_LINER
     // Для линейного робота нужно низкое разрешение ЧБ
+    // FRAMESIZE_QQVGA = 160x120 для захвата большего пространства по бокам
     config.frame_size = FRAMESIZE_QQVGA;
     config.pixel_format = PIXFORMAT_GRAYSCALE;
     config.jpeg_quality = 12;
     config.fb_count = 1;  // Один буфер достаточно для ЧБ
     config.fb_location = CAMERA_FB_IN_PSRAM;
-    DEBUG_PRINTLN("Настройка камеры для Liner: 96x96 ЧБ");
+    DEBUG_PRINTLN("Настройка камеры для Liner: 160x120 ЧБ (QQVGA)");
 #else
     // Для остальных - стандартное разрешение с учетом PSRAM
     if (psramFound()) {
