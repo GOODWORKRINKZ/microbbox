@@ -196,19 +196,17 @@ bool LinerRobot::initButton() {
 #ifdef FEATURE_BUTTON
     DEBUG_PRINTLN("Инициализация кнопки...");
     
-    // ВАЖНО: На GPIO4 есть нагрузка (LED?), которая тянет пин вниз
-    // Внутренний pull-up (~45кОм) слишком слабый, пин всегда в LOW (~0.14V)
-    // РЕШЕНИЕ: Используем INPUT без pullup, кнопка замыкает на VCC (+3.3V)
-    pinMode(BUTTON_PIN, INPUT);
+    pinMode(BUTTON_PIN, INPUT_PULLUP);
     
     // Читаем начальное состояние
     bool initialState = digitalRead(BUTTON_PIN);
     DEBUG_PRINT("Кнопка на пине ");
     DEBUG_PRINT(BUTTON_PIN);
     DEBUG_PRINT(", начальное состояние: ");
-    DEBUG_PRINTLN(initialState == HIGH ? "HIGH (нажата)" : "LOW (не нажата)");
-    DEBUG_PRINTLN("⚠️ ИНВЕРТИРОВАННАЯ ЛОГИКА: Кнопка замыкает на +3.3V, нажатие = HIGH");
-    DEBUG_PRINTLN("   Причина: на GPIO4 есть нагрузка, pull-up не работает (пин ~0.14V)");
+    DEBUG_PRINTLN(initialState == HIGH ? "HIGH (не нажата)" : "LOW (нажата)");
+    DEBUG_PRINTLN("Кнопка настроена с INPUT_PULLUP, нажатие = LOW (замыкание на GND)");
+    DEBUG_PRINTLN("⚠️ ВАЖНО: Требуется внешний резистор 1кОм между GPIO4 и +3.3V");
+    DEBUG_PRINTLN("   Это усилит pull-up и компенсирует нагрузку на пине");
     
     // Устанавливаем задержку перед первой проверкой кнопки
     // Это предотвращает ложные срабатывания при загрузке из-за нестабильных сигналов
@@ -244,30 +242,29 @@ void LinerRobot::updateButton() {
     lastButtonCheck_ = now;
     
     // Читаем состояние кнопки
-    // ⚠️ ИНВЕРТИРОВАННАЯ ЛОГИКА (кнопка замыкает на +3.3V):
-    // HIGH = нажата (замкнута на VCC)
-    // LOW = не нажата (нагрузка на пине тянет вниз)
+    // HIGH = не нажата (подтянута к VCC через pull-up + внешний резистор 1кОм)
+    // LOW = нажата (замкнута на GND)
     int rawPinValue = digitalRead(BUTTON_PIN);
-    bool currentButtonState = (rawPinValue == HIGH);  // HIGH = нажата
+    bool currentButtonState = (rawPinValue == LOW);
     
     // ДИАГНОСТИКА: Выводим состояние периодически
     static unsigned long lastDiagPrint = 0;
     if (now - lastDiagPrint > BUTTON_DIAG_INTERVAL_MS) {
         DEBUG_PRINTF("[%lu ms] [BUTTON_DIAG] Pin %d = %d (%s), buttonPressed_ = %s\n",
                      now, BUTTON_PIN, rawPinValue,
-                     rawPinValue == HIGH ? "HIGH/НАЖАТА" : "LOW/не_нажата",
+                     rawPinValue == HIGH ? "HIGH/не_нажата" : "LOW/нажата",
                      buttonPressed_ ? "true" : "false");
         lastDiagPrint = now;
     }
     
     // Детектируем переход из не нажатого состояния в нажатое (фронт нажатия)
     if (currentButtonState && !buttonPressed_) {
-        // Кнопка только что нажата (переход с LOW на HIGH)
+        // Кнопка только что нажата (переход с HIGH на LOW)
         buttonPressed_ = true;
         DEBUG_PRINTF("[%lu ms] Кнопка: переход в НАЖАТО, вызов onButtonPressed()\n", now);
         onButtonPressed();
     } else if (!currentButtonState && buttonPressed_) {
-        // Кнопка отпущена (переход с HIGH на LOW)
+        // Кнопка отпущена (переход с LOW на HIGH)
         buttonPressed_ = false;
         DEBUG_PRINTF("[%lu ms] Кнопка: переход в ОТПУЩЕНО\n", now);
     }
