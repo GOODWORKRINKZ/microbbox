@@ -49,6 +49,154 @@ def apply_camera_transforms(image, h_mirror=True, v_flip=True):
     return img_array
 
 
+def normalize_image(img_array, use_edge_detection=True, use_binarization=True):
+    """
+    Обработка изображения с усилением контраста, детекцией границ и бинаризацией.
+    
+    Проблема: изображения с камеры робота имеют низкую яркость и плохой контраст,
+    из-за чего линия плохо различима на фоне.
+    
+    Решение: 
+    1. Усиление контраста (растяжение гистограммы)
+    2. Edge detection (детекция границ) для выделения линии
+    3. Бинаризация для получения четкого черно-белого изображения
+    
+    Args:
+        img_array: numpy массив изображения в grayscale
+        use_edge_detection: применять ли детекцию границ
+        use_binarization: применять ли бинаризацию
+    
+    Returns:
+        numpy массив обработанного изображения [0, 255]
+    """
+    # 1. Растяжение контраста (нормализация гистограммы)
+    min_val = img_array.min()
+    max_val = img_array.max()
+    
+    if max_val > min_val:
+        img_contrast = ((img_array.astype(np.float32) - min_val) / (max_val - min_val) * 255.0).astype(np.uint8)
+    else:
+        img_contrast = img_array
+    
+    # 2. Детекция границ (опционально)
+    if use_edge_detection:
+        # Фильтр Собеля для детекции границ линии
+        # Помогает выделить края линии на фоне
+        edges = apply_sobel_filter(img_contrast)
+        
+        # Комбинируем исходное изображение с границами
+        # np.maximum берет максимум из двух значений, что позволяет
+        # сохранить яркие области исходного изображения и добавить выделенные границы
+        img_result = np.maximum(img_contrast, edges)
+    else:
+        img_result = img_contrast
+    
+    # 3. Бинаризация (приведение к черно-белому)
+    if use_binarization:
+        # Используем адаптивный порог (метод Otsu)
+        # Находим оптимальный порог автоматически
+        threshold = calculate_otsu_threshold(img_result)
+        img_result = np.where(img_result > threshold, 255, 0).astype(np.uint8)
+    
+    return img_result
+
+
+def apply_sobel_filter(img_array):
+    """
+    Применение фильтра Собеля для детекции границ.
+    
+    Примечание: Реализация использует циклы для простоты и отсутствия зависимостей.
+    Для больших изображений или production использования рекомендуется
+    использовать scipy.ndimage.convolve или cv2.filter2D для лучшей производительности.
+    
+    Для текущих изображений 160x120 производительность приемлема.
+    """
+    img_float = img_array.astype(np.float32)
+    height, width = img_float.shape
+    
+    # Sobel ядра для горизонтальных и вертикальных границ
+    sobel_x = np.array([[-1, 0, 1],
+                        [-2, 0, 2],
+                        [-1, 0, 1]], dtype=np.float32)
+    
+    sobel_y = np.array([[-1, -2, -1],
+                        [ 0,  0,  0],
+                        [ 1,  2,  1]], dtype=np.float32)
+    
+    # Результирующее изображение
+    edges = np.zeros_like(img_float)
+    
+    # Применяем свертку вручную (только для внутренних пикселей)
+    for y in range(1, height - 1):
+        for x in range(1, width - 1):
+            # Извлекаем окрестность 3x3
+            region = img_float[y-1:y+2, x-1:x+2]
+            
+            # Вычисляем градиенты
+            gx = np.sum(region * sobel_x)
+            gy = np.sum(region * sobel_y)
+            
+            # Величина градиента
+            edges[y, x] = np.sqrt(gx**2 + gy**2)
+    
+    # Нормализуем результат
+    if edges.max() > 0:
+        edges = (edges / edges.max() * 255.0).astype(np.uint8)
+    else:
+        edges = edges.astype(np.uint8)
+    
+    return edges
+
+
+def calculate_otsu_threshold(img_array):
+    """
+    Вычисление оптимального порога бинаризации методом Otsu.
+    Автоматически находит порог, который лучше всего разделяет
+    темный фон и светлую линию.
+    
+    Примечание: Для оптимизации можно использовать готовые реализации
+    из opencv (cv2.threshold с THRESH_OTSU) или skimage.filters.threshold_otsu.
+    Текущая реализация не требует дополнительных зависимостей.
+    """
+    # Построение гистограммы
+    hist, bin_edges = np.histogram(img_array.flatten(), bins=256, range=(0, 256))
+    
+    # Нормализация гистограммы
+    hist = hist.astype(np.float32)
+    hist_norm = hist / hist.sum()
+    
+    # Вычисление кумулятивных сумм
+    cumsum = np.cumsum(hist_norm)
+    cumsum_mean = np.cumsum(hist_norm * np.arange(256))
+    
+    # Полная средняя яркость
+    global_mean = cumsum_mean[-1]
+    
+    # Вычисление межклассовой дисперсии для каждого порога
+    max_variance = 0
+    best_threshold = 128
+    
+    for t in range(1, 255):
+        w0 = cumsum[t]
+        w1 = 1.0 - w0
+        
+        # Пропускаем случаи когда один из классов пуст
+        if w0 == 0 or w1 == 0:
+            continue
+        
+        mean0 = cumsum_mean[t] / w0
+        mean1 = (global_mean - cumsum_mean[t]) / w1
+        
+        # Межклассовая дисперсия
+        variance = w0 * w1 * (mean0 - mean1) ** 2
+        
+        if variance > max_variance:
+            max_variance = variance
+            best_threshold = t
+    
+    return best_threshold
+
+
 def detect_line_position(image_path, camera_config):
     """
     Реализация алгоритма detectLinePosition() из LinerRobot.cpp
@@ -76,12 +224,16 @@ def detect_line_position(image_path, camera_config):
     if img.size != (LINE_CAMERA_WIDTH, LINE_CAMERA_HEIGHT):
         img = img.resize((LINE_CAMERA_WIDTH, LINE_CAMERA_HEIGHT), Image.Resampling.LANCZOS)
     
-    # Применяем трансформации камеры
+    # Применяем трансформации камеры согласно конфигурации
+    # Эти трансформации нужны для правильной интерпретации направления движения
     img_array = apply_camera_transforms(
         img, 
         camera_config.get('hMirror', True),
         camera_config.get('vFlip', True)
     )
+    
+    # Применяем обработку изображения: усиление контраста, edge detection, бинаризацию
+    img_array = normalize_image(img_array)
     
     # Параметры сканирования
     width = img_array.shape[1]
@@ -146,27 +298,35 @@ def visualize_detection(image_path, result, camera_config, output_path=None):
     if img.size != (LINE_CAMERA_WIDTH, LINE_CAMERA_HEIGHT):
         img = img.resize((LINE_CAMERA_WIDTH, LINE_CAMERA_HEIGHT), Image.Resampling.LANCZOS)
     
-    # Применяем трансформации камеры
+    # Применяем трансформации камеры для правильной ориентации
     img_array = apply_camera_transforms(
         img,
         camera_config.get('hMirror', True),
         camera_config.get('vFlip', True)
     )
     
-    # Создание визуализации
-    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(12, 5))
+    # Применяем нормализацию (как в алгоритме детекции)
+    img_normalized = normalize_image(img_array)
+    
+    # Создание визуализации с 3 панелями
+    fig, (ax1, ax2, ax3) = plt.subplots(1, 3, figsize=(18, 5))
     
     # Исходное изображение
-    ax1.imshow(img_array, cmap='gray')
-    ax1.set_title(f'Original (after camera transforms)\n{os.path.basename(image_path)}')
+    ax1.imshow(img_array, cmap='gray', vmin=0, vmax=255)
+    ax1.set_title(f'After Camera Transforms\n{os.path.basename(image_path)}\nMin: {img_array.min()}, Max: {img_array.max()}')
     ax1.axis('off')
     
+    # Нормализованное изображение
+    ax2.imshow(img_normalized, cmap='gray', vmin=0, vmax=255)
+    ax2.set_title(f'Processed (edges + binary)\nMin: {img_normalized.min()}, Max: {img_normalized.max()}')
+    ax2.axis('off')
+    
     # Изображение с детекцией
-    ax2.imshow(img_array, cmap='gray')
+    ax3.imshow(img_normalized, cmap='gray')
     
     # Линия сканирования
     scan_line = result['scan_line']
-    ax2.axhline(y=scan_line, color='red', linestyle='--', linewidth=1, label='Scan line')
+    ax3.axhline(y=scan_line, color='red', linestyle='--', linewidth=1, label='Scan line')
     
     # Отображение позиции линии
     if result['detected']:
@@ -174,13 +334,13 @@ def visualize_detection(image_path, result, camera_config, output_path=None):
         position_normalized = result['position']
         position_pixel = (position_normalized + 1.0) * LINE_CAMERA_WIDTH / 2.0
         
-        ax2.axvline(x=position_pixel, color='green', linewidth=2, label=f'Line center: {position_normalized:.2f}')
+        ax3.axvline(x=position_pixel, color='green', linewidth=2, label=f'Line center: {position_normalized:.2f}')
         
         # Стрелка направления
         if abs(position_normalized) > 0.1:
             direction = 'LEFT' if position_normalized < 0 else 'RIGHT'
             color = 'yellow' if position_normalized < 0 else 'cyan'
-            ax2.text(position_pixel, scan_line - 10, f'← {direction}' if position_normalized < 0 else f'{direction} →',
+            ax3.text(position_pixel, scan_line - 10, f'← {direction}' if position_normalized < 0 else f'{direction} →',
                     color=color, fontsize=12, fontweight='bold',
                     ha='center', va='bottom')
     
@@ -190,13 +350,13 @@ def visualize_detection(image_path, result, camera_config, output_path=None):
     info_text += f"Width: {result['width_percent']*100:.1f}%\n"
     info_text += f"Terminate: {result['is_terminate']}"
     
-    ax2.text(5, 5, info_text, color='white', fontsize=10,
+    ax3.text(5, 5, info_text, color='white', fontsize=10,
             bbox=dict(boxstyle='round', facecolor='black', alpha=0.7),
             verticalalignment='top')
     
-    ax2.set_title('Line Detection Result')
-    ax2.legend(loc='upper right')
-    ax2.axis('off')
+    ax3.set_title('Line Detection Result')
+    ax3.legend(loc='upper right')
+    ax3.axis('off')
     
     plt.tight_layout()
     
