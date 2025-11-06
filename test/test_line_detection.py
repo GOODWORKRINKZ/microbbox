@@ -182,14 +182,15 @@ def calculate_otsu_threshold(img_array):
 
 def detect_line_position(image_path):
     """
-    Реализация алгоритма detectLinePosition() с использованием 2 горизонтальных 
-    и 2 вертикальных сканирующих линий для точного определения направления.
+    Реализация алгоритма detectLinePosition() с использованием 3 горизонтальных 
+    и 2 вертикальных сканирующих линий для точного определения направления,
+    включая крутые повороты на 90 градусов.
     
     Улучшения:
-    - 2 горизонтальные линии (50% и 85% высоты) для определения направления движения
-    - 2 вертикальные линии (30% и 70% ширины) для определения T-пересечений
-    - Вычисляет направление по ТРЕНДУ: куда ведет линия (вверх->вниз)
-    - Определяет T-пересечения по высоте линии на вертикальных срезах
+    - 3 горизонтальные линии (33%, 60%, 85% высоты) для определения крутых поворотов
+    - 2 вертикальные линии (30%, 70% ширины) для определения T-пересечений
+    - Вычисляет максимальный тренд между любыми двумя горизонтальными линиями
+    - Сильно увеличивает влияние тренда для крутых поворотов (|тренд| > 0.7)
     
     Args:
         image_path: путь к изображению
@@ -202,7 +203,7 @@ def detect_line_position(image_path):
             'is_terminate': bool,   # T-пересечение или обрыв
             'horizontal_scans': list  # результаты горизонтального сканирования
             'vertical_scans': list    # результаты вертикального сканирования
-            'direction_trend': float  # тренд направления (отрицательный = влево, положительный = вправо)
+            'direction_trend': float  # максимальный тренд направления
         }
     """
     # Загрузка изображения
@@ -226,10 +227,11 @@ def detect_line_position(image_path):
     width = img_array.shape[1]
     height = img_array.shape[0]
     
-    # === 1. ДВЕ ГОРИЗОНТАЛЬНЫЕ СКАНИРУЮЩИЕ ЛИНИИ ===
-    # Верхняя и нижняя для определения направления движения
+    # === 1. ТРИ ГОРИЗОНТАЛЬНЫЕ СКАНИРУЮЩИЕ ЛИНИИ ===
+    # Для определения крутых поворотов нужно больше точек сканирования
     horizontal_scan_heights = [
-        int(height * 0.50),  # 50% - верхняя 
+        int(height * 0.33),  # 33% - верхняя (дальняя часть пути)
+        int(height * 0.60),  # 60% - средняя
         int(height * 0.85),  # 85% - нижняя, ближе к роботу
     ]
     
@@ -346,32 +348,60 @@ def detect_line_position(image_path):
     # === ВЫЧИСЛЕНИЕ ПОЗИЦИИ С УЧЕТОМ НАПРАВЛЕНИЯ ДВИЖЕНИЯ ===
     # 
     # КЛЮЧЕВАЯ ИДЕЯ: Робот следует за линией, которая ведет от верхней части кадра к нижней.
-    # Если линия вверху СПРАВА, а внизу в ЦЕНТРЕ - робот должен повернуть ВЛЕВО, 
-    # чтобы следовать за направлением линии.
+    # Для крутых поворотов (90 градусов) важно определить сильное изменение позиции!
     #
     # Алгоритм:
-    # 1. Смотрим на позицию линии на верхней (50%) и нижней (85%) горизонтальных линиях
-    # 2. Вычисляем тренд: позиция_нижняя - позиция_верхняя
-    #    - Если тренд < 0 (линия идет влево-вниз) -> робот должен повернуть ВЛЕВО
-    #    - Если тренд > 0 (линия идет вправо-вниз) -> робот должен повернуть ВПРАВО
-    # 3. Используем тренд с весом для корректировки финальной позиции
+    # 1. Смотрим на позицию линии на 3 горизонтальных линиях (33%, 60%, 85%)
+    # 2. Вычисляем максимальный тренд между любыми двумя линиями
+    # 3. Для крутых поворотов (|тренд| > 0.5) сильно увеличиваем влияние тренда
     
-    # Если обе горизонтальные линии нашли позицию - вычисляем тренд
+    # Если хотя бы 2 горизонтальные линии нашли позицию
     if len(detected_horizontal) >= 2:
-        pos_top = horizontal_results[0]['position']      # 50% (верх)
-        pos_bottom = horizontal_results[1]['position']   # 85% (низ)
+        # Вычисляем все возможные тренды
+        max_trend = 0.0
+        max_trend_pair = None
         
-        # Тренд показывает направление движения линии
-        # Отрицательный = линия идет влево-вниз (робот поворачивает влево)
-        # Положительный = линия идет вправо-вниз (робот поворачивает вправо)
-        direction_trend = pos_bottom - pos_top
-        result['direction_trend'] = direction_trend
+        for i in range(len(horizontal_results)):
+            for j in range(i + 1, len(horizontal_results)):
+                pos_i = horizontal_results[i]['position']
+                pos_j = horizontal_results[j]['position']
+                
+                if pos_i is not None and pos_j is not None:
+                    # Тренд от дальней линии к ближней (от меньшего Y к большему Y)
+                    trend = pos_j - pos_i
+                    if abs(trend) > abs(max_trend):
+                        max_trend = trend
+                        max_trend_pair = (i, j)
         
-        # Финальная позиция: 
-        # - 70% вес нижней линии (ближе к роботу)
-        # - 30% вес тренда (корректировка по направлению)
-        # - дополнительная корректировка если тренд сильный
-        result['position'] = pos_bottom * 0.7 + direction_trend * 0.3
+        result['direction_trend'] = max_trend
+        
+        # Берем нижнюю (ближайшую к роботу) линию как базовую позицию
+        pos_bottom = None
+        for i in range(len(horizontal_results) - 1, -1, -1):
+            if horizontal_results[i]['position'] is not None:
+                pos_bottom = horizontal_results[i]['position']
+                break
+        
+        if pos_bottom is None:
+            # Если нижней нет, берем любую доступную
+            pos_bottom = detected_horizontal[0]['position']
+        
+        # Определяем силу тренда (насколько крутой поворот)
+        trend_strength = abs(max_trend)
+        
+        # Для крутых поворотов (90 градусов) тренд очень сильный
+        if trend_strength > 0.7:
+            # ОЧЕНЬ крутой поворот (почти 90 градусов) - тренд доминирует
+            result['position'] = pos_bottom * 0.2 + max_trend * 0.8
+        elif trend_strength > 0.5:
+            # Крутой поворот - сильное влияние тренда
+            result['position'] = pos_bottom * 0.3 + max_trend * 0.7
+        elif trend_strength > 0.3:
+            # Средний поворот - усиленное влияние тренда
+            result['position'] = pos_bottom * 0.5 + max_trend * 0.5
+        else:
+            # Плавный поворот или прямая
+            result['position'] = pos_bottom * 0.7 + max_trend * 0.3
         
     elif len(detected_horizontal) == 1:
         # Только одна линия найдена - используем её позицию
@@ -382,7 +412,7 @@ def detect_line_position(image_path):
 
 
 def visualize_detection(image_path, result, output_path=None):
-    """Визуализация результата детекции с 2 горизонтальными и 2 вертикальными сканирующими линиями"""
+    """Визуализация результата детекции с 3 горизонтальными и 2 вертикальными сканирующими линиями"""
     import matplotlib.pyplot as plt
     
     # Загрузка изображения
@@ -416,8 +446,8 @@ def visualize_detection(image_path, result, output_path=None):
     
     # === ГОРИЗОНТАЛЬНЫЕ СКАНИРУЮЩИЕ ЛИНИИ ===
     if 'horizontal_scans' in result:
-        h_colors = ['yellow', 'red']
-        h_labels = ['50% (верх)', '85% (низ)']
+        h_colors = ['cyan', 'yellow', 'red']
+        h_labels = ['33% (далеко)', '60% (средне)', '85% (близко)']
         
         for i, scan_info in enumerate(result['horizontal_scans']):
             scan_y = scan_info['y']
@@ -463,22 +493,36 @@ def visualize_detection(image_path, result, output_path=None):
         ax3.axvline(x=position_pixel, color='lime', linewidth=4, 
                    label=f'ЦЕНТР: {position_normalized:.2f}', alpha=0.9)
         
-        # Стрелка направления
-        if abs(position_normalized) > 0.15:
-            direction = 'ВЛЕВО ←' if position_normalized < 0 else '→ ВПРАВО'
-            color = 'yellow' if position_normalized < 0 else 'cyan'
-            ax3.text(position_pixel, 15, direction,
-                    color=color, fontsize=16, fontweight='bold',
-                    ha='center', va='top',
-                    bbox=dict(boxstyle='round', facecolor='black', alpha=0.8))
+        # Стрелка направления с учетом тренда
+        trend = result.get('direction_trend', 0.0)
+        
+        if abs(trend) > 0.5:
+            # Крутой поворот
+            if trend > 0:
+                direction = '⟹ КРУТОЙ ПОВОРОТ ВПРАВО'
+                color = 'cyan'
+            else:
+                direction = '⟸ КРУТОЙ ПОВОРОТ ВЛЕВО'
+                color = 'yellow'
+        elif abs(position_normalized) > 0.15:
+            if position_normalized < 0:
+                direction = '← ВЛЕВО'
+                color = 'yellow'
+            else:
+                direction = '→ ВПРАВО'
+                color = 'cyan'
         else:
-            ax3.text(position_pixel, 15, '↑ ПРЯМО',
-                    color='lime', fontsize=16, fontweight='bold',
-                    ha='center', va='top',
-                    bbox=dict(boxstyle='round', facecolor='black', alpha=0.8))
+            direction = '↑ ПРЯМО'
+            color = 'lime'
+        
+        ax3.text(position_pixel, 15, direction,
+                color=color, fontsize=16, fontweight='bold',
+                ha='center', va='top',
+                bbox=dict(boxstyle='round', facecolor='black', alpha=0.8))
     
     # Информация о результате
     info_text = f"Позиция: {result['position']:.3f}\n"
+    info_text += f"Тренд: {result.get('direction_trend', 0.0):.3f}\n"
     info_text += f"Обнаружена: {'ДА' if result['detected'] else 'НЕТ'}\n"
     info_text += f"Ширина: {result['width_percent']*100:.1f}%\n"
     info_text += f"Конец/T: {'ДА' if result['is_terminate'] else 'НЕТ'}"
@@ -487,7 +531,7 @@ def visualize_detection(image_path, result, output_path=None):
             bbox=dict(boxstyle='round', facecolor='black', alpha=0.85),
             verticalalignment='bottom', fontfamily='monospace')
     
-    ax3.set_title('Результат (2 гориз. + 2 верт. линии)')
+    ax3.set_title('Результат (3 гориз. + 2 верт. линии)')
     ax3.legend(loc='upper right', fontsize=7, framealpha=0.9)
     ax3.axis('off')
     
@@ -535,9 +579,19 @@ def test_category(category_path, expected_range, visualize=False):
         result = detect_line_position(img_path)
         results.append(result)
         
-        print(f"   Position: {result['position']:+.3f}")
-        print(f"   Detected: {result['detected']}")
-        print(f"   Width: {result['width_percent']*100:.1f}%")
+        # Показываем детали сканирования
+        h_scans = result['horizontal_scans']
+        print(f"   Позиция: {result['position']:+.3f}")
+        print(f"   Обнаружена: {result['detected']}")
+        print(f"   Ширина: {result['width_percent']*100:.1f}%")
+        print(f"   Тренд: {result['direction_trend']:+.3f}")
+        
+        # Детали горизонтальных сканов
+        pos_top = h_scans[0]['position']
+        pos_bot = h_scans[1]['position']
+        if pos_top is not None and pos_bot is not None:
+            print(f"   Сканы: верх={pos_top:+.3f}, низ={pos_bot:+.3f}")
+        
         print(f"   Terminate: {result['is_terminate']}")
         
         # Проверка ожиданий
@@ -552,6 +606,12 @@ def test_category(category_path, expected_range, visualize=False):
                 print(f"   ✅ PASS - Позиция в ожидаемом диапазоне [{min_val}, {max_val}]")
             else:
                 print(f"   ❌ FAIL - Позиция вне диапазона [{min_val}, {max_val}]")
+                # Примечание о возможных проблемах с данными
+                if not result['is_terminate'] and result['detected']:
+                    if (result['position'] < 0 and min_val > 0):
+                        print(f"   ⚠️  ЗАМЕЧАНИЕ: Линия слева, но ожидается справа")
+                    elif (result['position'] > 0 and max_val < 0):
+                        print(f"   ⚠️  ЗАМЕЧАНИЕ: Линия справа, но ожидается слева")
         
         # Визуализация
         if visualize:
