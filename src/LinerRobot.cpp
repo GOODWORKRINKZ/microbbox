@@ -15,6 +15,9 @@ LinerRobot::LinerRobot() :
     currentMode_(Mode::MANUAL),
     buttonPressed_(false),
     lastButtonCheck_(0),
+    lineDetected_(false),
+    lineNotDetectedCount_(0),
+    lineEndAnimationPlayed_(false),
     pidError_(0.0f),
     pidLastError_(0.0f),
     pidIntegral_(0.0f),
@@ -46,9 +49,14 @@ bool LinerRobot::initSpecificComponents() {
     
 #ifdef FEATURE_BUTTON
     // Инициализация кнопки
+    DEBUG_PRINTLN("FEATURE_BUTTON определен, инициализируем кнопку...");
     if (!initButton()) {
         DEBUG_PRINTLN("ПРЕДУПРЕЖДЕНИЕ: Не удалось инициализировать кнопку");
+    } else {
+        DEBUG_PRINTLN("✓ Кнопка успешно инициализирована!");
     }
+#else
+    DEBUG_PRINTLN("ВНИМАНИЕ: FEATURE_BUTTON НЕ определен! Кнопка не будет работать!");
 #endif
     
 #ifdef FEATURE_NEOPIXEL
@@ -65,6 +73,15 @@ bool LinerRobot::initSpecificComponents() {
 }
 
 void LinerRobot::updateSpecificComponents() {
+    // ДИАГНОСТИКА: Выводим текущий режим периодически
+    static unsigned long lastModePrint = 0;
+    if (millis() - lastModePrint > MODE_DIAG_INTERVAL_MS) {
+        unsigned long now = millis();
+        DEBUG_PRINT("[MODE_DIAG] Текущий режим: ");
+        DEBUG_PRINTLN(currentMode_ == Mode::AUTONOMOUS ? "АВТОНОМНЫЙ (следование по линии)" : "РУЧНОЙ");
+        lastModePrint = now;
+    }
+    
     // Обновление кнопки
 #ifdef FEATURE_BUTTON
     updateButton();
@@ -149,11 +166,26 @@ bool LinerRobot::initLEDs() {
     
     pixels_ = new Adafruit_NeoPixel(NEOPIXEL_COUNT, NEOPIXEL_PIN, NEO_GRB + NEO_KHZ800);
     pixels_->begin();
+    
+    // Для Liner используем пониженную яркость для экономии батареи
+#ifdef TARGET_LINER
+    pixels_->setBrightness(LED_BRIGHTNESS_LINER_MAX);
+    DEBUG_PRINT("Яркость LED установлена: ");
+    DEBUG_PRINT(LED_BRIGHTNESS_LINER_MAX);
+    DEBUG_PRINTLN(" (экономия батареи)");
+#else
     pixels_->setBrightness(LED_BRIGHTNESS_DEFAULT);
+#endif
+    
     pixels_->clear();
     pixels_->show();
     
     DEBUG_PRINTLN("NeoPixel LED инициализированы");
+    
+    // Красивая анимация запуска
+    DEBUG_PRINTLN("Запуск анимации LED...");
+    playStartupAnimation();
+    
     return true;
 #else
     return true;
@@ -165,6 +197,14 @@ bool LinerRobot::initButton() {
     DEBUG_PRINTLN("Инициализация кнопки...");
     
     pinMode(BUTTON_PIN, INPUT_PULLUP);
+    
+    // Читаем начальное состояние
+    bool initialState = digitalRead(BUTTON_PIN);
+    DEBUG_PRINT("Кнопка на пине ");
+    DEBUG_PRINT(BUTTON_PIN);
+    DEBUG_PRINT(", начальное состояние: ");
+    DEBUG_PRINTLN(initialState == HIGH ? "HIGH (не нажата)" : "LOW (нажата)");
+    DEBUG_PRINTLN("Кнопка настроена с INPUT_PULLUP, нажатие = LOW (замыкание на GND)");
     
     DEBUG_PRINTLN("Кнопка инициализирована");
     return true;
@@ -184,52 +224,76 @@ void LinerRobot::updateButton() {
     // Читаем состояние кнопки
     // HIGH = не нажата (подтянута к VCC через pull-up)
     // LOW = нажата (замкнута на GND)
-    bool buttonState = digitalRead(BUTTON_PIN) == LOW;
+    int rawPinValue = digitalRead(BUTTON_PIN);
+    bool currentButtonState = (rawPinValue == LOW);
     
-    // Обнаруживаем переход из HIGH в LOW (нажатие)
-    // Игнорируем если кнопка была LOW при старте (LED на пине)
-    static bool firstRead = true;
-    static bool initialState = HIGH;
-    
-    if (firstRead) {
-        initialState = !buttonState; // Инвертируем, чтобы игнорировать LED
-        firstRead = false;
-        buttonPressed_ = buttonState;
-        return; // Пропускаем первое чтение
+    // ДИАГНОСТИКА: Выводим состояние периодически
+    static unsigned long lastDiagPrint = 0;
+    if (now - lastDiagPrint > BUTTON_DIAG_INTERVAL_MS) {
+        DEBUG_PRINT("[BUTTON_DIAG] Pin ");
+        DEBUG_PRINT(BUTTON_PIN);
+        DEBUG_PRINT(" = ");
+        DEBUG_PRINT(rawPinValue);
+        DEBUG_PRINT(" (");
+        DEBUG_PRINT(rawPinValue == HIGH ? "HIGH/не_нажата" : "LOW/нажата");
+        DEBUG_PRINT("), buttonPressed_ = ");
+        DEBUG_PRINTLN(buttonPressed_ ? "true" : "false");
+        lastDiagPrint = now;
     }
     
-    if (buttonState && !buttonPressed_) {
-        // Кнопка нажата (переход HIGH->LOW)
+    // Детектируем переход из не нажатого состояния в нажатое (фронт нажатия)
+    if (currentButtonState && !buttonPressed_) {
+        // Кнопка только что нажата (переход с HIGH на LOW)
         buttonPressed_ = true;
         onButtonPressed();
-    } else if (!buttonState && buttonPressed_) {
-        // Кнопка отпущена (переход LOW->HIGH)
+        DEBUG_PRINTLN("Кнопка: переход в НАЖАТО, вызов onButtonPressed()");
+    } else if (!currentButtonState && buttonPressed_) {
+        // Кнопка отпущена (переход с LOW на HIGH)
         buttonPressed_ = false;
+        DEBUG_PRINTLN("Кнопка: переход в ОТПУЩЕНО");
     }
 #endif
 }
 
 void LinerRobot::onButtonPressed() {
-    DEBUG_PRINTLN("Кнопка нажата!");
+    DEBUG_PRINTLN("==================================================");
+    DEBUG_PRINTLN("КНОПКА НАЖАТА!");
+    DEBUG_PRINT("Текущий режим: ");
+    DEBUG_PRINTLN(currentMode_ == Mode::MANUAL ? "РУЧНОЙ" : "АВТОНОМНЫЙ");
     
     // Переключение режима
     if (currentMode_ == Mode::MANUAL) {
         currentMode_ = Mode::AUTONOMOUS;
-        DEBUG_PRINTLN("Переход в АВТОНОМНЫЙ режим");
+        DEBUG_PRINTLN(">>> ПЕРЕХОД В АВТОНОМНЫЙ РЕЖИМ <<<");
+        DEBUG_PRINTLN(">>> НАЧАТО АВТОСЛЕДОВАНИЕ ПО ЛИНИИ <<<");
         
         // Сброс PID контроллера
         pidError_ = 0.0f;
         pidLastError_ = 0.0f;
         pidIntegral_ = 0.0f;
+        DEBUG_PRINTLN("PID контроллер сброшен");
+        
+        // Сброс счетчиков линии
+        lineDetected_ = false;
+        lineNotDetectedCount_ = 0;
+        lineEndAnimationPlayed_ = false;
+        
+        // Анимация начала следования по линии
+#ifdef FEATURE_NEOPIXEL
+        playLineFollowStartAnimation();
+#endif
     } else {
         currentMode_ = Mode::MANUAL;
-        DEBUG_PRINTLN("Переход в РУЧНОЙ режим");
+        DEBUG_PRINTLN(">>> ПЕРЕХОД В РУЧНОЙ РЕЖИМ <<<");
+        DEBUG_PRINTLN(">>> АВТОСЛЕДОВАНИЕ ОСТАНОВЛЕНО <<<");
         
         // Остановка моторов
         if (motorController_) {
             motorController_->stop();
+            DEBUG_PRINTLN("Моторы остановлены");
         }
     }
+    DEBUG_PRINTLN("==================================================");
 }
 
 void LinerRobot::updateLineFollowing() {
@@ -291,10 +355,48 @@ float LinerRobot::detectLinePosition() {
     esp_camera_fb_return(fb);
     
     if (count == 0) {
-        // Линия не найдена
+        // Линия не найдена (обрыв)
+        lineDetected_ = false;
+        lineNotDetectedCount_++;
+        
+        // Если линия не найдена 10+ кадров подряд - считаем что конец линии
+        if (lineNotDetectedCount_ >= 10 && !lineEndAnimationPlayed_) {
+            DEBUG_PRINTLN("!!! КОНЕЦ ЛИНИИ: ОБРЫВ !!!");
+            lineEndAnimationPlayed_ = true;
+#ifdef FEATURE_NEOPIXEL
+            playLineEndAnimation();
+#endif
+            // Остановка моторов
+            if (motorController_) {
+                motorController_->stop();
+            }
+        }
+        
         DEBUG_PRINTLN("ПРЕДУПРЕЖДЕНИЕ: Линия не обнаружена");
         return 0.0f;
     }
+    
+    // Проверка на T-образное пересечение или разветвление
+    // Если линия занимает больше порогового значения ширины кадра - это пересечение/разветвление
+    float lineWidthPercent = (float)count / (float)width;
+    if (lineWidthPercent > LINE_T_JUNCTION_THRESHOLD && !lineEndAnimationPlayed_) {
+        DEBUG_PRINTF("!!! КОНЕЦ ЛИНИИ: T-ОБРАЗНОЕ ПЕРЕСЕЧЕНИЕ (ширина линии %.0f%%) !!!\n", lineWidthPercent * 100);
+        lineEndAnimationPlayed_ = true;
+#ifdef FEATURE_NEOPIXEL
+        playLineEndAnimation();
+#endif
+        // Остановка моторов
+        if (motorController_) {
+            motorController_->stop();
+        }
+        
+        // Возвращаем центр, чтобы не было резких движений перед остановкой
+        return 0.0f;
+    }
+    
+    // Линия найдена
+    lineDetected_ = true;
+    lineNotDetectedCount_ = 0;
     
     // Средняя позиция линии
     float avgPosition = sumPosition / (float)count;
@@ -373,23 +475,302 @@ void LinerRobot::handleMotorCommand(int throttlePWM, int steeringPWM) {
     // В автономном режиме игнорируем команды управления
 }
 
+void LinerRobot::playStartupAnimation() {
+#ifdef FEATURE_NEOPIXEL
+    if (!pixels_) return;
+    
+    const int leftStart = 0;    // Первые 8 LED - левая сторона
+    const int leftEnd = 7;
+    const int rightStart = 8;   // Следующие 8 LED - правая сторона  
+    const int rightEnd = 15;
+    
+    // Эффект 1: Радуга слева направо и справа налево
+    DEBUG_PRINTLN("Анимация: Радужная волна");
+    for (int j = 0; j < 256; j += 8) {
+        for (int i = leftStart; i <= leftEnd; i++) {
+            uint32_t color = pixels_->ColorHSV((j + i * 32) % 65536, 255, 200);
+            pixels_->setPixelColor(i, color);
+        }
+        for (int i = rightStart; i <= rightEnd; i++) {
+            uint32_t color = pixels_->ColorHSV((j + (rightEnd - i) * 32) % 65536, 255, 200);
+            pixels_->setPixelColor(i, color);
+        }
+        pixels_->show();
+        delay(15);
+    }
+    
+    // Эффект 2: Заполнение от центра к краям
+    DEBUG_PRINTLN("Анимация: Заполнение от центра");
+    pixels_->clear();
+    pixels_->show();
+    delay(100);
+    
+    // Красный цвет заполняет от центра к краям
+    for (int i = 0; i < 8; i++) {
+        int leftIdx = 7 - i;      // Левая сторона: от центра (7) к краю (0)
+        int rightIdx = 8 + i;     // Правая сторона: от центра (8) к краю (15)
+        
+        pixels_->setPixelColor(leftIdx, pixels_->Color(255, 0, 0));
+        pixels_->setPixelColor(rightIdx, pixels_->Color(255, 0, 0));
+        pixels_->show();
+        delay(60);
+    }
+    
+    delay(200);
+    
+    // Эффект 3: Смена цветов синхронно
+    DEBUG_PRINTLN("Анимация: Цветовая последовательность");
+    uint32_t colors[] = {
+        pixels_->Color(255, 0, 0),    // Красный
+        pixels_->Color(255, 128, 0),  // Оранжевый
+        pixels_->Color(255, 255, 0),  // Желтый
+        pixels_->Color(0, 255, 0),    // Зеленый
+        pixels_->Color(0, 0, 255),    // Синий
+        pixels_->Color(128, 0, 255)   // Фиолетовый
+    };
+    
+    for (int c = 0; c < 6; c++) {
+        for (int i = 0; i < NEOPIXEL_COUNT; i++) {
+            pixels_->setPixelColor(i, colors[c]);
+        }
+        pixels_->show();
+        delay(150);
+    }
+    
+    // Эффект 4: "Бегущие огни" навстречу друг другу
+    DEBUG_PRINTLN("Анимация: Бегущие огни");
+    for (int lap = 0; lap < 2; lap++) {
+        for (int i = 0; i < 8; i++) {
+            pixels_->clear();
+            
+            // Левая сторона: бежит слева направо (0->7)
+            pixels_->setPixelColor(i, pixels_->Color(0, 255, 255));
+            if (i > 0) pixels_->setPixelColor(i - 1, pixels_->Color(0, 128, 128));
+            
+            // Правая сторона: бежит справа налево (15->8)
+            pixels_->setPixelColor(rightEnd - i, pixels_->Color(255, 0, 255));
+            if (i > 0) pixels_->setPixelColor(rightEnd - i + 1, pixels_->Color(128, 0, 128));
+            
+            pixels_->show();
+            delay(80);
+        }
+    }
+    
+    // Эффект 5: Финальная вспышка
+    DEBUG_PRINTLN("Анимация: Финальная вспышка");
+    for (int brightness = 0; brightness < 255; brightness += 15) {
+        for (int i = 0; i < NEOPIXEL_COUNT; i++) {
+            pixels_->setPixelColor(i, pixels_->Color(brightness, brightness, brightness));
+        }
+        pixels_->show();
+        delay(10);
+    }
+    
+    delay(100);
+    
+    for (int brightness = 255; brightness >= 0; brightness -= 15) {
+        for (int i = 0; i < NEOPIXEL_COUNT; i++) {
+            pixels_->setPixelColor(i, pixels_->Color(brightness, brightness, brightness));
+        }
+        pixels_->show();
+        delay(10);
+    }
+    
+    // Переход к начальному состоянию (синий = ручной режим)
+    delay(200);
+    for (int i = 0; i < NEOPIXEL_COUNT; i++) {
+        pixels_->setPixelColor(i, pixels_->Color(0, 0, 255));
+    }
+    pixels_->show();
+    
+    DEBUG_PRINTLN("Анимация завершена!");
+#endif
+}
+
+void LinerRobot::playLineFollowStartAnimation() {
+#ifdef FEATURE_NEOPIXEL
+    if (!pixels_) return;
+    
+    DEBUG_PRINTLN(">>> АНИМАЦИЯ СТАРТА СЛЕДОВАНИЯ ПО ЛИНИИ <<<");
+    
+    const int leftStart = 0;
+    const int leftEnd = 7;
+    const int rightStart = 8;
+    const int rightEnd = 15;
+    
+    // Эффект: Зеленая волна от краев к центру (готовность к старту)
+    for (int i = 0; i < 8; i++) {
+        pixels_->clear();
+        
+        // Левая сторона: от 0 к 7
+        for (int j = 0; j <= i; j++) {
+            int brightness = 255 - (i - j) * 30;
+            pixels_->setPixelColor(j, pixels_->Color(0, brightness, 0));
+        }
+        
+        // Правая сторона: от 15 к 8
+        for (int j = 0; j <= i; j++) {
+            int brightness = 255 - (i - j) * 30;
+            pixels_->setPixelColor(rightEnd - j, pixels_->Color(0, brightness, 0));
+        }
+        
+        pixels_->show();
+        delay(60);
+    }
+    
+    // Финальная вспышка зеленым
+    for (int i = 0; i < 3; i++) {
+        for (int j = 0; j < NEOPIXEL_COUNT; j++) {
+            pixels_->setPixelColor(j, pixels_->Color(0, 255, 0));
+        }
+        pixels_->show();
+        delay(100);
+        
+        pixels_->clear();
+        pixels_->show();
+        delay(100);
+    }
+    
+    DEBUG_PRINTLN("Анимация старта завершена!");
+#endif
+}
+
+void LinerRobot::playLineEndAnimation() {
+#ifdef FEATURE_NEOPIXEL
+    if (!pixels_) return;
+    
+    DEBUG_PRINTLN(">>> АНИМАЦИЯ КОНЦА ЛИНИИ <<<");
+    
+    const int leftStart = 0;
+    const int leftEnd = 7;
+    const int rightStart = 8;
+    const int rightEnd = 15;
+    
+    // Эффект 1: Красная волна - предупреждение о конце
+    for (int wave = 0; wave < 3; wave++) {
+        for (int i = 0; i < 8; i++) {
+            pixels_->clear();
+            
+            // Левая сторона
+            pixels_->setPixelColor(i, pixels_->Color(255, 0, 0));
+            if (i > 0) pixels_->setPixelColor(i - 1, pixels_->Color(128, 0, 0));
+            
+            // Правая сторона
+            pixels_->setPixelColor(rightStart + i, pixels_->Color(255, 0, 0));
+            if (i > 0) pixels_->setPixelColor(rightStart + i - 1, pixels_->Color(128, 0, 0));
+            
+            pixels_->show();
+            delay(50);
+        }
+    }
+    
+    // Эффект 2: Пульсация красным
+    for (int pulse = 0; pulse < 5; pulse++) {
+        for (int brightness = 0; brightness < 255; brightness += 20) {
+            for (int i = 0; i < NEOPIXEL_COUNT; i++) {
+                pixels_->setPixelColor(i, pixels_->Color(brightness, 0, 0));
+            }
+            pixels_->show();
+            delay(15);
+        }
+        
+        for (int brightness = 255; brightness >= 0; brightness -= 20) {
+            for (int i = 0; i < NEOPIXEL_COUNT; i++) {
+                pixels_->setPixelColor(i, pixels_->Color(brightness, 0, 0));
+            }
+            pixels_->show();
+            delay(15);
+        }
+    }
+    
+    // Финал: оставить красные LED гореть
+    for (int i = 0; i < NEOPIXEL_COUNT; i++) {
+        pixels_->setPixelColor(i, pixels_->Color(255, 0, 0));
+    }
+    pixels_->show();
+    
+    DEBUG_PRINTLN("Анимация конца завершена!");
+#endif
+}
+
+void LinerRobot::updateLineFollowingLED(float linePosition) {
+#ifdef FEATURE_NEOPIXEL
+    if (!pixels_) return;
+    
+    // linePosition: -1.0 (левый край) до 1.0 (правый край)
+    // Показываем отклонение: чем больше отклонение, тем больше LED горят с той стороны
+    
+    const int leftStart = 0;
+    const int leftEnd = 7;
+    const int rightStart = 8;
+    const int rightEnd = 15;
+    
+    // Очищаем
+    pixels_->clear();
+    
+    if (linePosition < 0) {
+        // Линия слева - зажигаем левые LED
+        float leftIntensity = -linePosition; // 0.0 до 1.0
+        int numLeftLEDs = (int)(leftIntensity * 8);
+        numLeftLEDs = constrain(numLeftLEDs, 0, 8);
+        
+        // Левая сторона: зеленый (чем больше отклонение, тем больше LED)
+        for (int i = 0; i < numLeftLEDs; i++) {
+            int brightness = 255 - (i * 20); // Градиент яркости
+            pixels_->setPixelColor(leftStart + i, pixels_->Color(0, brightness, 0));
+        }
+        
+        // Правая сторона: синий (минимальная индикация)
+        for (int i = rightStart; i <= rightEnd; i++) {
+            pixels_->setPixelColor(i, pixels_->Color(0, 0, 50));
+        }
+        
+    } else if (linePosition > 0) {
+        // Линия справа - зажигаем правые LED
+        float rightIntensity = linePosition; // 0.0 до 1.0
+        int numRightLEDs = (int)(rightIntensity * 8);
+        numRightLEDs = constrain(numRightLEDs, 0, 8);
+        
+        // Правая сторона: зеленый (чем больше отклонение, тем больше LED)
+        for (int i = 0; i < numRightLEDs; i++) {
+            int brightness = 255 - (i * 20); // Градиент яркости
+            pixels_->setPixelColor(rightStart + i, pixels_->Color(0, brightness, 0));
+        }
+        
+        // Левая сторона: синий (минимальная индикация)
+        for (int i = leftStart; i <= leftEnd; i++) {
+            pixels_->setPixelColor(i, pixels_->Color(0, 0, 50));
+        }
+        
+    } else {
+        // Линия по центру - все зеленые
+        for (int i = 0; i < NEOPIXEL_COUNT; i++) {
+            pixels_->setPixelColor(i, pixels_->Color(0, 255, 0));
+        }
+    }
+    
+    pixels_->show();
+#endif
+}
+
 void LinerRobot::updateStatusLED() {
 #ifdef FEATURE_NEOPIXEL
     if (!pixels_) return;
     
     // Индикация режима
     if (currentMode_ == Mode::AUTONOMOUS) {
-        // Автономный режим - зеленый
-        for (int i = 0; i < NEOPIXEL_COUNT; i++) {
-            pixels_->setPixelColor(i, pixels_->Color(0, 255, 0));
+        // В автономном режиме отображаем статус следования
+        // Если конец линии - LED уже настроены анимацией
+        if (!lineEndAnimationPlayed_) {
+            updateLineFollowingLED(pidError_);
         }
     } else {
         // Ручной режим - синий
         for (int i = 0; i < NEOPIXEL_COUNT; i++) {
             pixels_->setPixelColor(i, pixels_->Color(0, 0, 255));
         }
+        pixels_->show();
     }
-    pixels_->show();
 #endif
 }
 
