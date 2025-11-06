@@ -58,6 +58,9 @@ private:
     
     // Анимация LED
     void playStartupAnimation();
+    void playLineFollowStartAnimation();  // Анимация при старте следования
+    void playLineEndAnimation();          // Анимация при обнаружении конца линии
+    void updateLineFollowingLED(float linePosition);  // Отображение отклонения на LED
     
     // Веб-обработчики
     void handleCommand(AsyncWebServerRequest* request);
@@ -74,6 +77,11 @@ private:
     Mode currentMode_;
     bool buttonPressed_;
     unsigned long lastButtonCheck_;
+    
+    // Следование по линии
+    bool lineDetected_;              // Обнаружена ли линия
+    int lineNotDetectedCount_;       // Счетчик кадров без линии
+    bool lineEndAnimationPlayed_;    // Проиграна ли анимация конца линии
     
     // PID контроллер
     float pidError_;
