@@ -41,7 +41,12 @@
 #ifdef FEATURE_NEOPIXEL
     #define NEOPIXEL_PIN 2          // Адресные светодиоды на пин 2
     #define NEOPIXEL_LED_CHANNEL 7  // PWM канал 7
-    #define NEOPIXEL_COUNT 3        // Всего 3 светодиода (2 сзади, 1 спереди)
+    #ifdef TARGET_LINER
+        #define NEOPIXEL_COUNT 16       // Для Liner: 16 светодиодов (по 8 на каждую сторону)
+        #define LED_BRIGHTNESS_LINER_MAX 15  // Максимальная яркость для Liner (экономия батареи)
+    #else
+        #define NEOPIXEL_COUNT 3        // Для Classic/Brain: 3 светодиода (2 сзади, 1 спереди)
+    #endif
     #define LED_BRIGHTNESS_DEFAULT 128   // Яркость по умолчанию (50%)
     #define LED_BRIGHTNESS_MAX 255       // Максимальная яркость
 #endif
@@ -58,6 +63,7 @@
 #ifdef FEATURE_BUTTON
     #define BUTTON_PIN 4            // Кнопка на пин 4 (GPIO4, безопасный пин)
     #define BUTTON_DEBOUNCE_MS 50   // Время антидребезга
+    #define BUTTON_DIAG_INTERVAL_MS 2000  // Интервал вывода диагностики кнопки
 #endif
 
 #ifdef FEATURE_MOTORS
@@ -144,6 +150,7 @@
     #define LINE_CAMERA_WIDTH 96        // Ширина изображения
     #define LINE_CAMERA_HEIGHT 96       // Высота изображения
     #define LINE_THRESHOLD 128          // Порог для ЧБ изображения
+    #define LINE_T_JUNCTION_THRESHOLD 0.7f  // Порог детектирования T-пересечения (70% ширины)
     #define LINE_PID_KP 1.0            // Пропорциональный коэффициент PID
     #define LINE_PID_KI 0.0            // Интегральный коэффициент PID
     #define LINE_PID_KD 0.1            // Дифференциальный коэффициент PID
@@ -154,6 +161,9 @@
 enum class ControlMode {
     DIFFERENTIAL = 0  // Дифференциальный (правый стик = скорость, левый стик = поворот)
 };
+
+// Диагностика
+#define MODE_DIAG_INTERVAL_MS 5000  // Интервал вывода диагностики режима работы
 
 #if defined(FEATURE_NEOPIXEL) || defined(FEATURE_BUZZER)
 // Эффекты и режимы
