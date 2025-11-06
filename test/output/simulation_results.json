@@ -1,0 +1,808 @@
+{
+  "version": "1.0",
+  "simulation_results": [
+    {
+      "frame_id": 0,
+      "image": "data/img_straight/straight_20251107_003843_297_050.jpg",
+      "expected_action": "straight",
+      "raw_action": "terminate",
+      "filtered_action": "unknown",
+      "is_correct_raw": false,
+      "is_correct_filtered": false,
+      "detection": {
+        "position": 0.0,
+        "trend": 0.0,
+        "detected": false,
+        "is_terminate": true
+      }
+    },
+    {
+      "frame_id": 1,
+      "image": "data/img_straight/straight_20251107_003842_017_049.jpg",
+      "expected_action": "straight",
+      "raw_action": "straight",
+      "filtered_action": "straight",
+      "is_correct_raw": true,
+      "is_correct_filtered": true,
+      "detection": {
+        "position": -0.13755530973451327,
+        "trend": -0.09380530973451329,
+        "detected": true,
+        "is_terminate": false
+      }
+    },
+    {
+      "frame_id": 2,
+      "image": "data/img_straight/straight_20251107_003840_932_048.jpg",
+      "expected_action": "straight",
+      "raw_action": "straight",
+      "filtered_action": "straight",
+      "is_correct_raw": true,
+      "is_correct_filtered": true,
+      "detection": {
+        "position": -0.11462865259740261,
+        "trend": 0.21764407467532465,
+        "detected": true,
+        "is_terminate": false
+      }
+    },
+    {
+      "frame_id": 3,
+      "image": "data/img_straight/straight_20251107_003839_709_047.jpg",
+      "expected_action": "straight",
+      "raw_action": "left",
+      "filtered_action": "straight",
+      "is_correct_raw": false,
+      "is_correct_filtered": true,
+      "detection": {
+        "position": -0.19831414701803046,
+        "trend": -0.09357142857142864,
+        "detected": true,
+        "is_terminate": false
+      }
+    },
+    {
+      "frame_id": 4,
+      "image": "data/img_straight/straight_20251107_003838_344_046.jpg",
+      "expected_action": "straight",
+      "raw_action": "straight",
+      "filtered_action": "straight",
+      "is_correct_raw": true,
+      "is_correct_filtered": true,
+      "detection": {
+        "position": -0.043489583333333436,
+        "trend": -0.13098958333333344,
+        "detected": true,
+        "is_terminate": false
+      }
+    },
+    {
+      "frame_id": 5,
+      "image": "data/img_right/right_20251107_004743_081_010.jpg",
+      "expected_action": "right",
+      "raw_action": "terminate",
+      "filtered_action": "straight",
+      "is_correct_raw": false,
+      "is_correct_filtered": false,
+      "detection": {
+        "position": 0.0,
+        "trend": 0.0,
+        "detected": false,
+        "is_terminate": true
+      }
+    },
+    {
+      "frame_id": 6,
+      "image": "data/img_right/right_20251107_004741_799_009.jpg",
+      "expected_action": "right",
+      "raw_action": "straight",
+      "filtered_action": "straight",
+      "is_correct_raw": false,
+      "is_correct_filtered": false,
+      "detection": {
+        "position": 0.0322596153846155,
+        "trend": -0.25624999999999987,
+        "detected": true,
+        "is_terminate": false
+      }
+    },
+    {
+      "frame_id": 7,
+      "image": "data/img_right/right_20251107_004740_518_008.jpg",
+      "expected_action": "right",
+      "raw_action": "straight",
+      "filtered_action": "straight",
+      "is_correct_raw": false,
+      "is_correct_filtered": false,
+      "detection": {
+        "position": 0.03875000000000006,
+        "trend": -0.25,
+        "detected": true,
+        "is_terminate": false
+      }
+    },
+    {
+      "frame_id": 8,
+      "image": "data/img_straight/straight_20251107_003836_929_045.jpg",
+      "expected_action": "straight",
+      "raw_action": "straight",
+      "filtered_action": "straight",
+      "is_correct_raw": true,
+      "is_correct_filtered": true,
+      "detection": {
+        "position": -0.10163461538461527,
+        "trend": -0.11249999999999993,
+        "detected": true,
+        "is_terminate": false
+      }
+    },
+    {
+      "frame_id": 9,
+      "image": "data/img_straight/straight_20251107_003835_803_044.jpg",
+      "expected_action": "straight",
+      "raw_action": "straight",
+      "filtered_action": "straight",
+      "is_correct_raw": true,
+      "is_correct_filtered": true,
+      "detection": {
+        "position": -0.02724616245602811,
+        "trend": 0.024470338983050843,
+        "detected": true,
+        "is_terminate": false
+      }
+    },
+    {
+      "frame_id": 10,
+      "image": "data/img_straight/straight_20251107_003834_663_043.jpg",
+      "expected_action": "straight",
+      "raw_action": "straight",
+      "filtered_action": "straight",
+      "is_correct_raw": true,
+      "is_correct_filtered": true,
+      "detection": {
+        "position": -0.06407216494845351,
+        "trend": -0.16907216494845345,
+        "detected": true,
+        "is_terminate": false
+      }
+    },
+    {
+      "frame_id": 11,
+      "image": "data/img_left/mirrored_right_right_20251107_004743_081_010.jpg",
+      "expected_action": "left",
+      "raw_action": "terminate",
+      "filtered_action": "straight",
+      "is_correct_raw": false,
+      "is_correct_filtered": false,
+      "detection": {
+        "position": 0.0,
+        "trend": 0.0,
+        "detected": false,
+        "is_terminate": true
+      }
+    },
+    {
+      "frame_id": 12,
+      "image": "data/img_left/mirrored_right_right_20251107_004741_799_009.jpg",
+      "expected_action": "left",
+      "raw_action": "straight",
+      "filtered_action": "straight",
+      "is_correct_raw": false,
+      "is_correct_filtered": false,
+      "detection": {
+        "position": -0.041009615384615436,
+        "trend": 0.25625,
+        "detected": true,
+        "is_terminate": false
+      }
+    },
+    {
+      "frame_id": 13,
+      "image": "data/img_straight/straight_20251107_003833_379_042.jpg",
+      "expected_action": "straight",
+      "raw_action": "straight",
+      "filtered_action": "straight",
+      "is_correct_raw": true,
+      "is_correct_filtered": true,
+      "detection": {
+        "position": -0.114140625,
+        "trend": 0.15273437499999998,
+        "detected": true,
+        "is_terminate": false
+      }
+    },
+    {
+      "frame_id": 14,
+      "image": "data/img_straight/straight_20251107_003832_101_041.jpg",
+      "expected_action": "straight",
+      "raw_action": "straight",
+      "filtered_action": "straight",
+      "is_correct_raw": true,
+      "is_correct_filtered": true,
+      "detection": {
+        "position": -0.07760820291419318,
+        "trend": 0.21412709120345386,
+        "detected": true,
+        "is_terminate": false
+      }
+    },
+    {
+      "frame_id": 15,
+      "image": "data/img_right/right_20251107_004739_159_007.jpg",
+      "expected_action": "right",
+      "raw_action": "left",
+      "filtered_action": "straight",
+      "is_correct_raw": false,
+      "is_correct_filtered": false,
+      "detection": {
+        "position": -0.30183189655172415,
+        "trend": -0.4161637931034483,
+        "detected": true,
+        "is_terminate": false
+      }
+    },
+    {
+      "frame_id": 16,
+      "image": "data/img_right/right_20251107_004737_965_006.jpg",
+      "expected_action": "right",
+      "raw_action": "left",
+      "filtered_action": "left",
+      "is_correct_raw": false,
+      "is_correct_filtered": false,
+      "detection": {
+        "position": -0.3009320175438597,
+        "trend": -0.41436403508771935,
+        "detected": true,
+        "is_terminate": false
+      }
+    },
+    {
+      "frame_id": 17,
+      "image": "data/img_right/right_20251107_004736_828_005.jpg",
+      "expected_action": "right",
+      "raw_action": "left",
+      "filtered_action": "left",
+      "is_correct_raw": false,
+      "is_correct_filtered": false,
+      "detection": {
+        "position": -0.3014130434782609,
+        "trend": -0.41532608695652184,
+        "detected": true,
+        "is_terminate": false
+      }
+    },
+    {
+      "frame_id": 18,
+      "image": "data/img_straight/straight_20251107_003830_819_040.jpg",
+      "expected_action": "straight",
+      "raw_action": "straight",
+      "filtered_action": "left",
+      "is_correct_raw": true,
+      "is_correct_filtered": false,
+      "detection": {
+        "position": -0.11600834252619968,
+        "trend": 0.19485314396028675,
+        "detected": true,
+        "is_terminate": false
+      }
+    },
+    {
+      "frame_id": 19,
+      "image": "data/img_straight/straight_20251107_003829_386_039.jpg",
+      "expected_action": "straight",
+      "raw_action": "straight",
+      "filtered_action": "straight",
+      "is_correct_raw": true,
+      "is_correct_filtered": true,
+      "detection": {
+        "position": -0.06987745098039219,
+        "trend": 0.2626225490196078,
+        "detected": true,
+        "is_terminate": false
+      }
+    },
+    {
+      "frame_id": 20,
+      "image": "data/img_straight/straight_20251107_003828_111_038.jpg",
+      "expected_action": "straight",
+      "raw_action": "right",
+      "filtered_action": "straight",
+      "is_correct_raw": false,
+      "is_correct_filtered": true,
+      "detection": {
+        "position": 0.1174107142857142,
+        "trend": 0.3642857142857142,
+        "detected": true,
+        "is_terminate": false
+      }
+    },
+    {
+      "frame_id": 21,
+      "image": "data/img_straight/straight_20251107_003826_668_037.jpg",
+      "expected_action": "straight",
+      "raw_action": "straight",
+      "filtered_action": "straight",
+      "is_correct_raw": true,
+      "is_correct_filtered": true,
+      "detection": {
+        "position": 0.011678571428571385,
+        "trend": -0.06607142857142856,
+        "detected": true,
+        "is_terminate": false
+      }
+    },
+    {
+      "frame_id": 22,
+      "image": "data/img_straight/straight_20251107_003825_422_036.jpg",
+      "expected_action": "straight",
+      "raw_action": "straight",
+      "filtered_action": "straight",
+      "is_correct_raw": true,
+      "is_correct_filtered": true,
+      "detection": {
+        "position": -0.1264494680851065,
+        "trend": 0.2279255319148935,
+        "detected": true,
+        "is_terminate": false
+      }
+    },
+    {
+      "frame_id": 23,
+      "image": "data/img_right/right_20251107_004642_303_020.jpg",
+      "expected_action": "right",
+      "raw_action": "terminate",
+      "filtered_action": "straight",
+      "is_correct_raw": false,
+      "is_correct_filtered": false,
+      "detection": {
+        "position": 0.0,
+        "trend": 0.0,
+        "detected": false,
+        "is_terminate": true
+      }
+    },
+    {
+      "frame_id": 24,
+      "image": "data/img_right/right_20251107_004640_864_019.jpg",
+      "expected_action": "right",
+      "raw_action": "terminate",
+      "filtered_action": "terminate",
+      "is_correct_raw": false,
+      "is_correct_filtered": false,
+      "detection": {
+        "position": 0.0,
+        "trend": 0.0,
+        "detected": false,
+        "is_terminate": true
+      }
+    },
+    {
+      "frame_id": 25,
+      "image": "data/img_straight/straight_20251107_003823_979_035.jpg",
+      "expected_action": "straight",
+      "raw_action": "straight",
+      "filtered_action": "terminate",
+      "is_correct_raw": true,
+      "is_correct_filtered": false,
+      "detection": {
+        "position": -0.08386377757067415,
+        "trend": 0.1921132339235787,
+        "detected": true,
+        "is_terminate": false
+      }
+    },
+    {
+      "frame_id": 26,
+      "image": "data/img_straight/straight_20251107_003822_667_034.jpg",
+      "expected_action": "straight",
+      "raw_action": "straight",
+      "filtered_action": "straight",
+      "is_correct_raw": true,
+      "is_correct_filtered": true,
+      "detection": {
+        "position": -0.11154639175257733,
+        "trend": 0.18595360824742269,
+        "detected": true,
+        "is_terminate": false
+      }
+    },
+    {
+      "frame_id": 27,
+      "image": "data/img_right/right_20251107_004639_427_018.jpg",
+      "expected_action": "right",
+      "raw_action": "terminate",
+      "filtered_action": "straight",
+      "is_correct_raw": false,
+      "is_correct_filtered": false,
+      "detection": {
+        "position": 0.0,
+        "trend": 0.0,
+        "detected": false,
+        "is_terminate": true
+      }
+    },
+    {
+      "frame_id": 28,
+      "image": "data/img_straight/straight_20251107_003821_550_033.jpg",
+      "expected_action": "straight",
+      "raw_action": "straight",
+      "filtered_action": "straight",
+      "is_correct_raw": true,
+      "is_correct_filtered": true,
+      "detection": {
+        "position": -0.09754748982360913,
+        "trend": -0.09023405698778819,
+        "detected": true,
+        "is_terminate": false
+      }
+    },
+    {
+      "frame_id": 29,
+      "image": "data/img_straight/straight_20251107_003820_429_032.jpg",
+      "expected_action": "straight",
+      "raw_action": "straight",
+      "filtered_action": "straight",
+      "is_correct_raw": true,
+      "is_correct_filtered": true,
+      "detection": {
+        "position": -0.1023711340206185,
+        "trend": 0.21262886597938147,
+        "detected": true,
+        "is_terminate": false
+      }
+    },
+    {
+      "frame_id": 30,
+      "image": "data/img_right/right_20251107_004637_986_017.jpg",
+      "expected_action": "right",
+      "raw_action": "straight",
+      "filtered_action": "straight",
+      "is_correct_raw": false,
+      "is_correct_filtered": false,
+      "detection": {
+        "position": 0.10687499999999994,
+        "trend": -0.03750000000000009,
+        "detected": true,
+        "is_terminate": false
+      }
+    },
+    {
+      "frame_id": 31,
+      "image": "data/img_straight/straight_20251107_003819_309_031.jpg",
+      "expected_action": "straight",
+      "raw_action": "straight",
+      "filtered_action": "straight",
+      "is_correct_raw": true,
+      "is_correct_filtered": true,
+      "detection": {
+        "position": -0.10537087912087907,
+        "trend": 0.2708791208791209,
+        "detected": true,
+        "is_terminate": false
+      }
+    },
+    {
+      "frame_id": 32,
+      "image": "data/img_straight/straight_20251107_003818_229_030.jpg",
+      "expected_action": "straight",
+      "raw_action": "straight",
+      "filtered_action": "straight",
+      "is_correct_raw": true,
+      "is_correct_filtered": true,
+      "detection": {
+        "position": -0.00992912371134027,
+        "trend": -0.05805412371134033,
+        "detected": true,
+        "is_terminate": false
+      }
+    },
+    {
+      "frame_id": 33,
+      "image": "data/img_straight/straight_20251107_003816_962_029.jpg",
+      "expected_action": "straight",
+      "raw_action": "right",
+      "filtered_action": "straight",
+      "is_correct_raw": false,
+      "is_correct_filtered": true,
+      "detection": {
+        "position": 0.18303571428571425,
+        "trend": 0.48303571428571423,
+        "detected": true,
+        "is_terminate": false
+      }
+    },
+    {
+      "frame_id": 34,
+      "image": "data/img_straight/straight_20251107_003815_790_028.jpg",
+      "expected_action": "straight",
+      "raw_action": "right",
+      "filtered_action": "right",
+      "is_correct_raw": false,
+      "is_correct_filtered": false,
+      "detection": {
+        "position": 0.08451086956521742,
+        "trend": 0.37826086956521743,
+        "detected": true,
+        "is_terminate": false
+      }
+    },
+    {
+      "frame_id": 35,
+      "image": "data/img_straight/straight_20251107_003814_670_027.jpg",
+      "expected_action": "straight",
+      "raw_action": "straight",
+      "filtered_action": "right",
+      "is_correct_raw": true,
+      "is_correct_filtered": false,
+      "detection": {
+        "position": 0.0994623655913979,
+        "trend": -0.10000000000000009,
+        "detected": true,
+        "is_terminate": false
+      }
+    },
+    {
+      "frame_id": 36,
+      "image": "data/img_straight/straight_20251107_003813_553_026.jpg",
+      "expected_action": "straight",
+      "raw_action": "right",
+      "filtered_action": "right",
+      "is_correct_raw": false,
+      "is_correct_filtered": false,
+      "detection": {
+        "position": 0.06672036082474231,
+        "trend": 0.3385953608247423,
+        "detected": true,
+        "is_terminate": false
+      }
+    },
+    {
+      "frame_id": 37,
+      "image": "data/img_straight/straight_20251107_003812_464_025.jpg",
+      "expected_action": "straight",
+      "raw_action": "terminate",
+      "filtered_action": "right",
+      "is_correct_raw": false,
+      "is_correct_filtered": false,
+      "detection": {
+        "position": 0.0,
+        "trend": 0.0,
+        "detected": false,
+        "is_terminate": true
+      }
+    },
+    {
+      "frame_id": 38,
+      "image": "data/img_straight/straight_20251107_003811_246_024.jpg",
+      "expected_action": "straight",
+      "raw_action": "straight",
+      "filtered_action": "right",
+      "is_correct_raw": true,
+      "is_correct_filtered": false,
+      "detection": {
+        "position": 0.26626582278481015,
+        "trend": -0.13623417721518982,
+        "detected": true,
+        "is_terminate": false
+      }
+    },
+    {
+      "frame_id": 39,
+      "image": "data/img_straight/straight_20251107_003809_868_023.jpg",
+      "expected_action": "straight",
+      "raw_action": "straight",
+      "filtered_action": "straight",
+      "is_correct_raw": true,
+      "is_correct_filtered": true,
+      "detection": {
+        "position": -0.11326983447488577,
+        "trend": 0.022260273972602773,
+        "detected": true,
+        "is_terminate": false
+      }
+    },
+    {
+      "frame_id": 40,
+      "image": "data/img_left/mirrored_right_right_20251107_004740_518_008.jpg",
+      "expected_action": "left",
+      "raw_action": "straight",
+      "filtered_action": "straight",
+      "is_correct_raw": false,
+      "is_correct_filtered": false,
+      "detection": {
+        "position": -0.04750000000000003,
+        "trend": 0.25,
+        "detected": true,
+        "is_terminate": false
+      }
+    },
+    {
+      "frame_id": 41,
+      "image": "data/img_left/mirrored_right_right_20251107_004739_159_007.jpg",
+      "expected_action": "left",
+      "raw_action": "right",
+      "filtered_action": "straight",
+      "is_correct_raw": false,
+      "is_correct_filtered": false,
+      "detection": {
+        "position": 0.2955818965517242,
+        "trend": 0.4161637931034483,
+        "detected": true,
+        "is_terminate": false
+      }
+    },
+    {
+      "frame_id": 42,
+      "image": "data/img_left/mirrored_right_right_20251107_004737_965_006.jpg",
+      "expected_action": "left",
+      "raw_action": "right",
+      "filtered_action": "right",
+      "is_correct_raw": false,
+      "is_correct_filtered": false,
+      "detection": {
+        "position": 0.2946820175438597,
+        "trend": 0.41436403508771935,
+        "detected": true,
+        "is_terminate": false
+      }
+    },
+    {
+      "frame_id": 43,
+      "image": "data/img_straight/straight_20251107_003808_670_022.jpg",
+      "expected_action": "straight",
+      "raw_action": "right",
+      "filtered_action": "right",
+      "is_correct_raw": false,
+      "is_correct_filtered": false,
+      "detection": {
+        "position": 0.06741071428571432,
+        "trend": 0.3392857142857143,
+        "detected": true,
+        "is_terminate": false
+      }
+    },
+    {
+      "frame_id": 44,
+      "image": "data/img_straight/straight_20251107_003807_315_021.jpg",
+      "expected_action": "straight",
+      "raw_action": "right",
+      "filtered_action": "right",
+      "is_correct_raw": false,
+      "is_correct_filtered": false,
+      "detection": {
+        "position": 0.2814356435643563,
+        "trend": 0.10643564356435631,
+        "detected": true,
+        "is_terminate": false
+      }
+    },
+    {
+      "frame_id": 45,
+      "image": "data/img_terminate/terminate_20251107_005140_591_015.jpg",
+      "expected_action": "terminate",
+      "raw_action": "right",
+      "filtered_action": "right",
+      "is_correct_raw": false,
+      "is_correct_filtered": false,
+      "detection": {
+        "position": 0.3601483516483516,
+        "trend": 0.3657967032967031,
+        "detected": true,
+        "is_terminate": false
+      }
+    },
+    {
+      "frame_id": 46,
+      "image": "data/img_straight/straight_20251107_003806_117_020.jpg",
+      "expected_action": "straight",
+      "raw_action": "straight",
+      "filtered_action": "right",
+      "is_correct_raw": true,
+      "is_correct_filtered": false,
+      "detection": {
+        "position": -0.1411965811965813,
+        "trend": -0.10619658119658126,
+        "detected": true,
+        "is_terminate": false
+      }
+    },
+    {
+      "frame_id": 47,
+      "image": "data/img_straight/straight_20251107_003804_754_019.jpg",
+      "expected_action": "straight",
+      "raw_action": "right",
+      "filtered_action": "right",
+      "is_correct_raw": false,
+      "is_correct_filtered": false,
+      "detection": {
+        "position": 0.33324468085106385,
+        "trend": 0.5394946808510639,
+        "detected": true,
+        "is_terminate": false
+      }
+    },
+    {
+      "frame_id": 48,
+      "image": "data/img_left/mirrored_right_right_20251107_004736_828_005.jpg",
+      "expected_action": "left",
+      "raw_action": "right",
+      "filtered_action": "right",
+      "is_correct_raw": false,
+      "is_correct_filtered": false,
+      "detection": {
+        "position": 0.29516304347826094,
+        "trend": 0.41532608695652184,
+        "detected": true,
+        "is_terminate": false
+      }
+    },
+    {
+      "frame_id": 49,
+      "image": "data/img_left/mirrored_right_right_20251107_004642_303_020.jpg",
+      "expected_action": "left",
+      "raw_action": "terminate",
+      "filtered_action": "right",
+      "is_correct_raw": false,
+      "is_correct_filtered": false,
+      "detection": {
+        "position": 0.0,
+        "trend": 0.0,
+        "detected": false,
+        "is_terminate": true
+      }
+    },
+    {
+      "frame_id": 50,
+      "image": "data/img_left/mirrored_right_right_20251107_004640_864_019.jpg",
+      "expected_action": "left",
+      "raw_action": "terminate",
+      "filtered_action": "terminate",
+      "is_correct_raw": false,
+      "is_correct_filtered": false,
+      "detection": {
+        "position": 0.0,
+        "trend": 0.0,
+        "detected": false,
+        "is_terminate": true
+      }
+    }
+  ],
+  "analysis": {
+    "total_frames": 51,
+    "correct_raw": 22,
+    "correct_filtered": 20,
+    "accuracy_raw": 43.13725490196079,
+    "accuracy_filtered": 39.21568627450981,
+    "improvement": -3.9215686274509807,
+    "category_stats": {
+      "straight": {
+        "total": 32,
+        "correct_raw": 22,
+        "correct_filtered": 20,
+        "accuracy_raw": 68.75,
+        "accuracy_filtered": 62.5
+      },
+      "left": {
+        "total": 8,
+        "correct_raw": 0,
+        "correct_filtered": 0,
+        "accuracy_raw": 0.0,
+        "accuracy_filtered": 0.0
+      },
+      "right": {
+        "total": 10,
+        "correct_raw": 0,
+        "correct_filtered": 0,
+        "accuracy_raw": 0.0,
+        "accuracy_filtered": 0.0
+      },
+      "terminate": {
+        "total": 1,
+        "correct_raw": 0,
+        "correct_filtered": 0,
+        "accuracy_raw": 0.0,
+        "accuracy_filtered": 0.0
+      }
+    }
+  }
+}
