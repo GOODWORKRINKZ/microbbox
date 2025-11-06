@@ -26,6 +26,21 @@ LINE_CAMERA_HEIGHT = 120
 LINE_THRESHOLD = 128
 LINE_T_JUNCTION_THRESHOLD = 0.7
 
+# Константы для анализа тренда направления
+TREND_THRESHOLD_SHARP_TURN = 0.7    # Очень крутой поворот (90°)
+TREND_THRESHOLD_MEDIUM_TURN = 0.5   # Крутой поворот
+TREND_THRESHOLD_GENTLE_TURN = 0.3   # Средний поворот
+
+# Веса для вычисления финальной позиции
+WEIGHT_SHARP_TURN_BASE = 0.2        # Вес базовой позиции при крутом повороте
+WEIGHT_SHARP_TURN_TREND = 0.8       # Вес тренда при крутом повороте
+WEIGHT_MEDIUM_TURN_BASE = 0.3       # Вес базовой позиции при среднем повороте
+WEIGHT_MEDIUM_TURN_TREND = 0.7      # Вес тренда при среднем повороте
+WEIGHT_GENTLE_TURN_BASE = 0.5       # Вес базовой позиции при плавном повороте
+WEIGHT_GENTLE_TURN_TREND = 0.5      # Вес тренда при плавном повороте
+WEIGHT_NORMAL_BASE = 0.7            # Вес базовой позиции при нормальном движении
+WEIGHT_NORMAL_TREND = 0.3           # Вес тренда при нормальном движении
+
 def apply_camera_transforms(image):
     """Применяет трансформации камеры (отражения)"""
     img_array = np.array(image)    
@@ -185,6 +200,15 @@ def detect_line_position(image_path):
     Реализация алгоритма detectLinePosition() с использованием 4 горизонтальных 
     и 4 вертикальных сканирующих линий для максимально точного определения направления.
     
+    ВАЖНО: Центр изображения (X=80, позиция=0.0) соответствует центру камеры/робота!
+    - Линия в центре (позиция ≈ 0.0) → робот едет ПРЯМО
+    - Линия слева (позиция < 0) → робот поворачивает ВЛЕВО, чтобы вернуться на линию
+    - Линия справа (позиция > 0) → робот поворачивает ВПРАВО, чтобы вернуться на линию
+    
+    ПРИМЕЧАНИЕ: Центр камеры может не совпадать с центром оси вращения колес.
+    Это смещение должно учитываться в ПИД-регуляторе при управлении моторами.
+    Данный алгоритм возвращает позицию линии относительно центра камеры.
+    
     Улучшения:
     - 4 горизонтальные линии (25%, 50%, 75%, 90% высоты) для точного определения траектории
     - 4 вертикальные линии (20%, 40%, 60%, 80% ширины) для точного определения T-пересечений
@@ -196,13 +220,13 @@ def detect_line_position(image_path):
     
     Returns:
         dict: {
-            'position': float,      # -1.0 (слева) до 1.0 (справа)
+            'position': float,      # -1.0 (линия слева) до 1.0 (линия справа) относительно центра камеры
             'detected': bool,       # найдена ли линия
             'width_percent': float, # % ширины кадра занятый линией
             'is_terminate': bool,   # T-пересечение или обрыв
-            'horizontal_scans': list  # результаты горизонтального сканирования
-            'vertical_scans': list    # результаты вертикального сканирования
-            'direction_trend': float  # максимальный тренд направления
+            'horizontal_scans': list  # результаты горизонтального сканирования (4 линии)
+            'vertical_scans': list    # результаты вертикального сканирования (4 линии)
+            'direction_trend': float  # максимальный тренд направления (для предсказания траектории)
         }
     """
     # Загрузка изображения
@@ -395,18 +419,19 @@ def detect_line_position(image_path):
         trend_strength = abs(max_trend)
         
         # Для крутых поворотов (90 градусов) тренд очень сильный
-        if trend_strength > 0.7:
+        # Используем именованные константы для лучшей читаемости и настройки
+        if trend_strength > TREND_THRESHOLD_SHARP_TURN:
             # ОЧЕНЬ крутой поворот (почти 90 градусов) - тренд доминирует
-            result['position'] = pos_bottom * 0.2 + max_trend * 0.8
-        elif trend_strength > 0.5:
+            result['position'] = pos_bottom * WEIGHT_SHARP_TURN_BASE + max_trend * WEIGHT_SHARP_TURN_TREND
+        elif trend_strength > TREND_THRESHOLD_MEDIUM_TURN:
             # Крутой поворот - сильное влияние тренда
-            result['position'] = pos_bottom * 0.3 + max_trend * 0.7
-        elif trend_strength > 0.3:
+            result['position'] = pos_bottom * WEIGHT_MEDIUM_TURN_BASE + max_trend * WEIGHT_MEDIUM_TURN_TREND
+        elif trend_strength > TREND_THRESHOLD_GENTLE_TURN:
             # Средний поворот - усиленное влияние тренда
-            result['position'] = pos_bottom * 0.5 + max_trend * 0.5
+            result['position'] = pos_bottom * WEIGHT_GENTLE_TURN_BASE + max_trend * WEIGHT_GENTLE_TURN_TREND
         else:
             # Плавный поворот или прямая
-            result['position'] = pos_bottom * 0.7 + max_trend * 0.3
+            result['position'] = pos_bottom * WEIGHT_NORMAL_BASE + max_trend * WEIGHT_NORMAL_TREND
         
     elif len(detected_horizontal) == 1:
         # Только одна линия найдена - используем её позицию
@@ -599,9 +624,10 @@ def test_category(category_path, expected_range, visualize=False):
         print(f"   Ширина: {result['width_percent']*100:.1f}%")
         print(f"   Тренд: {result['direction_trend']:+.3f}")
         
-        # Детали горизонтальных сканов
-        pos_top = h_scans[0]['position']
-        pos_bot = h_scans[1]['position']
+        # Детали горизонтальных сканов (верхний и нижний)
+        # У нас 4 линии: [0]=25%, [1]=50%, [2]=75%, [3]=90%
+        pos_top = h_scans[0]['position']  # 25% - самая верхняя (далеко)
+        pos_bot = h_scans[-1]['position']  # 90% - самая нижняя (близко к роботу)
         if pos_top is not None and pos_bot is not None:
             print(f"   Сканы: верх={pos_top:+.3f}, низ={pos_bot:+.3f}")
         
