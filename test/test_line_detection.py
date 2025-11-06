@@ -32,14 +32,15 @@ TREND_THRESHOLD_MEDIUM_TURN = 0.5   # Крутой поворот
 TREND_THRESHOLD_GENTLE_TURN = 0.3   # Средний поворот
 
 # Веса для вычисления финальной позиции
+# Примечание: каждая пара (BASE + TREND) должна в сумме давать 1.0 для правильной нормализации
 WEIGHT_SHARP_TURN_BASE = 0.2        # Вес базовой позиции при крутом повороте
-WEIGHT_SHARP_TURN_TREND = 0.8       # Вес тренда при крутом повороте
+WEIGHT_SHARP_TURN_TREND = 0.8       # Вес тренда при крутом повороте (0.2 + 0.8 = 1.0)
 WEIGHT_MEDIUM_TURN_BASE = 0.3       # Вес базовой позиции при среднем повороте
-WEIGHT_MEDIUM_TURN_TREND = 0.7      # Вес тренда при среднем повороте
+WEIGHT_MEDIUM_TURN_TREND = 0.7      # Вес тренда при среднем повороте (0.3 + 0.7 = 1.0)
 WEIGHT_GENTLE_TURN_BASE = 0.5       # Вес базовой позиции при плавном повороте
-WEIGHT_GENTLE_TURN_TREND = 0.5      # Вес тренда при плавном повороте
+WEIGHT_GENTLE_TURN_TREND = 0.5      # Вес тренда при плавном повороте (0.5 + 0.5 = 1.0)
 WEIGHT_NORMAL_BASE = 0.7            # Вес базовой позиции при нормальном движении
-WEIGHT_NORMAL_TREND = 0.3           # Вес тренда при нормальном движении
+WEIGHT_NORMAL_TREND = 0.3           # Вес тренда при нормальном движении (0.7 + 0.3 = 1.0)
 
 def apply_camera_transforms(image):
     """Применяет трансформации камеры (отражения)"""
@@ -193,6 +194,22 @@ def calculate_otsu_threshold(img_array):
             best_threshold = t
     
     return best_threshold
+
+
+def calculate_weighted_position(base_position, trend, weight_base, weight_trend):
+    """
+    Вспомогательная функция для вычисления взвешенной позиции линии.
+    
+    Args:
+        base_position: базовая позиция (обычно нижняя сканирующая линия)
+        trend: тренд направления движения
+        weight_base: вес базовой позиции
+        weight_trend: вес тренда
+    
+    Returns:
+        float: взвешенная позиция
+    """
+    return base_position * weight_base + trend * weight_trend
 
 
 def detect_line_position(image_path):
@@ -418,20 +435,23 @@ def detect_line_position(image_path):
         # Определяем силу тренда (насколько крутой поворот)
         trend_strength = abs(max_trend)
         
-        # Для крутых поворотов (90 градусов) тренд очень сильный
-        # Используем именованные константы для лучшей читаемости и настройки
+        # Выбираем веса в зависимости от силы тренда и вычисляем позицию
         if trend_strength > TREND_THRESHOLD_SHARP_TURN:
             # ОЧЕНЬ крутой поворот (почти 90 градусов) - тренд доминирует
-            result['position'] = pos_bottom * WEIGHT_SHARP_TURN_BASE + max_trend * WEIGHT_SHARP_TURN_TREND
+            result['position'] = calculate_weighted_position(
+                pos_bottom, max_trend, WEIGHT_SHARP_TURN_BASE, WEIGHT_SHARP_TURN_TREND)
         elif trend_strength > TREND_THRESHOLD_MEDIUM_TURN:
             # Крутой поворот - сильное влияние тренда
-            result['position'] = pos_bottom * WEIGHT_MEDIUM_TURN_BASE + max_trend * WEIGHT_MEDIUM_TURN_TREND
+            result['position'] = calculate_weighted_position(
+                pos_bottom, max_trend, WEIGHT_MEDIUM_TURN_BASE, WEIGHT_MEDIUM_TURN_TREND)
         elif trend_strength > TREND_THRESHOLD_GENTLE_TURN:
             # Средний поворот - усиленное влияние тренда
-            result['position'] = pos_bottom * WEIGHT_GENTLE_TURN_BASE + max_trend * WEIGHT_GENTLE_TURN_TREND
+            result['position'] = calculate_weighted_position(
+                pos_bottom, max_trend, WEIGHT_GENTLE_TURN_BASE, WEIGHT_GENTLE_TURN_TREND)
         else:
             # Плавный поворот или прямая
-            result['position'] = pos_bottom * WEIGHT_NORMAL_BASE + max_trend * WEIGHT_NORMAL_TREND
+            result['position'] = calculate_weighted_position(
+                pos_bottom, max_trend, WEIGHT_NORMAL_BASE, WEIGHT_NORMAL_TREND)
         
     elif len(detected_horizontal) == 1:
         # Только одна линия найдена - используем её позицию
