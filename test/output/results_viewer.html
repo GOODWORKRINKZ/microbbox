@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Результаты тестов распознавания линии</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background: #1e1e1e;
+            color: #e0e0e0;
+        }
+        h1, h2 {
+            color: #4CAF50;
+        }
+        .category {
+            margin: 30px 0;
+            border: 2px solid #4CAF50;
+            padding: 20px;
+            border-radius: 10px;
+            background: #2d2d2d;
+        }
+        .image-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(600px, 1fr));
+            gap: 20px;
+            margin: 20px 0;
+        }
+        .image-item {
+            border: 1px solid #555;
+            padding: 10px;
+            background: #383838;
+            border-radius: 5px;
+        }
+        .image-item img {
+            width: 100%;
+            height: auto;
+            border-radius: 5px;
+        }
+        .image-item h3 {
+            margin: 10px 0;
+            color: #FFC107;
+        }
+        .pass { color: #4CAF50; font-weight: bold; }
+        .fail { color: #f44336; font-weight: bold; }
+    </style>
+</head>
+<body>
+    <h1>📊 Результаты тестов алгоритма распознавания линии</h1>
+    <p>Алгоритм с 3 горизонтальными и 2 вертикальными сканирующими линиями</p>
+    
+    <div class="category">
+        <h2>✅ STRAIGHT (Прямо) - 4/4 тестов пройдено</h2>
+        <div class="image-grid">
+            <div class="image-item">
+                <h3 class="pass">✅ stream1.jpeg</h3>
+                <img src="img_straight/stream1_result.png" alt="straight stream1">
+            </div>
+            <div class="image-item">
+                <h3 class="pass">✅ stream2.jpeg</h3>
+                <img src="img_straight/stream2_result.png" alt="straight stream2">
+            </div>
+        </div>
+    </div>
+    
+    <div class="category">
+        <h2>✅ LEFT (Влево) - 2/2 тестов пройдено</h2>
+        <div class="image-grid">
+            <div class="image-item">
+                <h3 class="pass">✅ stream1.jpeg - Тренд: -0.753</h3>
+                <img src="img_left/stream1_result.png" alt="left stream1">
+                <p>Линия справа вверху → центр внизу. Робот поворачивает ВЛЕВО.</p>
+            </div>
+        </div>
+    </div>
+    
+    <div class="category">
+        <h2>⚠️ RIGHT (Вправо) - 2/4 тестов пройдено</h2>
+        <div class="image-grid">
+            <div class="image-item">
+                <h3 class="pass">✅ stream3.jpeg - Тренд: +0.849 (крутой поворот!)</h3>
+                <img src="img_right/stream3_result.png" alt="right stream3">
+                <p><strong>Поворот 90°!</strong> Линия слева вверху → центр внизу. Позиция: +0.679</p>
+            </div>
+            <div class="image-item">
+                <h3 class="pass">✅ stream_i3.jpg - Тренд: +0.878 (крутой поворот!)</h3>
+                <img src="img_right/stream_i3_result.png" alt="right stream_i3">
+                <p><strong>Поворот 90°!</strong> Линия слева вверху → центр/справа внизу. Позиция: +0.725</p>
+            </div>
+            <div class="image-item">
+                <h3 class="fail">❌ stream2.jpeg - Тренд: -0.019</h3>
+                <img src="img_right/stream2_result.png" alt="right stream2">
+                <p>Линия слева на всех уровнях. Возможно неправильная категоризация?</p>
+            </div>
+            <div class="image-item">
+                <h3 class="fail">❌ stream_i2.jpg - Тренд: -0.025</h3>
+                <img src="img_right/stream_i2_result.png" alt="right stream_i2">
+                <p>Линия слева на всех уровнях. Возможно неправильная категоризация?</p>
+            </div>
+        </div>
+    </div>
+    
+    <div class="category">
+        <h2>⚠️ TERMINATE (Конец линии / T-пересечение) - 2/4 тестов пройдено</h2>
+        <div class="image-grid">
+            <div class="image-item">
+                <h3 class="pass">✅ stream2.jpeg</h3>
+                <img src="img terminate/stream2_result.png" alt="terminate stream2">
+                <p>Правильно определено T-пересечение</p>
+            </div>
+            <div class="image-item">
+                <h3 class="fail">❌ stream1.jpeg</h3>
+                <img src="img terminate/stream1_result.png" alt="terminate stream1">
+                <p>Не определено как конец линии</p>
+            </div>
+        </div>
+    </div>
+    
+    <div class="category">
+        <h2>�� Дополнительный анализ</h2>
+        <div class="image-grid">
+            <div class="image-item">
+                <h3>Анализ поворотов на 90°</h3>
+                <img src="right_turn_90_analysis.png" alt="90 degree turn analysis">
+            </div>
+            <div class="image-item">
+                <h3>Обзор всех категорий</h3>
+                <img src="all_categories_overview.png" alt="all categories">
+            </div>
+        </div>
+    </div>
+    
+</body>
+</html>
