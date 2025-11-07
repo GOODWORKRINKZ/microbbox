@@ -452,7 +452,14 @@ def detect_line_position(image_path):
         'terminate_type': None,  # 'gap' (обрыв) или 't_junction' (Т-образное)
         'horizontal_scans': horizontal_results,
         'vertical_scans': vertical_results,
-        'direction_trend': 0.0
+        'direction_trend': 0.0,
+        'calibration_info': {  # Информация о калибровке
+            'pixels_per_cm_width': LINE_PIXELS_PER_CM_WIDTH,
+            'pixels_per_cm_height': LINE_PIXELS_PER_CM_HEIGHT,
+            'line_width_mm': LINE_WIDTH_MM,
+            'expected_width_pixels_h': LINE_EXPECTED_WIDTH_PIXELS_H,
+            'expected_width_pixels_v': LINE_EXPECTED_WIDTH_PIXELS_V
+        }
     }
     
     # Проверяем, найдена ли линия на горизонтальных сканах
@@ -540,9 +547,15 @@ def detect_line_position(image_path):
     
     # Если хотя бы 2 горизонтальные линии нашли позицию
     if len(detected_horizontal) >= 2:
-        # Вычисляем все возможные тренды
+        # === УЛУЧШЕННЫЙ АЛГОРИТМ С КАЛИБРОВКОЙ ===
+        # Используем уверенность (confidence) из валидации ширины линии
+        # для взвешивания результатов. Сканы с правильной шириной линии
+        # получают больший вес при вычислении итоговой позиции.
+        
+        # Вычисляем все возможные тренды с учетом уверенности
         max_trend = 0.0
         max_trend_pair = None
+        max_trend_confidence = 0.0
         
         for i in range(len(horizontal_results)):
             for j in range(i + 1, len(horizontal_results)):
@@ -552,18 +565,37 @@ def detect_line_position(image_path):
                 if pos_i is not None and pos_j is not None:
                     # Тренд от дальней линии к ближней (от меньшего Y к большему Y)
                     trend = pos_j - pos_i
-                    if abs(trend) > abs(max_trend):
+                    
+                    # Вычисляем среднюю уверенность для этой пары
+                    conf_i = horizontal_results[i]['width_validation']['confidence']
+                    conf_j = horizontal_results[j]['width_validation']['confidence']
+                    avg_confidence = (conf_i + conf_j) / 2.0
+                    
+                    # Взвешенный тренд учитывает уверенность
+                    weighted_trend_strength = abs(trend) * avg_confidence
+                    
+                    if weighted_trend_strength > abs(max_trend) * max_trend_confidence:
                         max_trend = trend
                         max_trend_pair = (i, j)
+                        max_trend_confidence = avg_confidence
         
         result['direction_trend'] = max_trend
         
         # Берем нижнюю (ближайшую к роботу) линию как базовую позицию
+        # С учетом уверенности - приоритет сканам с правильной шириной
         pos_bottom = None
+        best_confidence = 0.0
+        
         for i in range(len(horizontal_results) - 1, -1, -1):
             if horizontal_results[i]['position'] is not None:
-                pos_bottom = horizontal_results[i]['position']
-                break
+                confidence = horizontal_results[i]['width_validation']['confidence']
+                # Выбираем скан с наибольшей уверенностью среди нижних
+                if confidence > best_confidence or pos_bottom is None:
+                    pos_bottom = horizontal_results[i]['position']
+                    best_confidence = confidence
+                # Если уверенность приемлемая (>0.5), используем нижний скан
+                if confidence > 0.5:
+                    break
         
         if pos_bottom is None:
             # Если нижней нет, берем любую доступную
@@ -721,6 +753,13 @@ def visualize_detection(image_path, result, output_path=None):
     info_text += f"Обнаружена: {'ДА' if result['detected'] else 'НЕТ'}\n"
     info_text += f"Ширина: {result['width_percent']*100:.1f}%\n"
     
+    # Информация о калибровке
+    if 'calibration_info' in result:
+        cal = result['calibration_info']
+        info_text += f"\nКалибровка:\n"
+        info_text += f"Линия: {cal['line_width_mm']:.1f}мм\n"
+        info_text += f"~{cal['expected_width_pixels_h']:.1f} пикс\n"
+    
     # Показываем тип окончания если есть
     if result['is_terminate']:
         term_type = result.get('terminate_type', 'unknown')
@@ -791,6 +830,17 @@ def test_category(category_path, expected_range, visualize=False):
         print(f"   Обнаружена: {result['detected']}")
         print(f"   Ширина: {result['width_percent']*100:.1f}%")
         print(f"   Тренд: {result['direction_trend']:+.3f}")
+        
+        # Информация о калибровке и валидации ширины
+        if 'calibration_info' in result:
+            cal = result['calibration_info']
+            print(f"   Калибровка: линия {cal['line_width_mm']:.1f}мм ≈ {cal['expected_width_pixels_h']:.1f}пикс")
+        
+        # Показываем уверенность для нижнего скана (самый важный)
+        bottom_scan = h_scans[-1]
+        if bottom_scan['position'] is not None and 'width_validation' in bottom_scan:
+            val = bottom_scan['width_validation']
+            print(f"   Уверенность (низ): {val['confidence']:.2f} (ширина {val['width_ratio']:.2f}x)")
         
         # Детали горизонтальных сканов (верхний и нижний)
         # У нас 4 линии: [0]=25%, [1]=50%, [2]=75%, [3]=90%

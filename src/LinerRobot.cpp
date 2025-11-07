@@ -6,6 +6,13 @@
  * - Объединены в 2 блока для лучшей кэш-локальности (4x меньше промахов кэша)
  * - Ожидаемая производительность: 20+ FPS на ESP32 (240 MHz)
  * - Улучшенная точность распознавания за счет анализа тренда направления
+ * 
+ * КАЛИБРОВКА КАМЕРЫ (Nov 2025):
+ * - Добавлена калибровка для определения физического размера пикселей
+ * - Параметры: pixels_per_cm_width, pixels_per_cm_height, line_width_mm
+ * - Валидация ширины линии для фильтрации ложных срабатываний
+ * - Взвешивание результатов на основе уверенности (confidence)
+ * - Сканы с правильной шириной линии получают больший вес в финальной позиции
  */
 
 #include "LinerRobot.h"
@@ -416,18 +423,45 @@ float LinerRobot::detectLinePosition() {
     esp_camera_fb_return(fb);
     
     // ========================================================================
-    // АНАЛИЗ РЕЗУЛЬТАТОВ
+    // АНАЛИЗ РЕЗУЛЬТАТОВ С КАЛИБРОВКОЙ
     // ========================================================================
     
-    // Вычисляем нормализованные позиции для горизонтальных сканов
+    // Вычисляем нормализованные позиции и уверенность для горизонтальных сканов
     float h_positions[4];
+    float h_confidence[4];  // Уверенность на основе калибровки ширины линии
+    
     for (int i = 0; i < 4; i++) {
         if (h_count[i] > 0) {
             int avg_x = h_sum_x[i] / h_count[i];
             // Нормализация: -1.0 (левый край) до 1.0 (правый край)
             h_positions[i] = ((float)avg_x / (float)width) * 2.0f - 1.0f;
+            
+            // Валидация ширины линии на основе калибровки
+            // Ожидаемая ширина линии в пикселях
+            float expected_pixels = LINE_EXPECTED_WIDTH_PIXELS_H;
+            float width_ratio = (float)h_count[i] / expected_pixels;
+            
+            // Вычисляем уверенность (confidence)
+            // Максимальная уверенность когда width_ratio близок к 1.0
+            if (width_ratio < 1.0f) {
+                // Слишком узкая линия (может быть шум или дальняя часть)
+                h_confidence[i] = width_ratio;
+            } else {
+                // Слишком широкая линия (может быть T-пересечение или поворот)
+                float tolerance = 2.0f;  // Допускаем до 2x ширины
+                if (width_ratio <= tolerance) {
+                    h_confidence[i] = 1.0f - (width_ratio - 1.0f) / (tolerance - 1.0f);
+                } else {
+                    h_confidence[i] = 0.0f;  // Слишком широкая - низкая уверенность
+                }
+            }
+            
+            // Ограничиваем уверенность в диапазоне [0.0, 1.0]
+            h_confidence[i] = constrain(h_confidence[i], 0.0f, 1.0f);
+            
         } else {
             h_positions[i] = 0.0f;  // Линия не найдена на этом уровне
+            h_confidence[i] = 0.0f;  // Нет уверенности
         }
     }
     
@@ -479,20 +513,52 @@ float LinerRobot::detectLinePosition() {
     lineDetected_ = true;
     lineNotDetectedCount_ = 0;
     
-    // Вычисляем тренд направления (сравниваем все пары горизонтальных сканов)
+    // === УЛУЧШЕННЫЙ АЛГОРИТМ: Вычисление тренда с учетом уверенности ===
+    // Сканы с правильной шириной линии (высокая уверенность) получают больший вес
     float max_trend = 0.0f;
+    float max_trend_confidence = 0.0f;
+    
     for (int i = 0; i < 3; i++) {
         if (h_count[i] > 0 && h_count[i+1] > 0) {
             float trend = h_positions[i] - h_positions[i+1];
-            if (abs(trend) > abs(max_trend)) {
+            
+            // Средняя уверенность для этой пары сканов
+            float avg_confidence = (h_confidence[i] + h_confidence[i+1]) / 2.0f;
+            
+            // Взвешенная сила тренда
+            float weighted_trend_strength = abs(trend) * avg_confidence;
+            
+            // Выбираем тренд с максимальной взвешенной силой
+            if (weighted_trend_strength > abs(max_trend) * max_trend_confidence) {
                 max_trend = trend;
+                max_trend_confidence = avg_confidence;
             }
         }
     }
     
-    // Финальная позиция: базовая позиция (90% линия) + взвешенный тренд
-    float base_position = h_positions[3];  // Нижняя линия (90%) - самая важная
-    float final_position = base_position + (max_trend * 0.3f);  // 30% влияние тренда
+    // === Выбор базовой позиции с учетом уверенности ===
+    // Приоритет сканам с правильной шириной линии (высокая уверенность)
+    float base_position = h_positions[3];  // По умолчанию нижняя линия (90%)
+    float best_confidence = h_confidence[3];
+    
+    // Ищем скан с наилучшей уверенностью среди нижних
+    for (int i = 3; i >= 0; i--) {
+        if (h_count[i] > 0) {
+            if (h_confidence[i] > best_confidence || best_confidence == 0.0f) {
+                base_position = h_positions[i];
+                best_confidence = h_confidence[i];
+            }
+            // Если уверенность приемлемая (>0.5), используем этот скан
+            if (h_confidence[i] > 0.5f) {
+                break;
+            }
+        }
+    }
+    
+    // Финальная позиция: базовая позиция + взвешенный тренд
+    // Влияние тренда увеличивается с уверенностью
+    float trend_weight = 0.3f * (1.0f + max_trend_confidence);  // 0.3 - 0.6
+    float final_position = base_position + (max_trend * trend_weight);
     
     // Ограничиваем результат в диапазоне [-1.0, 1.0]
     final_position = constrain(final_position, -1.0f, 1.0f);
@@ -501,6 +567,18 @@ float LinerRobot::detectLinePosition() {
 }
 
 void LinerRobot::applyPIDControl(float linePosition) {
+    // === PID УПРАВЛЕНИЕ С КАЛИБРОВАННОЙ ДЕТЕКЦИЕЙ ===
+    // 
+    // linePosition от detectLinePosition():
+    //   -1.0 = линия слева (робот должен повернуть влево)
+    //    0.0 = линия по центру (робот едет прямо)
+    //   +1.0 = линия справа (робот должен повернуть вправо)
+    //
+    // Благодаря калибровке камеры:
+    //   - Позиция взвешена по уверенности (сканы с правильной шириной линии важнее)
+    //   - Тренд направления учитывает уверенность детекции
+    //   - Фильтруются ложные срабатывания (слишком узкие/широкие объекты)
+    
     // PID расчет
     pidError_ = linePosition;
     pidIntegral_ += pidError_;
