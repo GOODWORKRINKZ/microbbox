@@ -65,7 +65,11 @@ private:
     BootMode detectBootMode();       // Определяет режим загрузки по кнопке при старте
     
 #ifdef FEATURE_DUAL_CORE
-    // Детектирование линии на отдельном ядре (Core 0)
+    // Детектирование линии на отдельном ядре ESP32 для максимальной производительности
+    // В РЕЖИМЕ СЛЕДОВАНИЯ (веб/стрим ВЫКЛЮЧЕНЫ):
+    // - Core 0: Детектирование линии (приоритет 2, изолированный цикл)
+    // - Core 1: Управление моторами, PID контроллер, основной цикл
+    // Обеспечивает стабильный FPS без конкуренции за CPU
     static void lineDetectionTask(void* parameter);
     TaskHandle_t lineDetectionTaskHandle_;
     volatile float detectedLinePosition_;
