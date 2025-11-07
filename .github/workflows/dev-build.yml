@@ -1,0 +1,200 @@
+name: МикРоББокс Dev Build
+
+# Workflow для сборки прошивки из develop и feature веток
+# Создает артефакты которые можно скачать и прошить для тестирования
+# Также создает draft releases для удобного OTA обновления
+
+on:
+  push:
+    branches:
+      - develop
+      - 'feature/**'
+  workflow_dispatch:
+    inputs:
+      create_draft_release:
+        description: 'Создать draft release для OTA'
+        required: false
+        type: boolean
+        default: false
+
+permissions:
+  contents: write
+
+jobs:
+  build-dev-firmware:
+    name: Build Developer Firmware
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout Repository
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+
+    - name: Get Branch Info
+      id: branch_info
+      run: |
+        BRANCH_NAME=${GITHUB_REF#refs/heads/}
+        BRANCH_NAME_SAFE=$(echo "$BRANCH_NAME" | sed 's/[\/]/-/g')
+        SHORT_SHA=$(git rev-parse --short HEAD)
+        BUILD_DATE=$(date -u +'%Y%m%d-%H%M%S')
+
+        # Формируем версию для dev сборки
+        # Формат: branch-name-shortsha-date
+        DEV_VERSION="${BRANCH_NAME_SAFE}-${SHORT_SHA}-${BUILD_DATE}"
+
+        echo "branch_name=${BRANCH_NAME}" >> $GITHUB_OUTPUT
+        echo "branch_name_safe=${BRANCH_NAME_SAFE}" >> $GITHUB_OUTPUT
+        echo "short_sha=${SHORT_SHA}" >> $GITHUB_OUTPUT
+        echo "build_date=${BUILD_DATE}" >> $GITHUB_OUTPUT
+        echo "dev_version=${DEV_VERSION}" >> $GITHUB_OUTPUT
+
+        echo "📦 Building dev firmware for branch: ${BRANCH_NAME}"
+        echo "🔖 Dev version: ${DEV_VERSION}"
+
+    - name: Setup Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.11'
+
+    - name: Cache PlatformIO
+      uses: actions/cache@v4
+      with:
+        path: ~/.platformio
+        key: ${{ runner.os }}-pio-${{ hashFiles('**/platformio.ini') }}
+        restore-keys: |
+          ${{ runner.os }}-pio-
+
+    - name: Install PlatformIO and dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install platformio htmlmin jsmin csscompressor
+
+    - name: Build All Robot Types (Release)
+      run: |
+        echo "🔨 Building all robot types (release)..."
+        pio run --environment classic-release --environment liner-release --environment brain-release
+
+    - name: Prepare Dev Firmware Files
+      run: |
+        DEV_VERSION="${{ steps.branch_info.outputs.dev_version }}"
+        BRANCH_NAME="${{ steps.branch_info.outputs.branch_name }}"
+        SHORT_SHA="${{ steps.branch_info.outputs.short_sha }}"
+
+        echo "📦 Preparing dev firmware files..."
+
+        # Array of robot types
+        ROBOT_TYPES=("classic" "liner" "brain")
+
+        # Copy and rename firmware files
+        for robot in "${ROBOT_TYPES[@]}"; do
+          BUILD_DIR=".pio/build/${robot}-release"
+          OUTPUT_NAME="microbox-${robot}-dev-${DEV_VERSION}.bin"
+
+          if [ ! -f "${BUILD_DIR}/firmware.bin" ]; then
+            echo "ERROR: ${BUILD_DIR}/firmware.bin not found!"
+            exit 1
+          fi
+
+          cp "${BUILD_DIR}/firmware.bin" "${OUTPUT_NAME}"
+          echo "✅ Created: ${OUTPUT_NAME}"
+
+          # Создаем контрольную сумму
+          sha256sum "${OUTPUT_NAME}" > "${OUTPUT_NAME}.sha256"
+
+          # Информация о размере
+          SIZE=$(stat -c%s "${OUTPUT_NAME}")
+          echo "   Size: $(($SIZE / 1024)) KB"
+        done
+
+        # Создаем информационный файл
+        cat > DEV_BUILD_INFO.txt << EOF
+        МикРоББокс Developer Build
+
+        Branch: ${BRANCH_NAME}
+        Commit: ${SHORT_SHA}
+        Build Date: ${{ steps.branch_info.outputs.build_date }}
+        Dev Version: ${DEV_VERSION}
+
+        Built from: https://github.com/${{ github.repository }}/tree/${SHORT_SHA}
+
+        Robot Types:
+        - Classic (управляемый робот)
+        - Liner (следование по линии)
+        - Brain (модуль управления)
+
+        Это development сборка для тестирования.
+        Не рекомендуется для production использования.
+        EOF
+
+        echo "📋 Build info created"
+        cat DEV_BUILD_INFO.txt
+
+    - name: Upload Firmware Artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: microbbox-dev-${{ steps.branch_info.outputs.dev_version }}
+        path: |
+          microbox-*.bin
+          microbox-*.sha256
+          DEV_BUILD_INFO.txt
+        retention-days: 30
+
+    - name: Create Draft Release for OTA (Optional)
+      if: |
+        github.event.inputs.create_draft_release == 'true' ||
+        github.ref == 'refs/heads/develop'
+      uses: softprops/action-gh-release@v1
+      with:
+        tag_name: dev-${{ steps.branch_info.outputs.dev_version }}
+        name: 🔧 Dev Build - ${{ steps.branch_info.outputs.branch_name_safe }}
+        body: |
+          # Developer Build - ${{ steps.branch_info.outputs.branch_name }}
+
+          ⚠️ **Это development сборка для тестирования!**
+
+          **Информация о сборке:**
+          - Ветка: `${{ steps.branch_info.outputs.branch_name }}`
+          - Commit: `${{ steps.branch_info.outputs.short_sha }}`
+          - Дата сборки: `${{ steps.branch_info.outputs.build_date }}`
+
+          **Как использовать:**
+          1. Скачайте нужный файл для вашего типа робота
+          2. Обновите через веб-интерфейс или esptool
+          3. Сообщите о проблемах в Issues
+
+          **Доступные прошивки:**
+          - `microbox-classic-dev-*.bin` - для Classic робота
+          - `microbox-liner-dev-*.bin` - для Liner робота
+          - `microbox-brain-dev-*.bin` - для Brain робота
+
+          ---
+
+          Commit: https://github.com/${{ github.repository }}/commit/${{ github.sha }}
+        files: |
+          microbox-*.bin
+          microbox-*.sha256
+          DEV_BUILD_INFO.txt
+        draft: true
+        prerelease: true
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Build Summary
+      run: |
+        echo "## ✅ Dev firmware built successfully!" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "### 📦 Build Information:" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "- **Branch**: ${{ steps.branch_info.outputs.branch_name }}" >> $GITHUB_STEP_SUMMARY
+        echo "- **Commit**: ${{ steps.branch_info.outputs.short_sha }}" >> $GITHUB_STEP_SUMMARY
+        echo "- **Dev Version**: ${{ steps.branch_info.outputs.dev_version }}" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "### 📦 Firmware Files:" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        ls -lh microbox-*.bin | awk '{print "- **" $9 "** - " $5}' >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "### 📥 Download:" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "Firmware files uploaded as workflow artifacts." >> $GITHUB_STEP_SUMMARY
+        echo "Go to Actions → This workflow run → Artifacts section" >> $GITHUB_STEP_SUMMARY

@@ -341,6 +341,21 @@
                             
                             <div class="update-actions">
                                 <button id="checkUpdatesBtn" class="btn-secondary">🔍 Проверить обновления</button>
+                                
+                                <!-- Выбор канала обновлений -->
+                                <div class="update-channel-select">
+                                    <label for="updateChannel">📡 Канал обновлений:</label>
+                                    <select id="updateChannel" class="channel-select">
+                                        <option value="stable">Stable (Стабильный)</option>
+                                        <option value="dev">Dev (Разработческий) ⚠️</option>
+                                    </select>
+                                    <div class="channel-info">
+                                        <span id="channelDescription" class="channel-description">
+                                            Стабильные релизы для production использования
+                                        </span>
+                                    </div>
+                                </div>
+                                
                                 <label class="update-checkbox">
                                     <input type="checkbox" id="autoUpdate"> Автоматически проверять обновления при запуске
                                 </label>
