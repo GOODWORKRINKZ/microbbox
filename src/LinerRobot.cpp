@@ -69,6 +69,24 @@ LinerRobot::~LinerRobot() {
 bool LinerRobot::initSpecificComponents() {
     DEBUG_PRINTLN("=== Инициализация компонентов Liner робота ===");
     
+    // ВАЖНО: Определяем режим загрузки ПО КНОПКЕ ПРИ СТАРТЕ
+    bootMode_ = detectBootMode();
+    
+    if (bootMode_ == BootMode::CONFIGURATION) {
+        DEBUG_PRINTLN("🔧 РЕЖИМ: Configuration Mode (кнопка зажата при старте)");
+        DEBUG_PRINTLN("   - Веб-сервер: ВКЛЮЧЕН");
+        DEBUG_PRINTLN("   - Видеострим: ВКЛЮЧЕН");
+        DEBUG_PRINTLN("   - Детектирование: ОТКЛЮЧЕНО (экономия ресурсов)");
+        DEBUG_PRINTLN("   - Доступно: настройка, обновление, ручное управление");
+    } else {
+        DEBUG_PRINTLN("🏁 РЕЖИМ: Line Following Mode (кнопка не зажата)");
+        DEBUG_PRINTLN("   - Веб-сервер: ОТКЛЮЧЕН");
+        DEBUG_PRINTLN("   - Видеострим: ОТКЛЮЧЕН");
+        DEBUG_PRINTLN("   - WiFi: ОТКЛЮЧЕН");
+        DEBUG_PRINTLN("   - Детектирование: ВКЛЮЧЕНО");
+        DEBUG_PRINTLN("   - Работают: камера, детектор, моторы");
+    }
+    
     // Инициализация моторов
     if (!initMotors()) {
         DEBUG_PRINTLN("ОШИБКА: Не удалось инициализировать моторы");
@@ -310,9 +328,21 @@ void LinerRobot::onButtonPressed() {
     unsigned long now = millis();
     DEBUG_PRINTF("[%lu ms] ==================================================\n", now);
     DEBUG_PRINTF("[%lu ms] КНОПКА НАЖАТА!\n", now);
+    DEBUG_PRINTF("[%lu ms] Режим загрузки: %s\n", now, 
+                 bootMode_ == BootMode::CONFIGURATION ? "Configuration" : "Line Following");
     DEBUG_PRINTF("[%lu ms] Текущий режим: %s\n", now, currentMode_ == Mode::MANUAL ? "РУЧНОЙ" : "АВТОНОМНЫЙ");
     
-    // Переключение режима
+    // ВАЖНО: В Configuration Mode кнопка НЕ переключает режимы!
+    // Детектирование отключено, только ручное управление через веб
+    if (bootMode_ == BootMode::CONFIGURATION) {
+        DEBUG_PRINTF("[%lu ms] ⚠️ Configuration Mode: кнопка игнорируется\n", now);
+        DEBUG_PRINTF("[%lu ms]    Детектирование отключено в этом режиме\n", now);
+        DEBUG_PRINTF("[%lu ms]    Используйте веб-интерфейс для управления\n", now);
+        DEBUG_PRINTF("[%lu ms] ==================================================\n", now);
+        return;
+    }
+    
+    // Переключение режима (только в Line Following Mode)
     if (currentMode_ == Mode::MANUAL) {
         currentMode_ = Mode::AUTONOMOUS;
         DEBUG_PRINTF("[%lu ms] >>> ПЕРЕХОД В АВТОНОМНЫЙ РЕЖИМ <<<\n", now);
@@ -351,6 +381,13 @@ void LinerRobot::onButtonPressed() {
 
 void LinerRobot::updateLineFollowing() {
 #ifdef FEATURE_LINE_FOLLOWING
+    // КРИТИЧНО: В Configuration Mode детектирование НЕ запускается!
+    // Работает ТОЛЬКО в Line Following Mode
+    if (bootMode_ != BootMode::LINE_FOLLOWING) {
+        // В режиме настройки детектирование отключено
+        return;
+    }
+    
     // Определение позиции линии
     float linePosition = detectLinePosition();
     
@@ -1144,6 +1181,33 @@ float LinerRobot::filterPositionJump(float newPosition) {
     
     lastValidPosition_ = newPosition;
     return newPosition;
+}
+
+LinerRobot::BootMode LinerRobot::detectBootMode() {
+#ifdef FEATURE_BUTTON
+    // Читаем состояние кнопки при старте
+    // Если кнопка зажата (LOW) - Configuration Mode
+    // Если кнопка не зажата (HIGH) - Line Following Mode
+    
+    pinMode(BUTTON_PIN, INPUT_PULLUP);
+    delay(50);  // Небольшая задержка для стабилизации
+    
+    bool buttonState = digitalRead(BUTTON_PIN);
+    
+    if (buttonState == LOW) {
+        // Кнопка ЗАЖАТА при старте -> Configuration Mode
+        DEBUG_PRINTLN("🔧 Кнопка зажата при старте -> Configuration Mode");
+        return BootMode::CONFIGURATION;
+    } else {
+        // Кнопка НЕ ЗАЖАТА при старте -> Line Following Mode
+        DEBUG_PRINTLN("🏁 Кнопка не зажата -> Line Following Mode");
+        return BootMode::LINE_FOLLOWING;
+    }
+#else
+    // Если кнопки нет, по умолчанию Configuration Mode для безопасности
+    DEBUG_PRINTLN("⚠️ Кнопка не определена -> Configuration Mode по умолчанию");
+    return BootMode::CONFIGURATION;
+#endif
 }
 
 #endif // TARGET_LINER
