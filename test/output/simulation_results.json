@@ -1,0 +1,3936 @@
+{
+  "version": "1.0",
+  "simulation_results": [
+    {
+      "frame_id": 0,
+      "image": "output/frames/frame_0000.jpg",
+      "expected_action": "straight",
+      "raw_action": "straight",
+      "filtered_action": "unknown",
+      "is_correct_raw": true,
+      "is_correct_filtered": false,
+      "detection": {
+        "position": 0.07312499999999997,
+        "trend": 0.2437499999999999,
+        "detected": true,
+        "is_terminate": false
+      }
+    },
+    {
+      "frame_id": 1,
+      "image": "output/frames/frame_0001.jpg",
+      "expected_action": "straight",
+      "raw_action": "terminate",
+      "filtered_action": "straight",
+      "is_correct_raw": false,
+      "is_correct_filtered": true,
+      "detection": {
+        "position": 0.0,
+        "trend": 0.0,
+        "detected": false,
+        "is_terminate": true
+      }
+    },
+    {
+      "frame_id": 2,
+      "image": "output/frames/frame_0002.jpg",
+      "expected_action": "straight",
+      "raw_action": "terminate",
+      "filtered_action": "terminate",
+      "is_correct_raw": false,
+      "is_correct_filtered": false,
+      "detection": {
+        "position": 0.0,
+        "trend": 0.0,
+        "detected": false,
+        "is_terminate": true
+      }
+    },
+    {
+      "frame_id": 3,
+      "image": "output/frames/frame_0003.jpg",
+      "expected_action": "straight",
+      "raw_action": "terminate",
+      "filtered_action": "terminate",
+      "is_correct_raw": false,
+      "is_correct_filtered": false,
+      "detection": {
+        "position": 0.0,
+        "trend": 0.0,
+        "detected": false,
+        "is_terminate": true
+      }
+    },
+    {
+      "frame_id": 4,
+      "image": "output/frames/frame_0004.jpg",
+      "expected_action": "straight",
+      "raw_action": "terminate",
+      "filtered_action": "terminate",
+      "is_correct_raw": false,
+      "is_correct_filtered": false,
+      "detection": {
+        "position": 0.0,
+        "trend": 0.0,
+        "detected": false,
+        "is_terminate": true
+      }
+    },
+    {
+      "frame_id": 5,
+      "image": "output/frames/frame_0005.jpg",
+      "expected_action": "straight",
+      "raw_action": "terminate",
+      "filtered_action": "terminate",
+      "is_correct_raw": false,
+      "is_correct_filtered": false,
+      "detection": {
+        "position": 0.0,
+        "trend": 0.0,
+        "detected": false,
+        "is_terminate": true
+      }
+    },
+    {
+      "frame_id": 6,
+      "image": "output/frames/frame_0006.jpg",
+      "expected_action": "straight",
+      "raw_action": "terminate",
+      "filtered_action": "terminate",
+      "is_correct_raw": false,
+      "is_correct_filtered": false,
+      "detection": {
+        "position": 0.0,
+        "trend": 0.0,
+        "detected": false,
+        "is_terminate": true
+      }
+    },
+    {
+      "frame_id": 7,
+      "image": "output/frames/frame_0007.jpg",
+      "expected_action": "straight",
+      "raw_action": "terminate",
+      "filtered_action": "terminate",
+      "is_correct_raw": false,
+      "is_correct_filtered": false,
+      "detection": {
+        "position": 0.0,
+        "trend": 0.0,
+        "detected": false,
+        "is_terminate": true
+      }
+    },
+    {
+      "frame_id": 8,
+      "image": "output/frames/frame_0008.jpg",
+      "expected_action": "straight",
+      "raw_action": "terminate",
+      "filtered_action": "terminate",
+      "is_correct_raw": false,
+      "is_correct_filtered": false,
+      "detection": {
+        "position": 0.0,
+        "trend": 0.0,
+        "detected": false,
+        "is_terminate": true
+      }
+    },
+    {
+      "frame_id": 9,
+      "image": "output/frames/frame_0009.jpg",
+      "expected_action": "straight",
+      "raw_action": "terminate",
+      "filtered_action": "terminate",
+      "is_correct_raw": false,
+      "is_correct_filtered": false,
+      "detection": {
+        "position": 0.0,
+        "trend": 0.0,
+        "detected": false,
+        "is_terminate": true
+      }
+    },
+    {
+      "frame_id": 10,
+      "image": "output/frames/frame_0010.jpg",
+      "expected_action": "straight",
+      "raw_action": "terminate",
+      "filtered_action": "terminate",
+      "is_correct_raw": false,
+      "is_correct_filtered": false,
+      "detection": {
+        "position": 0.0,
+        "trend": 0.0,
+        "detected": false,
+        "is_terminate": true
+      }
+    },
+    {
+      "frame_id": 11,
+      "image": "output/frames/frame_0011.jpg",
+      "expected_action": "straight",
+      "raw_action": "terminate",
+      "filtered_action": "terminate",
+      "is_correct_raw": false,
+      "is_correct_filtered": false,
+      "detection": {
+        "position": 0.0,
+        "trend": 0.0,
+        "detected": false,
+        "is_terminate": true
+      }
+    },
+    {
+      "frame_id": 12,
+      "image": "output/frames/frame_0012.jpg",
+      "expected_action": "straight",
+      "raw_action": "terminate",
+      "filtered_action": "terminate",
+      "is_correct_raw": false,
+      "is_correct_filtered": false,
+      "detection": {
+        "position": 0.0,
+        "trend": 0.0,
+        "detected": false,
+        "is_terminate": true
+      }
+    },
+    {
+      "frame_id": 13,
+      "image": "output/frames/frame_0013.jpg",
+      "expected_action": "straight",
+      "raw_action": "terminate",
+      "filtered_action": "terminate",
+      "is_correct_raw": false,
+      "is_correct_filtered": false,
+      "detection": {
+        "position": 0.0,
+        "trend": 0.0,
+        "detected": false,
+        "is_terminate": true
+      }
+    },
+    {
+      "frame_id": 14,
+      "image": "output/frames/frame_0014.jpg",
+      "expected_action": "straight",
+      "raw_action": "terminate",
+      "filtered_action": "terminate",
+      "is_correct_raw": false,
+      "is_correct_filtered": false,
+      "detection": {
+        "position": 0.0,
+        "trend": 0.0,
+        "detected": false,
+        "is_terminate": true
+      }
+    },
+    {
+      "frame_id": 15,
+      "image": "output/frames/frame_0015.jpg",
+      "expected_action": "straight",
+      "raw_action": "terminate",
+      "filtered_action": "terminate",
+      "is_correct_raw": false,
+      "is_correct_filtered": false,
+      "detection": {
+        "position": 0.0,
+        "trend": 0.0,
+        "detected": false,
+        "is_terminate": true
+      }
+    },
+    {
+      "frame_id": 16,
+      "image": "output/frames/frame_0016.jpg",
+      "expected_action": "straight",
+      "raw_action": "terminate",
+      "filtered_action": "terminate",
+      "is_correct_raw": false,
+      "is_correct_filtered": false,
+      "detection": {
+        "position": 0.0,
+        "trend": 0.0,
+        "detected": false,
+        "is_terminate": true
+      }
+    },
+    {
+      "frame_id": 17,
+      "image": "output/frames/frame_0017.jpg",
+      "expected_action": "straight",
+      "raw_action": "terminate",
+      "filtered_action": "terminate",
+      "is_correct_raw": false,
+      "is_correct_filtered": false,
+      "detection": {
+        "position": 0.0,
+        "trend": 0.0,
+        "detected": false,
+        "is_terminate": true
+      }
+    },
+    {
+      "frame_id": 18,
+      "image": "output/frames/frame_0018.jpg",
+      "expected_action": "straight",
+      "raw_action": "terminate",
+      "filtered_action": "terminate",
+      "is_correct_raw": false,
+      "is_correct_filtered": false,
+      "detection": {
+        "position": 0.0,
+        "trend": 0.0,
+        "detected": false,
+        "is_terminate": true
+      }
+    },
+    {
+      "frame_id": 19,
+      "image": "output/frames/frame_0019.jpg",
+      "expected_action": "straight",
+      "raw_action": "terminate",
+      "filtered_action": "terminate",
+      "is_correct_raw": false,
+      "is_correct_filtered": false,
+      "detection": {
+        "position": 0.0,
+        "trend": 0.0,
+        "detected": false,
+        "is_terminate": true
+      }
+    },
+    {
+      "frame_id": 20,
+      "image": "output/frames/frame_0020.jpg",
+      "expected_action": "straight",
+      "raw_action": "terminate",
+      "filtered_action": "terminate",
+      "is_correct_raw": false,
+      "is_correct_filtered": false,
+      "detection": {
+        "position": 0.0,
+        "trend": 0.0,
+        "detected": false,
+        "is_terminate": true
+      }
+    },
+    {
+      "frame_id": 21,
+      "image": "output/frames/frame_0021.jpg",
+      "expected_action": "straight",
+      "raw_action": "terminate",
+      "filtered_action": "terminate",
+      "is_correct_raw": false,
+      "is_correct_filtered": false,
+      "detection": {
+        "position": 0.0,
+        "trend": 0.0,
+        "detected": false,
+        "is_terminate": true
+      }
+    },
+    {
+      "frame_id": 22,
+      "image": "output/frames/frame_0022.jpg",
+      "expected_action": "straight",
+      "raw_action": "terminate",
+      "filtered_action": "terminate",
+      "is_correct_raw": false,
+      "is_correct_filtered": false,
+      "detection": {
+        "position": 0.0,
+        "trend": 0.0,
+        "detected": false,
+        "is_terminate": true
+      }
+    },
+    {
+      "frame_id": 23,
+      "image": "output/frames/frame_0023.jpg",
+      "expected_action": "right",
+      "raw_action": "terminate",
+      "filtered_action": "terminate",
+      "is_correct_raw": false,
+      "is_correct_filtered": false,
+      "detection": {
+        "position": 0.0,
+        "trend": 0.0,
+        "detected": false,
+        "is_terminate": true
+      }
+    },
+    {
+      "frame_id": 24,
+      "image": "output/frames/frame_0024.jpg",
+      "expected_action": "right",
+      "raw_action": "right",
+      "filtered_action": "terminate",
+      "is_correct_raw": true,
+      "is_correct_filtered": false,
+      "detection": {
+        "position": 1.1825,
+        "trend": 1.24375,
+        "detected": true,
+        "is_terminate": false
+      }
+    },
+    {
+      "frame_id": 25,
+      "image": "output/frames/frame_0025.jpg",
+      "expected_action": "right",
+      "raw_action": "right",
+      "filtered_action": "right",
+      "is_correct_raw": true,
+      "is_correct_filtered": true,
+      "detection": {
+        "position": 1.18125,
+        "trend": 1.24375,
+        "detected": true,
+        "is_terminate": false
+      }
+    },
+    {
+      "frame_id": 26,
+      "image": "output/frames/frame_0026.jpg",
+      "expected_action": "right",
+      "raw_action": "right",
+      "filtered_action": "right",
+      "is_correct_raw": true,
+      "is_correct_filtered": true,
+      "detection": {
+        "position": 0.9437500000000001,
+        "trend": 0.9437500000000001,
+        "detected": true,
+        "is_terminate": false
+      }
+    },
+    {
+      "frame_id": 27,
+      "image": "output/frames/frame_0027.jpg",
+      "expected_action": "right",
+      "raw_action": "right",
+      "filtered_action": "right",
+      "is_correct_raw": true,
+      "is_correct_filtered": true,
+      "detection": {
+        "position": 1.6979166666666667,
+        "trend": 1.8895833333333334,
+        "detected": true,
+        "is_terminate": false
+      }
+    },
+    {
+      "frame_id": 28,
+      "image": "output/frames/frame_0028.jpg",
+      "expected_action": "right",
+      "raw_action": "right",
+      "filtered_action": "right",
+      "is_correct_raw": true,
+      "is_correct_filtered": true,
+      "detection": {
+        "position": 1.7000000000000002,
+        "trend": 1.89375,
+        "detected": true,
+        "is_terminate": false
+      }
+    },
+    {
+      "frame_id": 29,
+      "image": "output/frames/frame_0029.jpg",
+      "expected_action": "right",
+      "raw_action": "right",
+      "filtered_action": "right",
+      "is_correct_raw": true,
+      "is_correct_filtered": true,
+      "detection": {
+        "position": 1.7025000000000001,
+        "trend": 1.89375,
+        "detected": true,
+        "is_terminate": false
+      }
+    },
+    {
+      "frame_id": 30,
+      "image": "output/frames/frame_0030.jpg",
+      "expected_action": "right",
+      "raw_action": "right",
+      "filtered_action": "right",
+      "is_correct_raw": true,
+      "is_correct_filtered": true,
+      "detection": {
+        "position": 1.7000000000000002,
+        "trend": 1.89375,
+        "detected": true,
+        "is_terminate": false
+      }
+    },
+    {
+      "frame_id": 31,
+      "image": "output/frames/frame_0031.jpg",
+      "expected_action": "right",
+      "raw_action": "right",
+      "filtered_action": "right",
+      "is_correct_raw": true,
+      "is_correct_filtered": true,
+      "detection": {
+        "position": 1.70375,
+        "trend": 1.89375,
+        "detected": true,
+        "is_terminate": false
+      }
+    },
+    {
+      "frame_id": 32,
+      "image": "output/frames/frame_0032.jpg",
+      "expected_action": "right",
+      "raw_action": "right",
+      "filtered_action": "right",
+      "is_correct_raw": true,
+      "is_correct_filtered": true,
+      "detection": {
+        "position": 1.7075,
+        "trend": 1.9,
+        "detected": true,
+        "is_terminate": false
+      }
+    },
+    {
+      "frame_id": 33,
+      "image": "output/frames/frame_0033.jpg",
+      "expected_action": "right",
+      "raw_action": "right",
+      "filtered_action": "right",
+      "is_correct_raw": true,
+      "is_correct_filtered": true,
+      "detection": {
+        "position": 1.7000000000000002,
+        "trend": 1.89375,
+        "detected": true,
+        "is_terminate": false
+      }
+    },
+    {
+      "frame_id": 34,
+      "image": "output/frames/frame_0034.jpg",
+      "expected_action": "right",
+      "raw_action": "right",
+      "filtered_action": "right",
+      "is_correct_raw": true,
+      "is_correct_filtered": true,
+      "detection": {
+        "position": 1.7087500000000002,
+        "trend": 1.9000000000000001,
+        "detected": true,
+        "is_terminate": false
+      }
+    },
+    {
+      "frame_id": 35,
+      "image": "output/frames/frame_0035.jpg",
+      "expected_action": "right",
+      "raw_action": "right",
+      "filtered_action": "right",
+      "is_correct_raw": true,
+      "is_correct_filtered": true,
+      "detection": {
+        "position": 0.8825000000000002,
+        "trend": 1.0750000000000002,
+        "detected": true,
+        "is_terminate": false
+      }
+    },
+    {
+      "frame_id": 36,
+      "image": "output/frames/frame_0036.jpg",
+      "expected_action": "straight",
+      "raw_action": "right",
+      "filtered_action": "right",
+      "is_correct_raw": false,
+      "is_correct_filtered": false,
+      "detection": {
+        "position": 1.0225,
+        "trend": 1.2125,
+        "detected": true,
+        "is_terminate": false
+      }
+    },
+    {
+      "frame_id": 37,
+      "image": "output/frames/frame_0037.jpg",
+      "expected_action": "straight",
+      "raw_action": "left",
+      "filtered_action": "right",
+      "is_correct_raw": false,
+      "is_correct_filtered": false,
+      "detection": {
+        "position": -0.19543269230769234,
+        "trend": -0.3533653846153847,
+        "detected": true,
+        "is_terminate": false
+      }
+    },
+    {
+      "frame_id": 38,
+      "image": "output/frames/frame_0038.jpg",
+      "expected_action": "straight",
+      "raw_action": "left",
+      "filtered_action": "left",
+      "is_correct_raw": false,
+      "is_correct_filtered": false,
+      "detection": {
+        "position": -1.0375,
+        "trend": -1.2125,
+        "detected": true,
+        "is_terminate": false
+      }
+    },
+    {
+      "frame_id": 39,
+      "image": "output/frames/frame_0039.jpg",
+      "expected_action": "left",
+      "raw_action": "left",
+      "filtered_action": "left",
+      "is_correct_raw": true,
+      "is_correct_filtered": true,
+      "detection": {
+        "position": -0.8220491803278688,
+        "trend": -0.9957991803278687,
+        "detected": true,
+        "is_terminate": false
+      }
+    },
+    {
+      "frame_id": 40,
+      "image": "output/frames/frame_0040.jpg",
+      "expected_action": "left",
+      "raw_action": "left",
+      "filtered_action": "left",
+      "is_correct_raw": true,
+      "is_correct_filtered": true,
+      "detection": {
+        "position": -1.5862500000000002,
+        "trend": -1.7625000000000002,
+        "detected": true,
+        "is_terminate": false
+      }
+    },
+    {
+      "frame_id": 41,
+      "image": "output/frames/frame_0041.jpg",
+      "expected_action": "left",
+      "raw_action": "left",
+      "filtered_action": "left",
+      "is_correct_raw": true,
+      "is_correct_filtered": true,
+      "detection": {
+        "position": -1.5925,
+        "trend": -1.76875,
+        "detected": true,
+        "is_terminate": false
+      }
+    },
+    {
+      "frame_id": 42,
+      "image": "output/frames/frame_0042.jpg",
+      "expected_action": "left",
+      "raw_action": "left",
+      "filtered_action": "left",
+      "is_correct_raw": true,
+      "is_correct_filtered": true,
+      "detection": {
+        "position": -1.58875,
+        "trend": -1.7625,
+        "detected": true,
+        "is_terminate": false
+      }
+    },
+    {
+      "frame_id": 43,
+      "image": "output/frames/frame_0043.jpg",
+      "expected_action": "left",
+      "raw_action": "left",
+      "filtered_action": "left",
+      "is_correct_raw": true,
+      "is_correct_filtered": true,
+      "detection": {
+        "position": -1.595,
+        "trend": -1.7687499999999998,
+        "detected": true,
+        "is_terminate": false
+      }
+    },
+    {
+      "frame_id": 44,
+      "image": "output/frames/frame_0044.jpg",
+      "expected_action": "left",
+      "raw_action": "left",
+      "filtered_action": "left",
+      "is_correct_raw": true,
+      "is_correct_filtered": true,
+      "detection": {
+        "position": -1.5875000000000001,
+        "trend": -1.7625,
+        "detected": true,
+        "is_terminate": false
+      }
+    },
+    {
+      "frame_id": 45,
+      "image": "output/frames/frame_0045.jpg",
+      "expected_action": "left",
+      "raw_action": "left",
+      "filtered_action": "left",
+      "is_correct_raw": true,
+      "is_correct_filtered": true,
+      "detection": {
+        "position": -1.42875,
+        "trend": -1.5625,
+        "detected": true,
+        "is_terminate": false
+      }
+    },
+    {
+      "frame_id": 46,
+      "image": "output/frames/frame_0046.jpg",
+      "expected_action": "left",
+      "raw_action": "left",
+      "filtered_action": "left",
+      "is_correct_raw": true,
+      "is_correct_filtered": true,
+      "detection": {
+        "position": -1.21875,
+        "trend": -1.3,
+        "detected": true,
+        "is_terminate": false
+      }
+    },
+    {
+      "frame_id": 47,
+      "image": "output/frames/frame_0047.jpg",
+      "expected_action": "left",
+      "raw_action": "left",
+      "filtered_action": "left",
+      "is_correct_raw": true,
+      "is_correct_filtered": true,
+      "detection": {
+        "position": -0.9925,
+        "trend": -1.01875,
+        "detected": true,
+        "is_terminate": false
+      }
+    },
+    {
+      "frame_id": 48,
+      "image": "output/frames/frame_0048.jpg",
+      "expected_action": "left",
+      "raw_action": "left",
+      "filtered_action": "left",
+      "is_correct_raw": true,
+      "is_correct_filtered": true,
+      "detection": {
+        "position": -0.9175000000000001,
+        "trend": -0.9437500000000001,
+        "detected": true,
+        "is_terminate": false
+      }
+    },
+    {
+      "frame_id": 49,
+      "image": "output/frames/frame_0049.jpg",
+      "expected_action": "left",
+      "raw_action": "left",
+      "filtered_action": "left",
+      "is_correct_raw": true,
+      "is_correct_filtered": true,
+      "detection": {
+        "position": -0.3656250000000001,
+        "trend": -0.43125000000000013,
+        "detected": true,
+        "is_terminate": false
+      }
+    },
+    {
+      "frame_id": 50,
+      "image": "output/frames/frame_0050.jpg",
+      "expected_action": "left",
+      "raw_action": "left",
+      "filtered_action": "left",
+      "is_correct_raw": true,
+      "is_correct_filtered": true,
+      "detection": {
+        "position": -0.296875,
+        "trend": -0.36250000000000004,
+        "detected": true,
+        "is_terminate": false
+      }
+    },
+    {
+      "frame_id": 51,
+      "image": "output/frames/frame_0051.jpg",
+      "expected_action": "left",
+      "raw_action": "left",
+      "filtered_action": "left",
+      "is_correct_raw": true,
+      "is_correct_filtered": true,
+      "detection": {
+        "position": -0.290625,
+        "trend": -0.35625000000000007,
+        "detected": true,
+        "is_terminate": false
+      }
+    },
+    {
+      "frame_id": 52,
+      "image": "output/frames/frame_0052.jpg",
+      "expected_action": "left",
+      "raw_action": "left",
+      "filtered_action": "left",
+      "is_correct_raw": true,
+      "is_correct_filtered": true,
+      "detection": {
+        "position": -0.29374999999999996,
+        "trend": -0.35624999999999996,
+        "detected": true,
+        "is_terminate": false
+      }
+    },
+    {
+      "frame_id": 53,
+      "image": "output/frames/frame_0053.jpg",
+      "expected_action": "left",
+      "raw_action": "left",
+      "filtered_action": "left",
+      "is_correct_raw": true,
+      "is_correct_filtered": true,
+      "detection": {
+        "position": -0.296875,
+        "trend": -0.36250000000000004,
+        "detected": true,
+        "is_terminate": false
+      }
+    },
+    {
+      "frame_id": 54,
+      "image": "output/frames/frame_0054.jpg",
+      "expected_action": "left",
+      "raw_action": "left",
+      "filtered_action": "left",
+      "is_correct_raw": true,
+      "is_correct_filtered": true,
+      "detection": {
+        "position": -0.296875,
+        "trend": -0.36250000000000004,
+        "detected": true,
+        "is_terminate": false
+      }
+    },
+    {
+      "frame_id": 55,
+      "image": "output/frames/frame_0055.jpg",
+      "expected_action": "left",
+      "raw_action": "left",
+      "filtered_action": "left",
+      "is_correct_raw": true,
+      "is_correct_filtered": true,
+      "detection": {
+        "position": -0.2906249999999999,
+        "trend": -0.34999999999999987,
+        "detected": true,
+        "is_terminate": false
+      }
+    },
+    {
+      "frame_id": 56,
+      "image": "output/frames/frame_0056.jpg",
+      "expected_action": "left",
+      "raw_action": "left",
+      "filtered_action": "left",
+      "is_correct_raw": true,
+      "is_correct_filtered": true,
+      "detection": {
+        "position": -0.296875,
+        "trend": -0.36250000000000004,
+        "detected": true,
+        "is_terminate": false
+      }
+    },
+    {
+      "frame_id": 57,
+      "image": "output/frames/frame_0057.jpg",
+      "expected_action": "left",
+      "raw_action": "left",
+      "filtered_action": "left",
+      "is_correct_raw": true,
+      "is_correct_filtered": true,
+      "detection": {
+        "position": -0.30937499999999996,
+        "trend": -0.39374999999999993,
+        "detected": true,
+        "is_terminate": false
+      }
+    },
+    {
+      "frame_id": 58,
+      "image": "output/frames/frame_0058.jpg",
+      "expected_action": "left",
+      "raw_action": "left",
+      "filtered_action": "left",
+      "is_correct_raw": true,
+      "is_correct_filtered": true,
+      "detection": {
+        "position": -0.34062499999999996,
+        "trend": -0.42499999999999993,
+        "detected": true,
+        "is_terminate": false
+      }
+    },
+    {
+      "frame_id": 59,
+      "image": "output/frames/frame_0059.jpg",
+      "expected_action": "left",
+      "raw_action": "left",
+      "filtered_action": "left",
+      "is_correct_raw": true,
+      "is_correct_filtered": true,
+      "detection": {
+        "position": -0.37187499999999996,
+        "trend": -0.44999999999999996,
+        "detected": true,
+        "is_terminate": false
+      }
+    },
+    {
+      "frame_id": 60,
+      "image": "output/frames/frame_0060.jpg",
+      "expected_action": "left",
+      "raw_action": "left",
+      "filtered_action": "left",
+      "is_correct_raw": true,
+      "is_correct_filtered": true,
+      "detection": {
+        "position": -0.37812499999999993,
+        "trend": -0.4624999999999999,
+        "detected": true,
+        "is_terminate": false
+      }
+    },
+    {
+      "frame_id": 61,
+      "image": "output/frames/frame_0061.jpg",
+      "expected_action": "left",
+      "raw_action": "left",
+      "filtered_action": "left",
+      "is_correct_raw": true,
+      "is_correct_filtered": true,
+      "detection": {
+        "position": -0.375,
+        "trend": -0.45625000000000004,
+        "detected": true,
+        "is_terminate": false
+      }
+    },
+    {
+      "frame_id": 62,
+      "image": "output/frames/frame_0062.jpg",
+      "expected_action": "left",
+      "raw_action": "left",
+      "filtered_action": "left",
+      "is_correct_raw": true,
+      "is_correct_filtered": true,
+      "detection": {
+        "position": -0.38125,
+        "trend": -0.46875,
+        "detected": true,
+        "is_terminate": false
+      }
+    },
+    {
+      "frame_id": 63,
+      "image": "output/frames/frame_0063.jpg",
+      "expected_action": "left",
+      "raw_action": "left",
+      "filtered_action": "left",
+      "is_correct_raw": true,
+      "is_correct_filtered": true,
+      "detection": {
+        "position": -0.38749999999999996,
+        "trend": -0.48749999999999993,
+        "detected": true,
+        "is_terminate": false
+      }
+    },
+    {
+      "frame_id": 64,
+      "image": "output/frames/frame_0064.jpg",
+      "expected_action": "left",
+      "raw_action": "left",
+      "filtered_action": "left",
+      "is_correct_raw": true,
+      "is_correct_filtered": true,
+      "detection": {
+        "position": -0.4587499999999999,
+        "trend": -0.5187499999999999,
+        "detected": true,
+        "is_terminate": false
+      }
+    },
+    {
+      "frame_id": 65,
+      "image": "output/frames/frame_0065.jpg",
+      "expected_action": "left",
+      "raw_action": "left",
+      "filtered_action": "left",
+      "is_correct_raw": true,
+      "is_correct_filtered": true,
+      "detection": {
+        "position": -0.4649999999999999,
+        "trend": -0.5249999999999999,
+        "detected": true,
+        "is_terminate": false
+      }
+    },
+    {
+      "frame_id": 66,
+      "image": "output/frames/frame_0066.jpg",
+      "expected_action": "left",
+      "raw_action": "left",
+      "filtered_action": "left",
+      "is_correct_raw": true,
+      "is_correct_filtered": true,
+      "detection": {
+        "position": -0.4775,
+        "trend": -0.5375,
+        "detected": true,
+        "is_terminate": false
+      }
+    },
+    {
+      "frame_id": 67,
+      "image": "output/frames/frame_0067.jpg",
+      "expected_action": "left",
+      "raw_action": "left",
+      "filtered_action": "left",
+      "is_correct_raw": true,
+      "is_correct_filtered": true,
+      "detection": {
+        "position": -0.47374999999999984,
+        "trend": -0.5374999999999999,
+        "detected": true,
+        "is_terminate": false
+      }
+    },
+    {
+      "frame_id": 68,
+      "image": "output/frames/frame_0068.jpg",
+      "expected_action": "left",
+      "raw_action": "left",
+      "filtered_action": "left",
+      "is_correct_raw": true,
+      "is_correct_filtered": true,
+      "detection": {
+        "position": -0.47124999999999995,
+        "trend": -0.53125,
+        "detected": true,
+        "is_terminate": false
+      }
+    },
+    {
+      "frame_id": 69,
+      "image": "output/frames/frame_0069.jpg",
+      "expected_action": "left",
+      "raw_action": "left",
+      "filtered_action": "left",
+      "is_correct_raw": true,
+      "is_correct_filtered": true,
+      "detection": {
+        "position": -0.4775,
+        "trend": -0.5375,
+        "detected": true,
+        "is_terminate": false
+      }
+    },
+    {
+      "frame_id": 70,
+      "image": "output/frames/frame_0070.jpg",
+      "expected_action": "left",
+      "raw_action": "left",
+      "filtered_action": "left",
+      "is_correct_raw": true,
+      "is_correct_filtered": true,
+      "detection": {
+        "position": -0.4649999999999999,
+        "trend": -0.5249999999999999,
+        "detected": true,
+        "is_terminate": false
+      }
+    },
+    {
+      "frame_id": 71,
+      "image": "output/frames/frame_0071.jpg",
+      "expected_action": "left",
+      "raw_action": "left",
+      "filtered_action": "left",
+      "is_correct_raw": true,
+      "is_correct_filtered": true,
+      "detection": {
+        "position": -0.4775,
+        "trend": -0.5375,
+        "detected": true,
+        "is_terminate": false
+      }
+    },
+    {
+      "frame_id": 72,
+      "image": "output/frames/frame_0072.jpg",
+      "expected_action": "left",
+      "raw_action": "left",
+      "filtered_action": "left",
+      "is_correct_raw": true,
+      "is_correct_filtered": true,
+      "detection": {
+        "position": -0.47374999999999984,
+        "trend": -0.5374999999999999,
+        "detected": true,
+        "is_terminate": false
+      }
+    },
+    {
+      "frame_id": 73,
+      "image": "output/frames/frame_0073.jpg",
+      "expected_action": "left",
+      "raw_action": "left",
+      "filtered_action": "left",
+      "is_correct_raw": true,
+      "is_correct_filtered": true,
+      "detection": {
+        "position": -0.47124999999999995,
+        "trend": -0.53125,
+        "detected": true,
+        "is_terminate": false
+      }
+    },
+    {
+      "frame_id": 74,
+      "image": "output/frames/frame_0074.jpg",
+      "expected_action": "left",
+      "raw_action": "left",
+      "filtered_action": "left",
+      "is_correct_raw": true,
+      "is_correct_filtered": true,
+      "detection": {
+        "position": -0.47374999999999984,
+        "trend": -0.5374999999999999,
+        "detected": true,
+        "is_terminate": false
+      }
+    },
+    {
+      "frame_id": 75,
+      "image": "output/frames/frame_0075.jpg",
+      "expected_action": "left",
+      "raw_action": "left",
+      "filtered_action": "left",
+      "is_correct_raw": true,
+      "is_correct_filtered": true,
+      "detection": {
+        "position": -0.4649999999999999,
+        "trend": -0.5249999999999999,
+        "detected": true,
+        "is_terminate": false
+      }
+    },
+    {
+      "frame_id": 76,
+      "image": "output/frames/frame_0076.jpg",
+      "expected_action": "left",
+      "raw_action": "left",
+      "filtered_action": "left",
+      "is_correct_raw": true,
+      "is_correct_filtered": true,
+      "detection": {
+        "position": -0.47374999999999984,
+        "trend": -0.5374999999999999,
+        "detected": true,
+        "is_terminate": false
+      }
+    },
+    {
+      "frame_id": 77,
+      "image": "output/frames/frame_0077.jpg",
+      "expected_action": "left",
+      "raw_action": "left",
+      "filtered_action": "left",
+      "is_correct_raw": true,
+      "is_correct_filtered": true,
+      "detection": {
+        "position": -0.46937499999999993,
+        "trend": -0.53125,
+        "detected": true,
+        "is_terminate": false
+      }
+    },
+    {
+      "frame_id": 78,
+      "image": "output/frames/frame_0078.jpg",
+      "expected_action": "left",
+      "raw_action": "left",
+      "filtered_action": "left",
+      "is_correct_raw": true,
+      "is_correct_filtered": true,
+      "detection": {
+        "position": -0.45812499999999995,
+        "trend": -0.5125,
+        "detected": true,
+        "is_terminate": false
+      }
+    },
+    {
+      "frame_id": 79,
+      "image": "output/frames/frame_0079.jpg",
+      "expected_action": "left",
+      "raw_action": "left",
+      "filtered_action": "left",
+      "is_correct_raw": true,
+      "is_correct_filtered": true,
+      "detection": {
+        "position": -0.40937499999999993,
+        "trend": -0.4999999999999999,
+        "detected": true,
+        "is_terminate": false
+      }
+    },
+    {
+      "frame_id": 80,
+      "image": "output/frames/frame_0080.jpg",
+      "expected_action": "left",
+      "raw_action": "left",
+      "filtered_action": "left",
+      "is_correct_raw": true,
+      "is_correct_filtered": true,
+      "detection": {
+        "position": -0.396875,
+        "trend": -0.48749999999999993,
+        "detected": true,
+        "is_terminate": false
+      }
+    },
+    {
+      "frame_id": 81,
+      "image": "output/frames/frame_0081.jpg",
+      "expected_action": "left",
+      "raw_action": "left",
+      "filtered_action": "left",
+      "is_correct_raw": true,
+      "is_correct_filtered": true,
+      "detection": {
+        "position": -0.390625,
+        "trend": -0.48750000000000004,
+        "detected": true,
+        "is_terminate": false
+      }
+    },
+    {
+      "frame_id": 82,
+      "image": "output/frames/frame_0082.jpg",
+      "expected_action": "left",
+      "raw_action": "left",
+      "filtered_action": "left",
+      "is_correct_raw": true,
+      "is_correct_filtered": true,
+      "detection": {
+        "position": -0.390625,
+        "trend": -0.48750000000000004,
+        "detected": true,
+        "is_terminate": false
+      }
+    },
+    {
+      "frame_id": 83,
+      "image": "output/frames/frame_0083.jpg",
+      "expected_action": "left",
+      "raw_action": "left",
+      "filtered_action": "left",
+      "is_correct_raw": true,
+      "is_correct_filtered": true,
+      "detection": {
+        "position": -0.396875,
+        "trend": -0.48749999999999993,
+        "detected": true,
+        "is_terminate": false
+      }
+    },
+    {
+      "frame_id": 84,
+      "image": "output/frames/frame_0084.jpg",
+      "expected_action": "left",
+      "raw_action": "left",
+      "filtered_action": "left",
+      "is_correct_raw": true,
+      "is_correct_filtered": true,
+      "detection": {
+        "position": -0.441875,
+        "trend": -0.5000000000000001,
+        "detected": true,
+        "is_terminate": false
+      }
+    },
+    {
+      "frame_id": 85,
+      "image": "output/frames/frame_0085.jpg",
+      "expected_action": "left",
+      "raw_action": "left",
+      "filtered_action": "left",
+      "is_correct_raw": true,
+      "is_correct_filtered": true,
+      "detection": {
+        "position": -0.441875,
+        "trend": -0.5000000000000001,
+        "detected": true,
+        "is_terminate": false
+      }
+    },
+    {
+      "frame_id": 86,
+      "image": "output/frames/frame_0086.jpg",
+      "expected_action": "left",
+      "raw_action": "left",
+      "filtered_action": "left",
+      "is_correct_raw": true,
+      "is_correct_filtered": true,
+      "detection": {
+        "position": -0.441875,
+        "trend": -0.5000000000000001,
+        "detected": true,
+        "is_terminate": false
+      }
+    },
+    {
+      "frame_id": 87,
+      "image": "output/frames/frame_0087.jpg",
+      "expected_action": "left",
+      "raw_action": "left",
+      "filtered_action": "left",
+      "is_correct_raw": true,
+      "is_correct_filtered": true,
+      "detection": {
+        "position": -0.396875,
+        "trend": -0.48749999999999993,
+        "detected": true,
+        "is_terminate": false
+      }
+    },
+    {
+      "frame_id": 88,
+      "image": "output/frames/frame_0088.jpg",
+      "expected_action": "left",
+      "raw_action": "left",
+      "filtered_action": "left",
+      "is_correct_raw": true,
+      "is_correct_filtered": true,
+      "detection": {
+        "position": -0.396875,
+        "trend": -0.48749999999999993,
+        "detected": true,
+        "is_terminate": false
+      }
+    },
+    {
+      "frame_id": 89,
+      "image": "output/frames/frame_0089.jpg",
+      "expected_action": "left",
+      "raw_action": "left",
+      "filtered_action": "left",
+      "is_correct_raw": true,
+      "is_correct_filtered": true,
+      "detection": {
+        "position": -0.396875,
+        "trend": -0.48749999999999993,
+        "detected": true,
+        "is_terminate": false
+      }
+    },
+    {
+      "frame_id": 90,
+      "image": "output/frames/frame_0090.jpg",
+      "expected_action": "left",
+      "raw_action": "left",
+      "filtered_action": "left",
+      "is_correct_raw": true,
+      "is_correct_filtered": true,
+      "detection": {
+        "position": -0.390625,
+        "trend": -0.48750000000000004,
+        "detected": true,
+        "is_terminate": false
+      }
+    },
+    {
+      "frame_id": 91,
+      "image": "output/frames/frame_0091.jpg",
+      "expected_action": "left",
+      "raw_action": "left",
+      "filtered_action": "left",
+      "is_correct_raw": true,
+      "is_correct_filtered": true,
+      "detection": {
+        "position": -0.35624999999999996,
+        "trend": -0.41874999999999996,
+        "detected": true,
+        "is_terminate": false
+      }
+    },
+    {
+      "frame_id": 92,
+      "image": "output/frames/frame_0092.jpg",
+      "expected_action": "straight",
+      "raw_action": "left",
+      "filtered_action": "left",
+      "is_correct_raw": false,
+      "is_correct_filtered": false,
+      "detection": {
+        "position": -0.30250000000000005,
+        "trend": -0.29375000000000007,
+        "detected": true,
+        "is_terminate": false
+      }
+    },
+    {
+      "frame_id": 93,
+      "image": "output/frames/frame_0093.jpg",
+      "expected_action": "straight",
+      "raw_action": "straight",
+      "filtered_action": "left",
+      "is_correct_raw": true,
+      "is_correct_filtered": false,
+      "detection": {
+        "position": -0.008749999999999987,
+        "trend": 0.13124999999999998,
+        "detected": true,
+        "is_terminate": false
+      }
+    },
+    {
+      "frame_id": 94,
+      "image": "output/frames/frame_0094.jpg",
+      "expected_action": "straight",
+      "raw_action": "right",
+      "filtered_action": "left",
+      "is_correct_raw": false,
+      "is_correct_filtered": false,
+      "detection": {
+        "position": 0.16374999999999995,
+        "trend": 0.22499999999999998,
+        "detected": true,
+        "is_terminate": false
+      }
+    },
+    {
+      "frame_id": 95,
+      "image": "output/frames/frame_0095.jpg",
+      "expected_action": "straight",
+      "raw_action": "right",
+      "filtered_action": "right",
+      "is_correct_raw": false,
+      "is_correct_filtered": false,
+      "detection": {
+        "position": 0.153125,
+        "trend": 0.21875,
+        "detected": true,
+        "is_terminate": false
+      }
+    },
+    {
+      "frame_id": 96,
+      "image": "output/frames/frame_0096.jpg",
+      "expected_action": "straight",
+      "raw_action": "right",
+      "filtered_action": "right",
+      "is_correct_raw": false,
+      "is_correct_filtered": false,
+      "detection": {
+        "position": 0.153125,
+        "trend": 0.21875,
+        "detected": true,
+        "is_terminate": false
+      }
+    },
+    {
+      "frame_id": 97,
+      "image": "output/frames/frame_0097.jpg",
+      "expected_action": "straight",
+      "raw_action": "right",
+      "filtered_action": "right",
+      "is_correct_raw": false,
+      "is_correct_filtered": false,
+      "detection": {
+        "position": 0.153125,
+        "trend": 0.21875,
+        "detected": true,
+        "is_terminate": false
+      }
+    },
+    {
+      "frame_id": 98,
+      "image": "output/frames/frame_0098.jpg",
+      "expected_action": "straight",
+      "raw_action": "straight",
+      "filtered_action": "right",
+      "is_correct_raw": true,
+      "is_correct_filtered": false,
+      "detection": {
+        "position": 0.04875000000000004,
+        "trend": -0.14375000000000004,
+        "detected": true,
+        "is_terminate": false
+      }
+    },
+    {
+      "frame_id": 99,
+      "image": "output/frames/frame_0099.jpg",
+      "expected_action": "straight",
+      "raw_action": "left",
+      "filtered_action": "right",
+      "is_correct_raw": false,
+      "is_correct_filtered": false,
+      "detection": {
+        "position": -0.12482142857142858,
+        "trend": -0.38089285714285726,
+        "detected": true,
+        "is_terminate": false
+      }
+    },
+    {
+      "frame_id": 100,
+      "image": "output/frames/frame_0100.jpg",
+      "expected_action": "left",
+      "raw_action": "left",
+      "filtered_action": "left",
+      "is_correct_raw": true,
+      "is_correct_filtered": true,
+      "detection": {
+        "position": -0.13953125,
+        "trend": -0.4103125000000001,
+        "detected": true,
+        "is_terminate": false
+      }
+    },
+    {
+      "frame_id": 101,
+      "image": "output/frames/frame_0101.jpg",
+      "expected_action": "straight",
+      "raw_action": "left",
+      "filtered_action": "left",
+      "is_correct_raw": false,
+      "is_correct_filtered": false,
+      "detection": {
+        "position": -0.15043898809523815,
+        "trend": -0.33778273809523807,
+        "detected": true,
+        "is_terminate": false
+      }
+    },
+    {
+      "frame_id": 102,
+      "image": "output/frames/frame_0102.jpg",
+      "expected_action": "straight",
+      "raw_action": "right",
+      "filtered_action": "left",
+      "is_correct_raw": false,
+      "is_correct_filtered": false,
+      "detection": {
+        "position": 0.2734134615384615,
+        "trend": 0.15528846153846154,
+        "detected": true,
+        "is_terminate": false
+      }
+    },
+    {
+      "frame_id": 103,
+      "image": "output/frames/frame_0103.jpg",
+      "expected_action": "straight",
+      "raw_action": "straight",
+      "filtered_action": "left",
+      "is_correct_raw": true,
+      "is_correct_filtered": false,
+      "detection": {
+        "position": 0.1459375,
+        "trend": 0.13718750000000002,
+        "detected": true,
+        "is_terminate": false
+      }
+    },
+    {
+      "frame_id": 104,
+      "image": "output/frames/frame_0104.jpg",
+      "expected_action": "straight",
+      "raw_action": "straight",
+      "filtered_action": "straight",
+      "is_correct_raw": true,
+      "is_correct_filtered": true,
+      "detection": {
+        "position": 0.021125000000000026,
+        "trend": 0.11781249999999999,
+        "detected": true,
+        "is_terminate": false
+      }
+    },
+    {
+      "frame_id": 105,
+      "image": "output/frames/frame_0105.jpg",
+      "expected_action": "straight",
+      "raw_action": "straight",
+      "filtered_action": "straight",
+      "is_correct_raw": true,
+      "is_correct_filtered": true,
+      "detection": {
+        "position": -0.08203124999999994,
+        "trend": 0.12031250000000004,
+        "detected": true,
+        "is_terminate": false
+      }
+    },
+    {
+      "frame_id": 106,
+      "image": "output/frames/frame_0106.jpg",
+      "expected_action": "straight",
+      "raw_action": "straight",
+      "filtered_action": "straight",
+      "is_correct_raw": true,
+      "is_correct_filtered": true,
+      "detection": {
+        "position": -0.20884374999999994,
+        "trend": 0.06218750000000006,
+        "detected": true,
+        "is_terminate": false
+      }
+    },
+    {
+      "frame_id": 107,
+      "image": "output/frames/frame_0107.jpg",
+      "expected_action": "left",
+      "raw_action": "left",
+      "filtered_action": "straight",
+      "is_correct_raw": true,
+      "is_correct_filtered": false,
+      "detection": {
+        "position": -0.59934375,
+        "trend": -0.6478125,
+        "detected": true,
+        "is_terminate": false
+      }
+    },
+    {
+      "frame_id": 108,
+      "image": "output/frames/frame_0108.jpg",
+      "expected_action": "left",
+      "raw_action": "left",
+      "filtered_action": "left",
+      "is_correct_raw": true,
+      "is_correct_filtered": true,
+      "detection": {
+        "position": -0.613046875,
+        "trend": -0.654296875,
+        "detected": true,
+        "is_terminate": false
+      }
+    },
+    {
+      "frame_id": 109,
+      "image": "output/frames/frame_0109.jpg",
+      "expected_action": "left",
+      "raw_action": "left",
+      "filtered_action": "left",
+      "is_correct_raw": true,
+      "is_correct_filtered": true,
+      "detection": {
+        "position": -0.30625,
+        "trend": -0.375,
+        "detected": true,
+        "is_terminate": false
+      }
+    },
+    {
+      "frame_id": 110,
+      "image": "output/frames/frame_0110.jpg",
+      "expected_action": "left",
+      "raw_action": "left",
+      "filtered_action": "left",
+      "is_correct_raw": true,
+      "is_correct_filtered": true,
+      "detection": {
+        "position": -0.31875,
+        "trend": -0.38749999999999996,
+        "detected": true,
+        "is_terminate": false
+      }
+    },
+    {
+      "frame_id": 111,
+      "image": "output/frames/frame_0111.jpg",
+      "expected_action": "left",
+      "raw_action": "left",
+      "filtered_action": "left",
+      "is_correct_raw": true,
+      "is_correct_filtered": true,
+      "detection": {
+        "position": -0.30937500000000007,
+        "trend": -0.3812500000000001,
+        "detected": true,
+        "is_terminate": false
+      }
+    },
+    {
+      "frame_id": 112,
+      "image": "output/frames/frame_0112.jpg",
+      "expected_action": "left",
+      "raw_action": "left",
+      "filtered_action": "left",
+      "is_correct_raw": true,
+      "is_correct_filtered": true,
+      "detection": {
+        "position": -0.3062499999999999,
+        "trend": -0.38124999999999987,
+        "detected": true,
+        "is_terminate": false
+      }
+    },
+    {
+      "frame_id": 113,
+      "image": "output/frames/frame_0113.jpg",
+      "expected_action": "straight",
+      "raw_action": "left",
+      "filtered_action": "left",
+      "is_correct_raw": false,
+      "is_correct_filtered": false,
+      "detection": {
+        "position": -0.2718750000000001,
+        "trend": -0.30625000000000013,
+        "detected": true,
+        "is_terminate": false
+      }
+    },
+    {
+      "frame_id": 114,
+      "image": "output/frames/frame_0114.jpg",
+      "expected_action": "straight",
+      "raw_action": "left",
+      "filtered_action": "left",
+      "is_correct_raw": false,
+      "is_correct_filtered": false,
+      "detection": {
+        "position": -0.23375,
+        "trend": -0.2250000000000001,
+        "detected": true,
+        "is_terminate": false
+      }
+    },
+    {
+      "frame_id": 115,
+      "image": "output/frames/frame_0115.jpg",
+      "expected_action": "right",
+      "raw_action": "right",
+      "filtered_action": "left",
+      "is_correct_raw": true,
+      "is_correct_filtered": false,
+      "detection": {
+        "position": 0.09687499999999999,
+        "trend": 0.29375000000000007,
+        "detected": true,
+        "is_terminate": false
+      }
+    },
+    {
+      "frame_id": 116,
+      "image": "output/frames/frame_0116.jpg",
+      "expected_action": "right",
+      "raw_action": "right",
+      "filtered_action": "right",
+      "is_correct_raw": true,
+      "is_correct_filtered": true,
+      "detection": {
+        "position": 0.3656249999999999,
+        "trend": 0.45624999999999993,
+        "detected": true,
+        "is_terminate": false
+      }
+    },
+    {
+      "frame_id": 117,
+      "image": "output/frames/frame_0117.jpg",
+      "expected_action": "right",
+      "raw_action": "right",
+      "filtered_action": "right",
+      "is_correct_raw": true,
+      "is_correct_filtered": true,
+      "detection": {
+        "position": 0.38437499999999997,
+        "trend": 0.475,
+        "detected": true,
+        "is_terminate": false
+      }
+    },
+    {
+      "frame_id": 118,
+      "image": "output/frames/frame_0118.jpg",
+      "expected_action": "right",
+      "raw_action": "right",
+      "filtered_action": "right",
+      "is_correct_raw": true,
+      "is_correct_filtered": true,
+      "detection": {
+        "position": 0.378125,
+        "trend": 0.475,
+        "detected": true,
+        "is_terminate": false
+      }
+    },
+    {
+      "frame_id": 119,
+      "image": "output/frames/frame_0119.jpg",
+      "expected_action": "right",
+      "raw_action": "right",
+      "filtered_action": "right",
+      "is_correct_raw": true,
+      "is_correct_filtered": true,
+      "detection": {
+        "position": 0.5478365384615385,
+        "trend": 0.6567307692307692,
+        "detected": true,
+        "is_terminate": false
+      }
+    },
+    {
+      "frame_id": 120,
+      "image": "output/frames/frame_0120.jpg",
+      "expected_action": "right",
+      "raw_action": "right",
+      "filtered_action": "right",
+      "is_correct_raw": true,
+      "is_correct_filtered": true,
+      "detection": {
+        "position": 0.19317765567765566,
+        "trend": 0.44974816849816845,
+        "detected": true,
+        "is_terminate": false
+      }
+    },
+    {
+      "frame_id": 121,
+      "image": "output/frames/frame_0121.jpg",
+      "expected_action": "straight",
+      "raw_action": "straight",
+      "filtered_action": "right",
+      "is_correct_raw": true,
+      "is_correct_filtered": false,
+      "detection": {
+        "position": -0.145625,
+        "trend": 0.15625,
+        "detected": true,
+        "is_terminate": false
+      }
+    },
+    {
+      "frame_id": 122,
+      "image": "output/frames/frame_0122.jpg",
+      "expected_action": "straight",
+      "raw_action": "straight",
+      "filtered_action": "straight",
+      "is_correct_raw": true,
+      "is_correct_filtered": true,
+      "detection": {
+        "position": -0.06262820512820513,
+        "trend": 0.1644230769230769,
+        "detected": true,
+        "is_terminate": false
+      }
+    },
+    {
+      "frame_id": 123,
+      "image": "output/frames/frame_0123.jpg",
+      "expected_action": "straight",
+      "raw_action": "straight",
+      "filtered_action": "straight",
+      "is_correct_raw": true,
+      "is_correct_filtered": true,
+      "detection": {
+        "position": 0.0007852564102564241,
+        "trend": 0.1626602564102564,
+        "detected": true,
+        "is_terminate": false
+      }
+    },
+    {
+      "frame_id": 124,
+      "image": "output/frames/frame_0124.jpg",
+      "expected_action": "straight",
+      "raw_action": "straight",
+      "filtered_action": "straight",
+      "is_correct_raw": true,
+      "is_correct_filtered": true,
+      "detection": {
+        "position": 0.06947368421052627,
+        "trend": 0.18322368421052626,
+        "detected": true,
+        "is_terminate": false
+      }
+    },
+    {
+      "frame_id": 125,
+      "image": "output/frames/frame_0125.jpg",
+      "expected_action": "straight",
+      "raw_action": "right",
+      "filtered_action": "straight",
+      "is_correct_raw": false,
+      "is_correct_filtered": true,
+      "detection": {
+        "position": 0.14078947368421052,
+        "trend": 0.18453947368421053,
+        "detected": true,
+        "is_terminate": false
+      }
+    },
+    {
+      "frame_id": 126,
+      "image": "output/frames/frame_0126.jpg",
+      "expected_action": "straight",
+      "raw_action": "right",
+      "filtered_action": "right",
+      "is_correct_raw": false,
+      "is_correct_filtered": false,
+      "detection": {
+        "position": 0.20138513513513523,
+        "trend": 0.190033783783784,
+        "detected": true,
+        "is_terminate": false
+      }
+    },
+    {
+      "frame_id": 127,
+      "image": "output/frames/frame_0127.jpg",
+      "expected_action": "straight",
+      "raw_action": "right",
+      "filtered_action": "right",
+      "is_correct_raw": false,
+      "is_correct_filtered": false,
+      "detection": {
+        "position": 0.2541118421052631,
+        "trend": 0.1907894736842104,
+        "detected": true,
+        "is_terminate": false
+      }
+    },
+    {
+      "frame_id": 128,
+      "image": "output/frames/frame_0128.jpg",
+      "expected_action": "straight",
+      "raw_action": "right",
+      "filtered_action": "right",
+      "is_correct_raw": false,
+      "is_correct_filtered": false,
+      "detection": {
+        "position": 0.319375,
+        "trend": 0.17500000000000004,
+        "detected": true,
+        "is_terminate": false
+      }
+    },
+    {
+      "frame_id": 129,
+      "image": "output/frames/frame_0129.jpg",
+      "expected_action": "straight",
+      "raw_action": "right",
+      "filtered_action": "right",
+      "is_correct_raw": false,
+      "is_correct_filtered": false,
+      "detection": {
+        "position": 0.3629605263157896,
+        "trend": 0.1529605263157896,
+        "detected": true,
+        "is_terminate": false
+      }
+    },
+    {
+      "frame_id": 130,
+      "image": "output/frames/frame_0130.jpg",
+      "expected_action": "straight",
+      "raw_action": "right",
+      "filtered_action": "right",
+      "is_correct_raw": false,
+      "is_correct_filtered": false,
+      "detection": {
+        "position": 0.41835526315789456,
+        "trend": 0.1733552631578945,
+        "detected": true,
+        "is_terminate": false
+      }
+    },
+    {
+      "frame_id": 131,
+      "image": "output/frames/frame_0131.jpg",
+      "expected_action": "straight",
+      "raw_action": "right",
+      "filtered_action": "right",
+      "is_correct_raw": false,
+      "is_correct_filtered": false,
+      "detection": {
+        "position": 0.41948387096774203,
+        "trend": 0.26548387096774206,
+        "detected": true,
+        "is_terminate": false
+      }
+    },
+    {
+      "frame_id": 132,
+      "image": "output/frames/frame_0132.jpg",
+      "expected_action": "straight",
+      "raw_action": "straight",
+      "filtered_action": "right",
+      "is_correct_raw": true,
+      "is_correct_filtered": false,
+      "detection": {
+        "position": 0.10244318181818167,
+        "trend": -0.22727272727272751,
+        "detected": true,
+        "is_terminate": false
+      }
+    },
+    {
+      "frame_id": 133,
+      "image": "output/frames/frame_0133.jpg",
+      "expected_action": "straight",
+      "raw_action": "left",
+      "filtered_action": "right",
+      "is_correct_raw": false,
+      "is_correct_filtered": false,
+      "detection": {
+        "position": -0.04207848837209305,
+        "trend": -0.32165697674418614,
+        "detected": true,
+        "is_terminate": false
+      }
+    },
+    {
+      "frame_id": 134,
+      "image": "output/frames/frame_0134.jpg",
+      "expected_action": "straight",
+      "raw_action": "right",
+      "filtered_action": "right",
+      "is_correct_raw": false,
+      "is_correct_filtered": false,
+      "detection": {
+        "position": 0.2496740033222591,
+        "trend": 0.24891334440753043,
+        "detected": true,
+        "is_terminate": false
+      }
+    },
+    {
+      "frame_id": 135,
+      "image": "output/frames/frame_0135.jpg",
+      "expected_action": "right",
+      "raw_action": "right",
+      "filtered_action": "right",
+      "is_correct_raw": true,
+      "is_correct_filtered": true,
+      "detection": {
+        "position": 0.37470339100923555,
+        "trend": 0.40054314565483473,
+        "detected": true,
+        "is_terminate": false
+      }
+    },
+    {
+      "frame_id": 136,
+      "image": "output/frames/frame_0136.jpg",
+      "expected_action": "right",
+      "raw_action": "right",
+      "filtered_action": "right",
+      "is_correct_raw": true,
+      "is_correct_filtered": true,
+      "detection": {
+        "position": 0.5044603924418604,
+        "trend": 0.4897801598837208,
+        "detected": true,
+        "is_terminate": false
+      }
+    },
+    {
+      "frame_id": 137,
+      "image": "output/frames/frame_0137.jpg",
+      "expected_action": "right",
+      "raw_action": "right",
+      "filtered_action": "right",
+      "is_correct_raw": true,
+      "is_correct_filtered": true,
+      "detection": {
+        "position": 0.6079166666666664,
+        "trend": 0.6229166666666666,
+        "detected": true,
+        "is_terminate": false
+      }
+    },
+    {
+      "frame_id": 138,
+      "image": "output/frames/frame_0138.jpg",
+      "expected_action": "right",
+      "raw_action": "right",
+      "filtered_action": "right",
+      "is_correct_raw": true,
+      "is_correct_filtered": true,
+      "detection": {
+        "position": 0.5874563953488373,
+        "trend": 0.6193313953488373,
+        "detected": true,
+        "is_terminate": false
+      }
+    },
+    {
+      "frame_id": 139,
+      "image": "output/frames/frame_0139.jpg",
+      "expected_action": "right",
+      "raw_action": "right",
+      "filtered_action": "right",
+      "is_correct_raw": true,
+      "is_correct_filtered": true,
+      "detection": {
+        "position": 0.539563953488372,
+        "trend": 0.5808139534883721,
+        "detected": true,
+        "is_terminate": false
+      }
+    },
+    {
+      "frame_id": 140,
+      "image": "output/frames/frame_0140.jpg",
+      "expected_action": "straight",
+      "raw_action": "right",
+      "filtered_action": "right",
+      "is_correct_raw": false,
+      "is_correct_filtered": false,
+      "detection": {
+        "position": 0.375,
+        "trend": 0.36250000000000004,
+        "detected": true,
+        "is_terminate": false
+      }
+    },
+    {
+      "frame_id": 141,
+      "image": "output/frames/frame_0141.jpg",
+      "expected_action": "right",
+      "raw_action": "right",
+      "filtered_action": "right",
+      "is_correct_raw": true,
+      "is_correct_filtered": true,
+      "detection": {
+        "position": 0.3606104651162791,
+        "trend": 0.3793604651162791,
+        "detected": true,
+        "is_terminate": false
+      }
+    },
+    {
+      "frame_id": 142,
+      "image": "output/frames/frame_0142.jpg",
+      "expected_action": "right",
+      "raw_action": "right",
+      "filtered_action": "right",
+      "is_correct_raw": true,
+      "is_correct_filtered": true,
+      "detection": {
+        "position": 0.5195535714285713,
+        "trend": 0.6151785714285712,
+        "detected": true,
+        "is_terminate": false
+      }
+    },
+    {
+      "frame_id": 143,
+      "image": "output/frames/frame_0143.jpg",
+      "expected_action": "right",
+      "raw_action": "right",
+      "filtered_action": "right",
+      "is_correct_raw": true,
+      "is_correct_filtered": true,
+      "detection": {
+        "position": 0.5116133720930232,
+        "trend": 0.6222383720930232,
+        "detected": true,
+        "is_terminate": false
+      }
+    },
+    {
+      "frame_id": 144,
+      "image": "output/frames/frame_0144.jpg",
+      "expected_action": "right",
+      "raw_action": "right",
+      "filtered_action": "right",
+      "is_correct_raw": true,
+      "is_correct_filtered": true,
+      "detection": {
+        "position": 0.5003571428571428,
+        "trend": 0.6241071428571429,
+        "detected": true,
+        "is_terminate": false
+      }
+    },
+    {
+      "frame_id": 145,
+      "image": "output/frames/frame_0145.jpg",
+      "expected_action": "right",
+      "raw_action": "right",
+      "filtered_action": "right",
+      "is_correct_raw": true,
+      "is_correct_filtered": true,
+      "detection": {
+        "position": 0.4913372093023255,
+        "trend": 0.6287790697674418,
+        "detected": true,
+        "is_terminate": false
+      }
+    },
+    {
+      "frame_id": 146,
+      "image": "output/frames/frame_0146.jpg",
+      "expected_action": "right",
+      "raw_action": "right",
+      "filtered_action": "right",
+      "is_correct_raw": true,
+      "is_correct_filtered": true,
+      "detection": {
+        "position": 0.47808139534883737,
+        "trend": 0.628779069767442,
+        "detected": true,
+        "is_terminate": false
+      }
+    },
+    {
+      "frame_id": 147,
+      "image": "output/frames/frame_0147.jpg",
+      "expected_action": "right",
+      "raw_action": "right",
+      "filtered_action": "right",
+      "is_correct_raw": true,
+      "is_correct_filtered": true,
+      "detection": {
+        "position": 0.46482558139534863,
+        "trend": 0.6287790697674417,
+        "detected": true,
+        "is_terminate": false
+      }
+    },
+    {
+      "frame_id": 148,
+      "image": "output/frames/frame_0148.jpg",
+      "expected_action": "right",
+      "raw_action": "right",
+      "filtered_action": "right",
+      "is_correct_raw": true,
+      "is_correct_filtered": true,
+      "detection": {
+        "position": 0.41567754919499106,
+        "trend": 0.5775044722719141,
+        "detected": true,
+        "is_terminate": false
+      }
+    },
+    {
+      "frame_id": 149,
+      "image": "output/frames/frame_0149.jpg",
+      "expected_action": "right",
+      "raw_action": "right",
+      "filtered_action": "right",
+      "is_correct_raw": true,
+      "is_correct_filtered": true,
+      "detection": {
+        "position": 0.09174476896251083,
+        "trend": 0.31896251089799466,
+        "detected": true,
+        "is_terminate": false
+      }
+    },
+    {
+      "frame_id": 150,
+      "image": "output/frames/frame_0150.jpg",
+      "expected_action": "straight",
+      "raw_action": "straight",
+      "filtered_action": "right",
+      "is_correct_raw": true,
+      "is_correct_filtered": false,
+      "detection": {
+        "position": -0.17810810810810812,
+        "trend": 0.04797297297297298,
+        "detected": true,
+        "is_terminate": false
+      }
+    },
+    {
+      "frame_id": 151,
+      "image": "output/frames/frame_0151.jpg",
+      "expected_action": "straight",
+      "raw_action": "left",
+      "filtered_action": "right",
+      "is_correct_raw": false,
+      "is_correct_filtered": false,
+      "detection": {
+        "position": -0.3876756756756756,
+        "trend": -0.24067567567567572,
+        "detected": true,
+        "is_terminate": false
+      }
+    },
+    {
+      "frame_id": 152,
+      "image": "output/frames/frame_0152.jpg",
+      "expected_action": "straight",
+      "raw_action": "left",
+      "filtered_action": "left",
+      "is_correct_raw": false,
+      "is_correct_filtered": false,
+      "detection": {
+        "position": -0.31235323886639665,
+        "trend": -0.22067307692307692,
+        "detected": true,
+        "is_terminate": false
+      }
+    },
+    {
+      "frame_id": 153,
+      "image": "output/frames/frame_0153.jpg",
+      "expected_action": "straight",
+      "raw_action": "straight",
+      "filtered_action": "left",
+      "is_correct_raw": true,
+      "is_correct_filtered": false,
+      "detection": {
+        "position": -0.1152418207681365,
+        "trend": 0.17540007112375544,
+        "detected": true,
+        "is_terminate": false
+      }
+    },
+    {
+      "frame_id": 154,
+      "image": "output/frames/frame_0154.jpg",
+      "expected_action": "straight",
+      "raw_action": "straight",
+      "filtered_action": "straight",
+      "is_correct_raw": true,
+      "is_correct_filtered": true,
+      "detection": {
+        "position": -0.03499999999999998,
+        "trend": 0.17500000000000004,
+        "detected": true,
+        "is_terminate": false
+      }
+    },
+    {
+      "frame_id": 155,
+      "image": "output/frames/frame_0155.jpg",
+      "expected_action": "straight",
+      "raw_action": "straight",
+      "filtered_action": "straight",
+      "is_correct_raw": true,
+      "is_correct_filtered": true,
+      "detection": {
+        "position": 0.055625000000000036,
+        "trend": 0.20000000000000007,
+        "detected": true,
+        "is_terminate": false
+      }
+    },
+    {
+      "frame_id": 156,
+      "image": "output/frames/frame_0156.jpg",
+      "expected_action": "straight",
+      "raw_action": "straight",
+      "filtered_action": "straight",
+      "is_correct_raw": true,
+      "is_correct_filtered": true,
+      "detection": {
+        "position": 0.11266784750337376,
+        "trend": 0.183358636977058,
+        "detected": true,
+        "is_terminate": false
+      }
+    },
+    {
+      "frame_id": 157,
+      "image": "output/frames/frame_0157.jpg",
+      "expected_action": "straight",
+      "raw_action": "right",
+      "filtered_action": "straight",
+      "is_correct_raw": false,
+      "is_correct_filtered": true,
+      "detection": {
+        "position": 0.1966776315789473,
+        "trend": 0.1835526315789473,
+        "detected": true,
+        "is_terminate": false
+      }
+    },
+    {
+      "frame_id": 158,
+      "image": "output/frames/frame_0158.jpg",
+      "expected_action": "straight",
+      "raw_action": "right",
+      "filtered_action": "right",
+      "is_correct_raw": false,
+      "is_correct_filtered": false,
+      "detection": {
+        "position": 0.24812500000000004,
+        "trend": 0.15625,
+        "detected": true,
+        "is_terminate": false
+      }
+    },
+    {
+      "frame_id": 159,
+      "image": "output/frames/frame_0159.jpg",
+      "expected_action": "straight",
+      "raw_action": "right",
+      "filtered_action": "right",
+      "is_correct_raw": false,
+      "is_correct_filtered": false,
+      "detection": {
+        "position": 0.31586538461538455,
+        "trend": 0.14871794871794863,
+        "detected": true,
+        "is_terminate": false
+      }
+    },
+    {
+      "frame_id": 160,
+      "image": "output/frames/frame_0160.jpg",
+      "expected_action": "straight",
+      "raw_action": "left",
+      "filtered_action": "right",
+      "is_correct_raw": false,
+      "is_correct_filtered": false,
+      "detection": {
+        "position": -0.24697724039829305,
+        "trend": -0.4571123755334282,
+        "detected": true,
+        "is_terminate": false
+      }
+    },
+    {
+      "frame_id": 161,
+      "image": "output/frames/frame_0161.jpg",
+      "expected_action": "left",
+      "raw_action": "left",
+      "filtered_action": "left",
+      "is_correct_raw": true,
+      "is_correct_filtered": true,
+      "detection": {
+        "position": -0.4149999999999999,
+        "trend": -0.5499999999999999,
+        "detected": true,
+        "is_terminate": false
+      }
+    },
+    {
+      "frame_id": 162,
+      "image": "output/frames/frame_0162.jpg",
+      "expected_action": "left",
+      "raw_action": "left",
+      "filtered_action": "left",
+      "is_correct_raw": true,
+      "is_correct_filtered": true,
+      "detection": {
+        "position": -0.23849999999999993,
+        "trend": -0.3769999999999999,
+        "detected": true,
+        "is_terminate": false
+      }
+    },
+    {
+      "frame_id": 163,
+      "image": "output/frames/frame_0163.jpg",
+      "expected_action": "straight",
+      "raw_action": "straight",
+      "filtered_action": "left",
+      "is_correct_raw": true,
+      "is_correct_filtered": false,
+      "detection": {
+        "position": -0.114375,
+        "trend": -0.1625000000000001,
+        "detected": true,
+        "is_terminate": false
+      }
+    },
+    {
+      "frame_id": 164,
+      "image": "output/frames/frame_0164.jpg",
+      "expected_action": "straight",
+      "raw_action": "straight",
+      "filtered_action": "straight",
+      "is_correct_raw": true,
+      "is_correct_filtered": true,
+      "detection": {
+        "position": -0.11249999999999999,
+        "trend": -0.15625,
+        "detected": true,
+        "is_terminate": false
+      }
+    },
+    {
+      "frame_id": 165,
+      "image": "output/frames/frame_0165.jpg",
+      "expected_action": "straight",
+      "raw_action": "straight",
+      "filtered_action": "straight",
+      "is_correct_raw": true,
+      "is_correct_filtered": true,
+      "detection": {
+        "position": -0.11874999999999997,
+        "trend": -0.16249999999999998,
+        "detected": true,
+        "is_terminate": false
+      }
+    },
+    {
+      "frame_id": 166,
+      "image": "output/frames/frame_0166.jpg",
+      "expected_action": "straight",
+      "raw_action": "straight",
+      "filtered_action": "straight",
+      "is_correct_raw": true,
+      "is_correct_filtered": true,
+      "detection": {
+        "position": -0.114375,
+        "trend": -0.1625000000000001,
+        "detected": true,
+        "is_terminate": false
+      }
+    },
+    {
+      "frame_id": 167,
+      "image": "output/frames/frame_0167.jpg",
+      "expected_action": "straight",
+      "raw_action": "straight",
+      "filtered_action": "straight",
+      "is_correct_raw": true,
+      "is_correct_filtered": true,
+      "detection": {
+        "position": -0.114375,
+        "trend": -0.1625000000000001,
+        "detected": true,
+        "is_terminate": false
+      }
+    },
+    {
+      "frame_id": 168,
+      "image": "output/frames/frame_0168.jpg",
+      "expected_action": "straight",
+      "raw_action": "straight",
+      "filtered_action": "straight",
+      "is_correct_raw": true,
+      "is_correct_filtered": true,
+      "detection": {
+        "position": -0.11874999999999997,
+        "trend": -0.16249999999999998,
+        "detected": true,
+        "is_terminate": false
+      }
+    },
+    {
+      "frame_id": 169,
+      "image": "output/frames/frame_0169.jpg",
+      "expected_action": "straight",
+      "raw_action": "straight",
+      "filtered_action": "straight",
+      "is_correct_raw": true,
+      "is_correct_filtered": true,
+      "detection": {
+        "position": 0.11812500000000006,
+        "trend": 0.1312500000000001,
+        "detected": true,
+        "is_terminate": false
+      }
+    },
+    {
+      "frame_id": 170,
+      "image": "output/frames/frame_0170.jpg",
+      "expected_action": "straight",
+      "raw_action": "right",
+      "filtered_action": "straight",
+      "is_correct_raw": false,
+      "is_correct_filtered": true,
+      "detection": {
+        "position": 0.33124999999999993,
+        "trend": 0.32499999999999996,
+        "detected": true,
+        "is_terminate": false
+      }
+    },
+    {
+      "frame_id": 171,
+      "image": "output/frames/frame_0171.jpg",
+      "expected_action": "right",
+      "raw_action": "right",
+      "filtered_action": "right",
+      "is_correct_raw": true,
+      "is_correct_filtered": true,
+      "detection": {
+        "position": 0.40937499999999993,
+        "trend": 0.48124999999999996,
+        "detected": true,
+        "is_terminate": false
+      }
+    },
+    {
+      "frame_id": 172,
+      "image": "output/frames/frame_0172.jpg",
+      "expected_action": "right",
+      "raw_action": "right",
+      "filtered_action": "right",
+      "is_correct_raw": true,
+      "is_correct_filtered": true,
+      "detection": {
+        "position": 0.6990322580645162,
+        "trend": 0.7415322580645162,
+        "detected": true,
+        "is_terminate": false
+      }
+    },
+    {
+      "frame_id": 173,
+      "image": "output/frames/frame_0173.jpg",
+      "expected_action": "right",
+      "raw_action": "right",
+      "filtered_action": "right",
+      "is_correct_raw": true,
+      "is_correct_filtered": true,
+      "detection": {
+        "position": 0.5837792642140468,
+        "trend": 0.6163879598662207,
+        "detected": true,
+        "is_terminate": false
+      }
+    },
+    {
+      "frame_id": 174,
+      "image": "output/frames/frame_0174.jpg",
+      "expected_action": "straight",
+      "raw_action": "right",
+      "filtered_action": "right",
+      "is_correct_raw": false,
+      "is_correct_filtered": false,
+      "detection": {
+        "position": 0.30056249999999995,
+        "trend": 0.12687500000000007,
+        "detected": true,
+        "is_terminate": false
+      }
+    },
+    {
+      "frame_id": 175,
+      "image": "output/frames/frame_0175.jpg",
+      "expected_action": "straight",
+      "raw_action": "right",
+      "filtered_action": "right",
+      "is_correct_raw": false,
+      "is_correct_filtered": false,
+      "detection": {
+        "position": 0.23230769230769222,
+        "trend": 0.13269230769230766,
+        "detected": true,
+        "is_terminate": false
+      }
+    },
+    {
+      "frame_id": 176,
+      "image": "output/frames/frame_0176.jpg",
+      "expected_action": "straight",
+      "raw_action": "straight",
+      "filtered_action": "right",
+      "is_correct_raw": true,
+      "is_correct_filtered": false,
+      "detection": {
+        "position": 0.14475961538461543,
+        "trend": 0.1339903846153847,
+        "detected": true,
+        "is_terminate": false
+      }
+    },
+    {
+      "frame_id": 177,
+      "image": "output/frames/frame_0177.jpg",
+      "expected_action": "straight",
+      "raw_action": "straight",
+      "filtered_action": "straight",
+      "is_correct_raw": true,
+      "is_correct_filtered": true,
+      "detection": {
+        "position": 0.04156250000000015,
+        "trend": 0.13781250000000012,
+        "detected": true,
+        "is_terminate": false
+      }
+    },
+    {
+      "frame_id": 178,
+      "image": "output/frames/frame_0178.jpg",
+      "expected_action": "straight",
+      "raw_action": "straight",
+      "filtered_action": "straight",
+      "is_correct_raw": true,
+      "is_correct_filtered": true,
+      "detection": {
+        "position": -0.019374999999999913,
+        "trend": 0.16437500000000005,
+        "detected": true,
+        "is_terminate": false
+      }
+    },
+    {
+      "frame_id": 179,
+      "image": "output/frames/frame_0179.jpg",
+      "expected_action": "straight",
+      "raw_action": "straight",
+      "filtered_action": "straight",
+      "is_correct_raw": true,
+      "is_correct_filtered": true,
+      "detection": {
+        "position": -0.05606249999999996,
+        "trend": 0.2265625,
+        "detected": true,
+        "is_terminate": false
+      }
+    },
+    {
+      "frame_id": 180,
+      "image": "output/frames/frame_0180.jpg",
+      "expected_action": "right",
+      "raw_action": "right",
+      "filtered_action": "straight",
+      "is_correct_raw": true,
+      "is_correct_filtered": false,
+      "detection": {
+        "position": 0.06198405253283301,
+        "trend": 0.33454502814258913,
+        "detected": true,
+        "is_terminate": false
+      }
+    },
+    {
+      "frame_id": 181,
+      "image": "output/frames/frame_0181.jpg",
+      "expected_action": "right",
+      "raw_action": "straight",
+      "filtered_action": "straight",
+      "is_correct_raw": false,
+      "is_correct_filtered": false,
+      "detection": {
+        "position": 0.052849999999999994,
+        "trend": 0.2695000000000001,
+        "detected": true,
+        "is_terminate": false
+      }
+    },
+    {
+      "frame_id": 182,
+      "image": "output/frames/frame_0182.jpg",
+      "expected_action": "right",
+      "raw_action": "right",
+      "filtered_action": "right",
+      "is_correct_raw": true,
+      "is_correct_filtered": true,
+      "detection": {
+        "position": 0.4429545454545456,
+        "trend": 0.5142045454545456,
+        "detected": true,
+        "is_terminate": false
+      }
+    },
+    {
+      "frame_id": 183,
+      "image": "output/frames/frame_0183.jpg",
+      "expected_action": "right",
+      "raw_action": "right",
+      "filtered_action": "right",
+      "is_correct_raw": true,
+      "is_correct_filtered": true,
+      "detection": {
+        "position": 0.4987500000000001,
+        "trend": 0.5625000000000001,
+        "detected": true,
+        "is_terminate": false
+      }
+    },
+    {
+      "frame_id": 184,
+      "image": "output/frames/frame_0184.jpg",
+      "expected_action": "right",
+      "raw_action": "right",
+      "filtered_action": "right",
+      "is_correct_raw": true,
+      "is_correct_filtered": true,
+      "detection": {
+        "position": 0.4862499999999999,
+        "trend": 0.5499999999999999,
+        "detected": true,
+        "is_terminate": false
+      }
+    },
+    {
+      "frame_id": 185,
+      "image": "output/frames/frame_0185.jpg",
+      "expected_action": "right",
+      "raw_action": "right",
+      "filtered_action": "right",
+      "is_correct_raw": true,
+      "is_correct_filtered": true,
+      "detection": {
+        "position": 0.4818749999999999,
+        "trend": 0.54375,
+        "detected": true,
+        "is_terminate": false
+      }
+    },
+    {
+      "frame_id": 186,
+      "image": "output/frames/frame_0186.jpg",
+      "expected_action": "right",
+      "raw_action": "right",
+      "filtered_action": "right",
+      "is_correct_raw": true,
+      "is_correct_filtered": true,
+      "detection": {
+        "position": 0.4862499999999999,
+        "trend": 0.5499999999999999,
+        "detected": true,
+        "is_terminate": false
+      }
+    },
+    {
+      "frame_id": 187,
+      "image": "output/frames/frame_0187.jpg",
+      "expected_action": "right",
+      "raw_action": "right",
+      "filtered_action": "right",
+      "is_correct_raw": true,
+      "is_correct_filtered": true,
+      "detection": {
+        "position": 0.4862499999999999,
+        "trend": 0.5499999999999999,
+        "detected": true,
+        "is_terminate": false
+      }
+    },
+    {
+      "frame_id": 188,
+      "image": "output/frames/frame_0188.jpg",
+      "expected_action": "right",
+      "raw_action": "right",
+      "filtered_action": "right",
+      "is_correct_raw": true,
+      "is_correct_filtered": true,
+      "detection": {
+        "position": 0.4862499999999999,
+        "trend": 0.5499999999999999,
+        "detected": true,
+        "is_terminate": false
+      }
+    },
+    {
+      "frame_id": 189,
+      "image": "output/frames/frame_0189.jpg",
+      "expected_action": "right",
+      "raw_action": "right",
+      "filtered_action": "right",
+      "is_correct_raw": true,
+      "is_correct_filtered": true,
+      "detection": {
+        "position": 0.390625,
+        "trend": 0.5,
+        "detected": true,
+        "is_terminate": false
+      }
+    },
+    {
+      "frame_id": 190,
+      "image": "output/frames/frame_0190.jpg",
+      "expected_action": "right",
+      "raw_action": "right",
+      "filtered_action": "right",
+      "is_correct_raw": true,
+      "is_correct_filtered": true,
+      "detection": {
+        "position": 0.16875,
+        "trend": 0.32500000000000007,
+        "detected": true,
+        "is_terminate": false
+      }
+    },
+    {
+      "frame_id": 191,
+      "image": "output/frames/frame_0191.jpg",
+      "expected_action": "straight",
+      "raw_action": "left",
+      "filtered_action": "right",
+      "is_correct_raw": false,
+      "is_correct_filtered": false,
+      "detection": {
+        "position": -0.2525,
+        "trend": -0.24375000000000002,
+        "detected": true,
+        "is_terminate": false
+      }
+    },
+    {
+      "frame_id": 192,
+      "image": "output/frames/frame_0192.jpg",
+      "expected_action": "straight",
+      "raw_action": "left",
+      "filtered_action": "left",
+      "is_correct_raw": false,
+      "is_correct_filtered": false,
+      "detection": {
+        "position": -0.3062499999999999,
+        "trend": -0.34999999999999987,
+        "detected": true,
+        "is_terminate": false
+      }
+    },
+    {
+      "frame_id": 193,
+      "image": "output/frames/frame_0193.jpg",
+      "expected_action": "left",
+      "raw_action": "left",
+      "filtered_action": "left",
+      "is_correct_raw": true,
+      "is_correct_filtered": true,
+      "detection": {
+        "position": -0.34687499999999993,
+        "trend": -0.4312499999999999,
+        "detected": true,
+        "is_terminate": false
+      }
+    },
+    {
+      "frame_id": 194,
+      "image": "output/frames/frame_0194.jpg",
+      "expected_action": "left",
+      "raw_action": "left",
+      "filtered_action": "left",
+      "is_correct_raw": true,
+      "is_correct_filtered": true,
+      "detection": {
+        "position": -0.3500000000000001,
+        "trend": -0.43125000000000013,
+        "detected": true,
+        "is_terminate": false
+      }
+    },
+    {
+      "frame_id": 195,
+      "image": "output/frames/frame_0195.jpg",
+      "expected_action": "left",
+      "raw_action": "left",
+      "filtered_action": "left",
+      "is_correct_raw": true,
+      "is_correct_filtered": true,
+      "detection": {
+        "position": -0.34687499999999993,
+        "trend": -0.4312499999999999,
+        "detected": true,
+        "is_terminate": false
+      }
+    },
+    {
+      "frame_id": 196,
+      "image": "output/frames/frame_0196.jpg",
+      "expected_action": "left",
+      "raw_action": "left",
+      "filtered_action": "left",
+      "is_correct_raw": true,
+      "is_correct_filtered": true,
+      "detection": {
+        "position": -0.3500000000000001,
+        "trend": -0.43125000000000013,
+        "detected": true,
+        "is_terminate": false
+      }
+    },
+    {
+      "frame_id": 197,
+      "image": "output/frames/frame_0197.jpg",
+      "expected_action": "left",
+      "raw_action": "left",
+      "filtered_action": "left",
+      "is_correct_raw": true,
+      "is_correct_filtered": true,
+      "detection": {
+        "position": -0.365625,
+        "trend": -0.44999999999999996,
+        "detected": true,
+        "is_terminate": false
+      }
+    },
+    {
+      "frame_id": 198,
+      "image": "output/frames/frame_0198.jpg",
+      "expected_action": "left",
+      "raw_action": "left",
+      "filtered_action": "left",
+      "is_correct_raw": true,
+      "is_correct_filtered": true,
+      "detection": {
+        "position": -0.365625,
+        "trend": -0.44999999999999996,
+        "detected": true,
+        "is_terminate": false
+      }
+    },
+    {
+      "frame_id": 199,
+      "image": "output/frames/frame_0199.jpg",
+      "expected_action": "left",
+      "raw_action": "left",
+      "filtered_action": "left",
+      "is_correct_raw": true,
+      "is_correct_filtered": true,
+      "detection": {
+        "position": -0.38125,
+        "trend": -0.46875,
+        "detected": true,
+        "is_terminate": false
+      }
+    },
+    {
+      "frame_id": 200,
+      "image": "output/frames/frame_0200.jpg",
+      "expected_action": "left",
+      "raw_action": "left",
+      "filtered_action": "left",
+      "is_correct_raw": true,
+      "is_correct_filtered": true,
+      "detection": {
+        "position": -0.37812500000000004,
+        "trend": -0.4750000000000001,
+        "detected": true,
+        "is_terminate": false
+      }
+    },
+    {
+      "frame_id": 201,
+      "image": "output/frames/frame_0201.jpg",
+      "expected_action": "left",
+      "raw_action": "left",
+      "filtered_action": "left",
+      "is_correct_raw": true,
+      "is_correct_filtered": true,
+      "detection": {
+        "position": -0.3843749999999999,
+        "trend": -0.47499999999999987,
+        "detected": true,
+        "is_terminate": false
+      }
+    },
+    {
+      "frame_id": 202,
+      "image": "output/frames/frame_0202.jpg",
+      "expected_action": "left",
+      "raw_action": "left",
+      "filtered_action": "left",
+      "is_correct_raw": true,
+      "is_correct_filtered": true,
+      "detection": {
+        "position": -0.359375,
+        "trend": -0.44999999999999996,
+        "detected": true,
+        "is_terminate": false
+      }
+    },
+    {
+      "frame_id": 203,
+      "image": "output/frames/frame_0203.jpg",
+      "expected_action": "straight",
+      "raw_action": "left",
+      "filtered_action": "left",
+      "is_correct_raw": false,
+      "is_correct_filtered": false,
+      "detection": {
+        "position": -0.07749999999999999,
+        "trend": -0.28749999999999987,
+        "detected": true,
+        "is_terminate": false
+      }
+    },
+    {
+      "frame_id": 204,
+      "image": "output/frames/frame_0204.jpg",
+      "expected_action": "straight",
+      "raw_action": "right",
+      "filtered_action": "left",
+      "is_correct_raw": false,
+      "is_correct_filtered": false,
+      "detection": {
+        "position": 0.31875,
+        "trend": 0.3125,
+        "detected": true,
+        "is_terminate": false
+      }
+    },
+    {
+      "frame_id": 205,
+      "image": "output/frames/frame_0205.jpg",
+      "expected_action": "right",
+      "raw_action": "right",
+      "filtered_action": "right",
+      "is_correct_raw": true,
+      "is_correct_filtered": true,
+      "detection": {
+        "position": 0.38437499999999997,
+        "trend": 0.44375,
+        "detected": true,
+        "is_terminate": false
+      }
+    },
+    {
+      "frame_id": 206,
+      "image": "output/frames/frame_0206.jpg",
+      "expected_action": "right",
+      "raw_action": "right",
+      "filtered_action": "right",
+      "is_correct_raw": true,
+      "is_correct_filtered": true,
+      "detection": {
+        "position": 0.4649999999999999,
+        "trend": 0.5249999999999999,
+        "detected": true,
+        "is_terminate": false
+      }
+    },
+    {
+      "frame_id": 207,
+      "image": "output/frames/frame_0207.jpg",
+      "expected_action": "right",
+      "raw_action": "right",
+      "filtered_action": "right",
+      "is_correct_raw": true,
+      "is_correct_filtered": true,
+      "detection": {
+        "position": 0.4649999999999999,
+        "trend": 0.5249999999999999,
+        "detected": true,
+        "is_terminate": false
+      }
+    },
+    {
+      "frame_id": 208,
+      "image": "output/frames/frame_0208.jpg",
+      "expected_action": "right",
+      "raw_action": "right",
+      "filtered_action": "right",
+      "is_correct_raw": true,
+      "is_correct_filtered": true,
+      "detection": {
+        "position": 0.4649999999999999,
+        "trend": 0.5249999999999999,
+        "detected": true,
+        "is_terminate": false
+      }
+    },
+    {
+      "frame_id": 209,
+      "image": "output/frames/frame_0209.jpg",
+      "expected_action": "right",
+      "raw_action": "right",
+      "filtered_action": "right",
+      "is_correct_raw": true,
+      "is_correct_filtered": true,
+      "detection": {
+        "position": 0.45249999999999996,
+        "trend": 0.5125,
+        "detected": true,
+        "is_terminate": false
+      }
+    },
+    {
+      "frame_id": 210,
+      "image": "output/frames/frame_0210.jpg",
+      "expected_action": "right",
+      "raw_action": "right",
+      "filtered_action": "right",
+      "is_correct_raw": true,
+      "is_correct_filtered": true,
+      "detection": {
+        "position": 0.22499999999999998,
+        "trend": 0.34999999999999987,
+        "detected": true,
+        "is_terminate": false
+      }
+    },
+    {
+      "frame_id": 211,
+      "image": "output/frames/frame_0211.jpg",
+      "expected_action": "straight",
+      "raw_action": "straight",
+      "filtered_action": "right",
+      "is_correct_raw": true,
+      "is_correct_filtered": false,
+      "detection": {
+        "position": -0.039999999999999966,
+        "trend": 0.1875,
+        "detected": true,
+        "is_terminate": false
+      }
+    },
+    {
+      "frame_id": 212,
+      "image": "output/frames/frame_0212.jpg",
+      "expected_action": "straight",
+      "raw_action": "left",
+      "filtered_action": "right",
+      "is_correct_raw": false,
+      "is_correct_filtered": false,
+      "detection": {
+        "position": -0.15062499999999993,
+        "trend": -0.1812499999999999,
+        "detected": true,
+        "is_terminate": false
+      }
+    },
+    {
+      "frame_id": 213,
+      "image": "output/frames/frame_0213.jpg",
+      "expected_action": "straight",
+      "raw_action": "left",
+      "filtered_action": "left",
+      "is_correct_raw": false,
+      "is_correct_filtered": false,
+      "detection": {
+        "position": -0.16374999999999992,
+        "trend": -0.22499999999999987,
+        "detected": true,
+        "is_terminate": false
+      }
+    },
+    {
+      "frame_id": 214,
+      "image": "output/frames/frame_0214.jpg",
+      "expected_action": "straight",
+      "raw_action": "left",
+      "filtered_action": "left",
+      "is_correct_raw": false,
+      "is_correct_filtered": false,
+      "detection": {
+        "position": -0.16374999999999992,
+        "trend": -0.22499999999999987,
+        "detected": true,
+        "is_terminate": false
+      }
+    },
+    {
+      "frame_id": 215,
+      "image": "output/frames/frame_0215.jpg",
+      "expected_action": "straight",
+      "raw_action": "left",
+      "filtered_action": "left",
+      "is_correct_raw": false,
+      "is_correct_filtered": false,
+      "detection": {
+        "position": -0.16374999999999992,
+        "trend": -0.22499999999999987,
+        "detected": true,
+        "is_terminate": false
+      }
+    },
+    {
+      "frame_id": 216,
+      "image": "output/frames/frame_0216.jpg",
+      "expected_action": "straight",
+      "raw_action": "left",
+      "filtered_action": "left",
+      "is_correct_raw": false,
+      "is_correct_filtered": false,
+      "detection": {
+        "position": -0.17625,
+        "trend": -0.23749999999999993,
+        "detected": true,
+        "is_terminate": false
+      }
+    },
+    {
+      "frame_id": 217,
+      "image": "output/frames/frame_0217.jpg",
+      "expected_action": "straight",
+      "raw_action": "left",
+      "filtered_action": "left",
+      "is_correct_raw": false,
+      "is_correct_filtered": false,
+      "detection": {
+        "position": -0.17625,
+        "trend": -0.23749999999999993,
+        "detected": true,
+        "is_terminate": false
+      }
+    },
+    {
+      "frame_id": 218,
+      "image": "output/frames/frame_0218.jpg",
+      "expected_action": "straight",
+      "raw_action": "left",
+      "filtered_action": "left",
+      "is_correct_raw": false,
+      "is_correct_filtered": false,
+      "detection": {
+        "position": -0.17625,
+        "trend": -0.23749999999999993,
+        "detected": true,
+        "is_terminate": false
+      }
+    },
+    {
+      "frame_id": 219,
+      "image": "output/frames/frame_0219.jpg",
+      "expected_action": "straight",
+      "raw_action": "straight",
+      "filtered_action": "left",
+      "is_correct_raw": true,
+      "is_correct_filtered": false,
+      "detection": {
+        "position": 0.024374999999999973,
+        "trend": -0.13750000000000007,
+        "detected": true,
+        "is_terminate": false
+      }
+    },
+    {
+      "frame_id": 220,
+      "image": "output/frames/frame_0220.jpg",
+      "expected_action": "straight",
+      "raw_action": "right",
+      "filtered_action": "left",
+      "is_correct_raw": false,
+      "is_correct_filtered": false,
+      "detection": {
+        "position": 0.34687499999999993,
+        "trend": 0.3374999999999999,
+        "detected": true,
+        "is_terminate": false
+      }
+    },
+    {
+      "frame_id": 221,
+      "image": "output/frames/frame_0221.jpg",
+      "expected_action": "right",
+      "raw_action": "right",
+      "filtered_action": "right",
+      "is_correct_raw": true,
+      "is_correct_filtered": true,
+      "detection": {
+        "position": 0.42499999999999993,
+        "trend": 0.4937499999999999,
+        "detected": true,
+        "is_terminate": false
+      }
+    },
+    {
+      "frame_id": 222,
+      "image": "output/frames/frame_0222.jpg",
+      "expected_action": "right",
+      "raw_action": "right",
+      "filtered_action": "right",
+      "is_correct_raw": true,
+      "is_correct_filtered": true,
+      "detection": {
+        "position": 0.505625,
+        "trend": 0.575,
+        "detected": true,
+        "is_terminate": false
+      }
+    },
+    {
+      "frame_id": 223,
+      "image": "output/frames/frame_0223.jpg",
+      "expected_action": "right",
+      "raw_action": "right",
+      "filtered_action": "right",
+      "is_correct_raw": true,
+      "is_correct_filtered": true,
+      "detection": {
+        "position": 0.50125,
+        "trend": 0.56875,
+        "detected": true,
+        "is_terminate": false
+      }
+    },
+    {
+      "frame_id": 224,
+      "image": "output/frames/frame_0224.jpg",
+      "expected_action": "right",
+      "raw_action": "right",
+      "filtered_action": "right",
+      "is_correct_raw": true,
+      "is_correct_filtered": true,
+      "detection": {
+        "position": 0.50125,
+        "trend": 0.56875,
+        "detected": true,
+        "is_terminate": false
+      }
+    },
+    {
+      "frame_id": 225,
+      "image": "output/frames/frame_0225.jpg",
+      "expected_action": "right",
+      "raw_action": "right",
+      "filtered_action": "right",
+      "is_correct_raw": true,
+      "is_correct_filtered": true,
+      "detection": {
+        "position": 0.49687499999999996,
+        "trend": 0.5625,
+        "detected": true,
+        "is_terminate": false
+      }
+    },
+    {
+      "frame_id": 226,
+      "image": "output/frames/frame_0226.jpg",
+      "expected_action": "right",
+      "raw_action": "right",
+      "filtered_action": "right",
+      "is_correct_raw": true,
+      "is_correct_filtered": true,
+      "detection": {
+        "position": 0.49687499999999996,
+        "trend": 0.5625,
+        "detected": true,
+        "is_terminate": false
+      }
+    },
+    {
+      "frame_id": 227,
+      "image": "output/frames/frame_0227.jpg",
+      "expected_action": "right",
+      "raw_action": "right",
+      "filtered_action": "right",
+      "is_correct_raw": true,
+      "is_correct_filtered": true,
+      "detection": {
+        "position": 0.50125,
+        "trend": 0.56875,
+        "detected": true,
+        "is_terminate": false
+      }
+    },
+    {
+      "frame_id": 228,
+      "image": "output/frames/frame_0228.jpg",
+      "expected_action": "right",
+      "raw_action": "right",
+      "filtered_action": "right",
+      "is_correct_raw": true,
+      "is_correct_filtered": true,
+      "detection": {
+        "position": 0.503125,
+        "trend": 0.5687500000000001,
+        "detected": true,
+        "is_terminate": false
+      }
+    },
+    {
+      "frame_id": 229,
+      "image": "output/frames/frame_0229.jpg",
+      "expected_action": "right",
+      "raw_action": "right",
+      "filtered_action": "right",
+      "is_correct_raw": true,
+      "is_correct_filtered": true,
+      "detection": {
+        "position": 0.49687499999999996,
+        "trend": 0.5625,
+        "detected": true,
+        "is_terminate": false
+      }
+    },
+    {
+      "frame_id": 230,
+      "image": "output/frames/frame_0230.jpg",
+      "expected_action": "right",
+      "raw_action": "right",
+      "filtered_action": "right",
+      "is_correct_raw": true,
+      "is_correct_filtered": true,
+      "detection": {
+        "position": 0.5093749999999999,
+        "trend": 0.575,
+        "detected": true,
+        "is_terminate": false
+      }
+    },
+    {
+      "frame_id": 231,
+      "image": "output/frames/frame_0231.jpg",
+      "expected_action": "right",
+      "raw_action": "right",
+      "filtered_action": "right",
+      "is_correct_raw": true,
+      "is_correct_filtered": true,
+      "detection": {
+        "position": 0.503125,
+        "trend": 0.5687500000000001,
+        "detected": true,
+        "is_terminate": false
+      }
+    },
+    {
+      "frame_id": 232,
+      "image": "output/frames/frame_0232.jpg",
+      "expected_action": "right",
+      "raw_action": "right",
+      "filtered_action": "right",
+      "is_correct_raw": true,
+      "is_correct_filtered": true,
+      "detection": {
+        "position": 0.49687499999999996,
+        "trend": 0.5625,
+        "detected": true,
+        "is_terminate": false
+      }
+    },
+    {
+      "frame_id": 233,
+      "image": "output/frames/frame_0233.jpg",
+      "expected_action": "right",
+      "raw_action": "right",
+      "filtered_action": "right",
+      "is_correct_raw": true,
+      "is_correct_filtered": true,
+      "detection": {
+        "position": 0.73125,
+        "trend": 0.7749999999999999,
+        "detected": true,
+        "is_terminate": false
+      }
+    },
+    {
+      "frame_id": 234,
+      "image": "output/frames/frame_0234.jpg",
+      "expected_action": "right",
+      "raw_action": "right",
+      "filtered_action": "right",
+      "is_correct_raw": true,
+      "is_correct_filtered": true,
+      "detection": {
+        "position": 1.13125,
+        "trend": 1.175,
+        "detected": true,
+        "is_terminate": false
+      }
+    },
+    {
+      "frame_id": 235,
+      "image": "output/frames/frame_0235.jpg",
+      "expected_action": "right",
+      "raw_action": "right",
+      "filtered_action": "right",
+      "is_correct_raw": true,
+      "is_correct_filtered": true,
+      "detection": {
+        "position": 1.1575000000000002,
+        "trend": 1.2000000000000002,
+        "detected": true,
+        "is_terminate": false
+      }
+    },
+    {
+      "frame_id": 236,
+      "image": "output/frames/frame_0236.jpg",
+      "expected_action": "right",
+      "raw_action": "right",
+      "filtered_action": "right",
+      "is_correct_raw": true,
+      "is_correct_filtered": true,
+      "detection": {
+        "position": 1.3825000000000003,
+        "trend": 1.4812500000000002,
+        "detected": true,
+        "is_terminate": false
+      }
+    },
+    {
+      "frame_id": 237,
+      "image": "output/frames/frame_0237.jpg",
+      "expected_action": "right",
+      "raw_action": "right",
+      "filtered_action": "right",
+      "is_correct_raw": true,
+      "is_correct_filtered": true,
+      "detection": {
+        "position": 1.6025000000000003,
+        "trend": 1.75625,
+        "detected": true,
+        "is_terminate": false
+      }
+    },
+    {
+      "frame_id": 238,
+      "image": "output/frames/frame_0238.jpg",
+      "expected_action": "right",
+      "raw_action": "right",
+      "filtered_action": "right",
+      "is_correct_raw": true,
+      "is_correct_filtered": true,
+      "detection": {
+        "position": 1.7512500000000002,
+        "trend": 1.94375,
+        "detected": true,
+        "is_terminate": false
+      }
+    },
+    {
+      "frame_id": 239,
+      "image": "output/frames/frame_0239.jpg",
+      "expected_action": "right",
+      "raw_action": "right",
+      "filtered_action": "right",
+      "is_correct_raw": true,
+      "is_correct_filtered": true,
+      "detection": {
+        "position": 1.0225,
+        "trend": 1.03125,
+        "detected": true,
+        "is_terminate": false
+      }
+    },
+    {
+      "frame_id": 240,
+      "image": "output/frames/frame_0240.jpg",
+      "expected_action": "right",
+      "raw_action": "right",
+      "filtered_action": "right",
+      "is_correct_raw": true,
+      "is_correct_filtered": true,
+      "detection": {
+        "position": 1.02625,
+        "trend": 1.0375,
+        "detected": true,
+        "is_terminate": false
+      }
+    },
+    {
+      "frame_id": 241,
+      "image": "output/frames/frame_0241.jpg",
+      "expected_action": "right",
+      "raw_action": "right",
+      "filtered_action": "right",
+      "is_correct_raw": true,
+      "is_correct_filtered": true,
+      "detection": {
+        "position": 1.0175,
+        "trend": 1.025,
+        "detected": true,
+        "is_terminate": false
+      }
+    },
+    {
+      "frame_id": 242,
+      "image": "output/frames/frame_0242.jpg",
+      "expected_action": "right",
+      "raw_action": "right",
+      "filtered_action": "right",
+      "is_correct_raw": true,
+      "is_correct_filtered": true,
+      "detection": {
+        "position": 1.03625,
+        "trend": 1.0499999999999998,
+        "detected": true,
+        "is_terminate": false
+      }
+    },
+    {
+      "frame_id": 243,
+      "image": "output/frames/frame_0243.jpg",
+      "expected_action": "right",
+      "raw_action": "right",
+      "filtered_action": "right",
+      "is_correct_raw": true,
+      "is_correct_filtered": true,
+      "detection": {
+        "position": 1.0225,
+        "trend": 1.03125,
+        "detected": true,
+        "is_terminate": false
+      }
+    },
+    {
+      "frame_id": 244,
+      "image": "output/frames/frame_0244.jpg",
+      "expected_action": "right",
+      "raw_action": "right",
+      "filtered_action": "right",
+      "is_correct_raw": true,
+      "is_correct_filtered": true,
+      "detection": {
+        "position": 1.0075000000000003,
+        "trend": 1.0125000000000002,
+        "detected": true,
+        "is_terminate": false
+      }
+    },
+    {
+      "frame_id": 245,
+      "image": "output/frames/frame_0245.jpg",
+      "expected_action": "right",
+      "raw_action": "right",
+      "filtered_action": "right",
+      "is_correct_raw": true,
+      "is_correct_filtered": true,
+      "detection": {
+        "position": 1.0225,
+        "trend": 1.03125,
+        "detected": true,
+        "is_terminate": false
+      }
+    },
+    {
+      "frame_id": 246,
+      "image": "output/frames/frame_0246.jpg",
+      "expected_action": "right",
+      "raw_action": "right",
+      "filtered_action": "right",
+      "is_correct_raw": true,
+      "is_correct_filtered": true,
+      "detection": {
+        "position": 0.9387500000000001,
+        "trend": 0.98125,
+        "detected": true,
+        "is_terminate": false
+      }
+    },
+    {
+      "frame_id": 247,
+      "image": "output/frames/frame_0247.jpg",
+      "expected_action": "right",
+      "raw_action": "right",
+      "filtered_action": "right",
+      "is_correct_raw": true,
+      "is_correct_filtered": true,
+      "detection": {
+        "position": 0.68875,
+        "trend": 0.78125,
+        "detected": true,
+        "is_terminate": false
+      }
+    },
+    {
+      "frame_id": 248,
+      "image": "output/frames/frame_0248.jpg",
+      "expected_action": "right",
+      "raw_action": "left",
+      "filtered_action": "right",
+      "is_correct_raw": false,
+      "is_correct_filtered": true,
+      "detection": {
+        "position": -0.2906249999999999,
+        "trend": -0.41249999999999987,
+        "detected": true,
+        "is_terminate": false
+      }
+    },
+    {
+      "frame_id": 249,
+      "image": "output/frames/frame_0249.jpg",
+      "expected_action": "right",
+      "raw_action": "left",
+      "filtered_action": "left",
+      "is_correct_raw": false,
+      "is_correct_filtered": false,
+      "detection": {
+        "position": -0.579375,
+        "trend": -0.5625,
+        "detected": true,
+        "is_terminate": false
+      }
+    },
+    {
+      "frame_id": 250,
+      "image": "output/frames/frame_0250.jpg",
+      "expected_action": "straight",
+      "raw_action": "left",
+      "filtered_action": "left",
+      "is_correct_raw": false,
+      "is_correct_filtered": false,
+      "detection": {
+        "position": -0.7875000000000001,
+        "trend": -0.75,
+        "detected": true,
+        "is_terminate": false
+      }
+    },
+    {
+      "frame_id": 251,
+      "image": "output/frames/frame_0251.jpg",
+      "expected_action": "straight",
+      "raw_action": "left",
+      "filtered_action": "left",
+      "is_correct_raw": false,
+      "is_correct_filtered": false,
+      "detection": {
+        "position": -0.9375,
+        "trend": -0.9375,
+        "detected": true,
+        "is_terminate": false
+      }
+    },
+    {
+      "frame_id": 252,
+      "image": "output/frames/frame_0252.jpg",
+      "expected_action": "left",
+      "raw_action": "left",
+      "filtered_action": "left",
+      "is_correct_raw": true,
+      "is_correct_filtered": true,
+      "detection": {
+        "position": -1.18375,
+        "trend": -1.24375,
+        "detected": true,
+        "is_terminate": false
+      }
+    },
+    {
+      "frame_id": 253,
+      "image": "output/frames/frame_0253.jpg",
+      "expected_action": "left",
+      "raw_action": "left",
+      "filtered_action": "left",
+      "is_correct_raw": true,
+      "is_correct_filtered": true,
+      "detection": {
+        "position": -1.4775,
+        "trend": -1.6125,
+        "detected": true,
+        "is_terminate": false
+      }
+    },
+    {
+      "frame_id": 254,
+      "image": "output/frames/frame_0254.jpg",
+      "expected_action": "left",
+      "raw_action": "left",
+      "filtered_action": "left",
+      "is_correct_raw": true,
+      "is_correct_filtered": true,
+      "detection": {
+        "position": -1.4825,
+        "trend": -1.61875,
+        "detected": true,
+        "is_terminate": false
+      }
+    },
+    {
+      "frame_id": 255,
+      "image": "output/frames/frame_0255.jpg",
+      "expected_action": "left",
+      "raw_action": "left",
+      "filtered_action": "left",
+      "is_correct_raw": true,
+      "is_correct_filtered": true,
+      "detection": {
+        "position": -1.395,
+        "trend": -1.53125,
+        "detected": true,
+        "is_terminate": false
+      }
+    },
+    {
+      "frame_id": 256,
+      "image": "output/frames/frame_0256.jpg",
+      "expected_action": "left",
+      "raw_action": "left",
+      "filtered_action": "left",
+      "is_correct_raw": true,
+      "is_correct_filtered": true,
+      "detection": {
+        "position": -1.25625,
+        "trend": -1.39375,
+        "detected": true,
+        "is_terminate": false
+      }
+    },
+    {
+      "frame_id": 257,
+      "image": "output/frames/frame_0257.jpg",
+      "expected_action": "left",
+      "raw_action": "left",
+      "filtered_action": "left",
+      "is_correct_raw": true,
+      "is_correct_filtered": true,
+      "detection": {
+        "position": -1.13375,
+        "trend": -1.26875,
+        "detected": true,
+        "is_terminate": false
+      }
+    },
+    {
+      "frame_id": 258,
+      "image": "output/frames/frame_0258.jpg",
+      "expected_action": "left",
+      "raw_action": "left",
+      "filtered_action": "left",
+      "is_correct_raw": true,
+      "is_correct_filtered": true,
+      "detection": {
+        "position": -0.8400000000000002,
+        "trend": -0.9750000000000001,
+        "detected": true,
+        "is_terminate": false
+      }
+    },
+    {
+      "frame_id": 259,
+      "image": "output/frames/frame_0259.jpg",
+      "expected_action": "left",
+      "raw_action": "left",
+      "filtered_action": "left",
+      "is_correct_raw": true,
+      "is_correct_filtered": true,
+      "detection": {
+        "position": -0.08534340659340656,
+        "trend": -0.28447802197802186,
+        "detected": true,
+        "is_terminate": false
+      }
+    }
+  ],
+  "analysis": {
+    "total_frames": 260,
+    "correct_raw": 188,
+    "correct_filtered": 177,
+    "accuracy_raw": 72.3076923076923,
+    "accuracy_filtered": 68.07692307692308,
+    "improvement": -4.230769230769226,
+    "category_stats": {
+      "straight": {
+        "total": 98,
+        "correct_raw": 30,
+        "correct_filtered": 22,
+        "accuracy_raw": 30.612244897959183,
+        "accuracy_filtered": 22.448979591836736
+      },
+      "left": {
+        "total": 80,
+        "correct_raw": 80,
+        "correct_filtered": 79,
+        "accuracy_raw": 100.0,
+        "accuracy_filtered": 98.75
+      },
+      "right": {
+        "total": 82,
+        "correct_raw": 78,
+        "correct_filtered": 76,
+        "accuracy_raw": 95.1219512195122,
+        "accuracy_filtered": 92.6829268292683
+      }
+    }
+  }
+}
