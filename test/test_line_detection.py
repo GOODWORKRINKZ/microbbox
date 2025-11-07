@@ -34,6 +34,16 @@ LINE_CAMERA_HEIGHT = 120
 LINE_THRESHOLD = 128
 LINE_T_JUNCTION_THRESHOLD = 0.7
 
+# Калибровка камеры (физические размеры наблюдаемого пространства)
+LINE_PIXELS_PER_CM_WIDTH = 16.0   # Пикселей на 1 см по ширине кадра
+LINE_PIXELS_PER_CM_HEIGHT = 12.0  # Пикселей на 1 см по высоте кадра
+LINE_WIDTH_MM = 19.5              # Ширина линии в миллиметрах (19-20мм)
+
+# Вычисленные параметры на основе калибровки
+LINE_WIDTH_CM = LINE_WIDTH_MM / 10.0  # Ширина линии в см
+LINE_EXPECTED_WIDTH_PIXELS_H = LINE_WIDTH_CM * LINE_PIXELS_PER_CM_WIDTH   # Ожидаемая ширина линии в пикселях по горизонтали
+LINE_EXPECTED_WIDTH_PIXELS_V = LINE_WIDTH_CM * LINE_PIXELS_PER_CM_HEIGHT  # Ожидаемая ширина линии в пикселях по вертикали
+
 # Физические параметры робота
 CAMERA_TO_WHEEL_AXIS_DISTANCE_MM = 81.62  # Расстояние от центра камеры до центра оси вращения колес (мм)
 
@@ -223,6 +233,64 @@ def calculate_weighted_position(base_position, trend, weight_base, weight_trend)
     return base_position * weight_base + trend * weight_trend
 
 
+def validate_line_width(count_pixels, scan_type='horizontal'):
+    """
+    Проверяет, соответствует ли обнаруженная ширина линии ожидаемой.
+    Используется для фильтрации ложных срабатываний и улучшения точности.
+    
+    Args:
+        count_pixels: количество пикселей линии
+        scan_type: тип сканирования ('horizontal' или 'vertical')
+    
+    Returns:
+        dict: {
+            'is_valid': bool,           # соответствует ли ширина ожидаемой
+            'confidence': float,        # уверенность в детекции (0.0 - 1.0)
+            'width_ratio': float,       # отношение обнаруженной ширины к ожидаемой
+            'expected_pixels': float    # ожидаемое количество пикселей
+        }
+    """
+    if scan_type == 'horizontal':
+        expected_pixels = LINE_EXPECTED_WIDTH_PIXELS_H
+        tolerance_factor = 2.0  # Допускаем ±100% от ожидаемой ширины (поворот может растягивать линию)
+    else:  # vertical
+        expected_pixels = LINE_EXPECTED_WIDTH_PIXELS_V
+        tolerance_factor = 2.0
+    
+    # Минимальная и максимальная допустимая ширина
+    min_pixels = expected_pixels * 0.3  # Линия может быть тоньше из-за перспективы
+    max_pixels = expected_pixels * tolerance_factor
+    
+    # Проверка диапазона
+    is_valid = min_pixels <= count_pixels <= max_pixels
+    
+    # Вычисляем уверенность (confidence) на основе близости к ожидаемому значению
+    if count_pixels == 0:
+        confidence = 0.0
+        width_ratio = 0.0
+    else:
+        width_ratio = count_pixels / expected_pixels
+        
+        # Уверенность максимальна когда width_ratio близок к 1.0
+        # Снижается при отклонении от ожидаемого значения
+        if width_ratio < 1.0:
+            # Слишком узкая линия (может быть шум или дальняя часть линии)
+            confidence = max(0.0, width_ratio / 1.0)
+        else:
+            # Слишком широкая линия (может быть T-пересечение или поворот)
+            if width_ratio <= tolerance_factor:
+                confidence = max(0.0, 1.0 - (width_ratio - 1.0) / (tolerance_factor - 1.0))
+            else:
+                confidence = 0.0
+    
+    return {
+        'is_valid': is_valid,
+        'confidence': confidence,
+        'width_ratio': width_ratio,
+        'expected_pixels': expected_pixels
+    }
+
+
 def detect_line_position(image_path):
     """
     Реализация алгоритма detectLinePosition() с использованием 4 горизонтальных 
@@ -306,6 +374,9 @@ def detect_line_position(image_path):
                 sum_position += float(x)
                 count += 1
         
+        # Валидация ширины линии на основе калибровки
+        width_validation = validate_line_width(count, 'horizontal')
+        
         if count > 0:
             avg_position = sum_position / float(count)
             normalized = (avg_position / float(width)) * 2.0 - 1.0
@@ -320,7 +391,8 @@ def detect_line_position(image_path):
             'position': normalized,
             'pixel_position': avg_position,
             'count': count,
-            'width_percent': width_percent
+            'width_percent': width_percent,
+            'width_validation': width_validation  # Добавляем информацию о валидации
         })
     
     # === 2. ЧЕТЫРЕ ВЕРТИКАЛЬНЫЕ СКАНИРУЮЩИЕ ЛИНИИ ===
@@ -348,6 +420,9 @@ def detect_line_position(image_path):
                 sum_position += float(y)
                 count += 1
         
+        # Валидация ширины линии на основе калибровки
+        width_validation = validate_line_width(count, 'vertical')
+        
         if count > 0:
             avg_position = sum_position / float(count)
             # Для вертикали нормализуем по высоте
@@ -363,7 +438,8 @@ def detect_line_position(image_path):
             'position': normalized,
             'pixel_position': avg_position,
             'count': count,
-            'height_percent': height_percent
+            'height_percent': height_percent,
+            'width_validation': width_validation  # Добавляем информацию о валидации
         })
     
     # === АНАЛИЗ РЕЗУЛЬТАТОВ ===
