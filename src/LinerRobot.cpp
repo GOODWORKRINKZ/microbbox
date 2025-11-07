@@ -6,6 +6,13 @@
  * - Объединены в 2 блока для лучшей кэш-локальности (4x меньше промахов кэша)
  * - Ожидаемая производительность: 20+ FPS на ESP32 (240 MHz)
  * - Улучшенная точность распознавания за счет анализа тренда направления
+ * 
+ * КАЛИБРОВКА КАМЕРЫ (Nov 2025):
+ * - Добавлена калибровка для определения физического размера пикселей
+ * - Параметры: pixels_per_cm_width, pixels_per_cm_height, line_width_mm
+ * - Валидация ширины линии для фильтрации ложных срабатываний
+ * - Взвешивание результатов на основе уверенности (confidence)
+ * - Сканы с правильной шириной линии получают больший вес в финальной позиции
  */
 
 #include "LinerRobot.h"
@@ -23,18 +30,36 @@ LinerRobot::LinerRobot() :
     currentEffectMode_(EffectMode::NORMAL),
 #endif
     currentMode_(Mode::MANUAL),
+    bootMode_(BootMode::LINE_FOLLOWING),  // По умолчанию режим следования
     buttonPressed_(false),
     lastButtonCheck_(0),
     lineDetected_(false),
     lineNotDetectedCount_(0),
     lineEndAnimationPlayed_(false),
+#if LINE_USE_MEDIAN_FILTER
+    positionHistoryIndex_(0),
+#endif
+    lastValidPosition_(0.0f),
+    adaptiveThreshold_(LINE_THRESHOLD),
     pidError_(0.0f),
     pidLastError_(0.0f),
     pidIntegral_(0.0f),
     targetThrottlePWM_(1500),
     targetSteeringPWM_(1500)
+#ifdef FEATURE_DUAL_CORE
+    , lineDetectionTaskHandle_(nullptr),
+    detectedLinePosition_(0.0f),
+    linePositionMutex_(nullptr)
+#endif
 {
     DEBUG_PRINTLN("Создание LinerRobot");
+    
+#if LINE_USE_MEDIAN_FILTER
+    // Инициализация истории позиций нулями
+    for (int i = 0; i < LINE_MEDIAN_FILTER_SIZE; i++) {
+        positionHistory_[i] = 0.0f;
+    }
+#endif
 }
 
 LinerRobot::~LinerRobot() {
@@ -43,6 +68,24 @@ LinerRobot::~LinerRobot() {
 
 bool LinerRobot::initSpecificComponents() {
     DEBUG_PRINTLN("=== Инициализация компонентов Liner робота ===");
+    
+    // ВАЖНО: Определяем режим загрузки ПО КНОПКЕ ПРИ СТАРТЕ
+    bootMode_ = detectBootMode();
+    
+    if (bootMode_ == BootMode::CONFIGURATION) {
+        DEBUG_PRINTLN("🔧 РЕЖИМ: Configuration Mode (кнопка зажата при старте)");
+        DEBUG_PRINTLN("   - Веб-сервер: ВКЛЮЧЕН");
+        DEBUG_PRINTLN("   - Видеострим: ВКЛЮЧЕН");
+        DEBUG_PRINTLN("   - Детектирование: ОТКЛЮЧЕНО (экономия ресурсов)");
+        DEBUG_PRINTLN("   - Доступно: настройка, обновление, ручное управление");
+    } else {
+        DEBUG_PRINTLN("🏁 РЕЖИМ: Line Following Mode (кнопка не зажата)");
+        DEBUG_PRINTLN("   - Веб-сервер: ОТКЛЮЧЕН");
+        DEBUG_PRINTLN("   - Видеострим: ОТКЛЮЧЕН");
+        DEBUG_PRINTLN("   - WiFi: ОТКЛЮЧЕН");
+        DEBUG_PRINTLN("   - Детектирование: ВКЛЮЧЕНО");
+        DEBUG_PRINTLN("   - Работают: камера, детектор, моторы");
+    }
     
     // Инициализация моторов
     if (!initMotors()) {
@@ -285,9 +328,21 @@ void LinerRobot::onButtonPressed() {
     unsigned long now = millis();
     DEBUG_PRINTF("[%lu ms] ==================================================\n", now);
     DEBUG_PRINTF("[%lu ms] КНОПКА НАЖАТА!\n", now);
+    DEBUG_PRINTF("[%lu ms] Режим загрузки: %s\n", now, 
+                 bootMode_ == BootMode::CONFIGURATION ? "Configuration" : "Line Following");
     DEBUG_PRINTF("[%lu ms] Текущий режим: %s\n", now, currentMode_ == Mode::MANUAL ? "РУЧНОЙ" : "АВТОНОМНЫЙ");
     
-    // Переключение режима
+    // ВАЖНО: В Configuration Mode кнопка НЕ переключает режимы!
+    // Детектирование отключено, только ручное управление через веб
+    if (bootMode_ == BootMode::CONFIGURATION) {
+        DEBUG_PRINTF("[%lu ms] ⚠️ Configuration Mode: кнопка игнорируется\n", now);
+        DEBUG_PRINTF("[%lu ms]    Детектирование отключено в этом режиме\n", now);
+        DEBUG_PRINTF("[%lu ms]    Используйте веб-интерфейс для управления\n", now);
+        DEBUG_PRINTF("[%lu ms] ==================================================\n", now);
+        return;
+    }
+    
+    // Переключение режима (только в Line Following Mode)
     if (currentMode_ == Mode::MANUAL) {
         currentMode_ = Mode::AUTONOMOUS;
         DEBUG_PRINTF("[%lu ms] >>> ПЕРЕХОД В АВТОНОМНЫЙ РЕЖИМ <<<\n", now);
@@ -326,6 +381,13 @@ void LinerRobot::onButtonPressed() {
 
 void LinerRobot::updateLineFollowing() {
 #ifdef FEATURE_LINE_FOLLOWING
+    // КРИТИЧНО: В Configuration Mode детектирование НЕ запускается!
+    // Работает ТОЛЬКО в Line Following Mode
+    if (bootMode_ != BootMode::LINE_FOLLOWING) {
+        // В режиме настройки детектирование отключено
+        return;
+    }
+    
     // Определение позиции линии
     float linePosition = detectLinePosition();
     
@@ -362,16 +424,28 @@ float LinerRobot::detectLinePosition() {
     uint8_t* img = fb->buf;
     
     // ========================================================================
-    // ОПТИМИЗИРОВАННЫЙ АЛГОРИТМ: 4×4 сканирующих линий
-    // Объединены в 2 блока для лучшей кэш-локальности (4x ускорение)
+    // ОПТИМИЗИРОВАННЫЙ АЛГОРИТМ: 4×4 сканирующих линий + BEST PRACTICES
+    // - Адаптивная бинаризация (метод Otsu)
+    // - ROI оптимизация (приоритет нижней части кадра)
+    // - Объединены в 2 блока для лучшей кэш-локальности (4x ускорение)
     // ========================================================================
     
+#if LINE_USE_ADAPTIVE_THRESHOLD
+    // Вычисляем адаптивный порог на основе текущего освещения (метод Otsu)
+    adaptiveThreshold_ = calculateOtsuThreshold(img, width, height);
+    uint8_t threshold = adaptiveThreshold_;
+    DEBUG_PRINTF("📊 Адаптивный порог: %d\n", threshold);
+#else
+    uint8_t threshold = LINE_THRESHOLD;
+#endif
+    
     // БЛОК 1: Все 4 горизонтальных скана подряд (кэш-френдли!)
+    // ROI оптимизация: фокус на нижней части кадра
     int scan_y[4] = {
-        height * 25 / 100,  // 25% - верхняя линия
-        height * 50 / 100,  // 50% - средне-верхняя
+        height * 40 / 100,  // 40% - верхняя линия (ROI начало)
+        height * 55 / 100,  // 55% - средне-верхняя
         height * 75 / 100,  // 75% - средне-нижняя
-        height * 90 / 100   // 90% - нижняя (основная)
+        height * 90 / 100   // 90% - нижняя (самая важная!)
     };
     
     int h_sum_x[4] = {0, 0, 0, 0};     // Сумма X-координат пикселей линии
@@ -383,7 +457,7 @@ float LinerRobot::detectLinePosition() {
         uint8_t* row = &img[y * width];  // Указатель на строку (быстрый доступ)
         
         for (int x = 0; x < width; x++) {
-            if (row[x] < LINE_THRESHOLD) {  // Черный пиксель (линия)
+            if (row[x] < threshold) {  // Черный пиксель (линия) - адаптивный порог
                 h_sum_x[scan_idx] += x;
                 h_count[scan_idx]++;
             }
@@ -406,7 +480,7 @@ float LinerRobot::detectLinePosition() {
         int x = scan_x[scan_idx];
         
         for (int y = 0; y < height; y++) {
-            if (img[y * width + x] < LINE_THRESHOLD) {
+            if (img[y * width + x] < threshold) {  // Используем адаптивный порог
                 v_sum_y[scan_idx] += y;
                 v_count[scan_idx]++;
             }
@@ -416,18 +490,45 @@ float LinerRobot::detectLinePosition() {
     esp_camera_fb_return(fb);
     
     // ========================================================================
-    // АНАЛИЗ РЕЗУЛЬТАТОВ
+    // АНАЛИЗ РЕЗУЛЬТАТОВ С КАЛИБРОВКОЙ
     // ========================================================================
     
-    // Вычисляем нормализованные позиции для горизонтальных сканов
+    // Вычисляем нормализованные позиции и уверенность для горизонтальных сканов
     float h_positions[4];
+    float h_confidence[4];  // Уверенность на основе калибровки ширины линии
+    
     for (int i = 0; i < 4; i++) {
         if (h_count[i] > 0) {
             int avg_x = h_sum_x[i] / h_count[i];
             // Нормализация: -1.0 (левый край) до 1.0 (правый край)
             h_positions[i] = ((float)avg_x / (float)width) * 2.0f - 1.0f;
+            
+            // Валидация ширины линии на основе калибровки
+            // Ожидаемая ширина линии в пикселях
+            float expected_pixels = LINE_EXPECTED_WIDTH_PIXELS_H;
+            float width_ratio = (float)h_count[i] / expected_pixels;
+            
+            // Вычисляем уверенность (confidence)
+            // Максимальная уверенность когда width_ratio близок к 1.0
+            if (width_ratio < 1.0f) {
+                // Слишком узкая линия (может быть шум или дальняя часть)
+                h_confidence[i] = width_ratio;
+            } else {
+                // Слишком широкая линия (может быть T-пересечение или поворот)
+                float tolerance = 2.0f;  // Допускаем до 2x ширины
+                if (width_ratio <= tolerance) {
+                    h_confidence[i] = 1.0f - (width_ratio - 1.0f) / (tolerance - 1.0f);
+                } else {
+                    h_confidence[i] = 0.0f;  // Слишком широкая - низкая уверенность
+                }
+            }
+            
+            // Ограничиваем уверенность в диапазоне [0.0, 1.0]
+            h_confidence[i] = constrain(h_confidence[i], 0.0f, 1.0f);
+            
         } else {
             h_positions[i] = 0.0f;  // Линия не найдена на этом уровне
+            h_confidence[i] = 0.0f;  // Нет уверенности
         }
     }
     
@@ -479,28 +580,83 @@ float LinerRobot::detectLinePosition() {
     lineDetected_ = true;
     lineNotDetectedCount_ = 0;
     
-    // Вычисляем тренд направления (сравниваем все пары горизонтальных сканов)
+    // === УЛУЧШЕННЫЙ АЛГОРИТМ: Вычисление тренда с учетом уверенности ===
+    // Сканы с правильной шириной линии (высокая уверенность) получают больший вес
     float max_trend = 0.0f;
+    float max_trend_confidence = 0.0f;
+    
     for (int i = 0; i < 3; i++) {
         if (h_count[i] > 0 && h_count[i+1] > 0) {
             float trend = h_positions[i] - h_positions[i+1];
-            if (abs(trend) > abs(max_trend)) {
+            
+            // Средняя уверенность для этой пары сканов
+            float avg_confidence = (h_confidence[i] + h_confidence[i+1]) / 2.0f;
+            
+            // Взвешенная сила тренда
+            float weighted_trend_strength = abs(trend) * avg_confidence;
+            
+            // Выбираем тренд с максимальной взвешенной силой
+            if (weighted_trend_strength > abs(max_trend) * max_trend_confidence) {
                 max_trend = trend;
+                max_trend_confidence = avg_confidence;
             }
         }
     }
     
-    // Финальная позиция: базовая позиция (90% линия) + взвешенный тренд
-    float base_position = h_positions[3];  // Нижняя линия (90%) - самая важная
-    float final_position = base_position + (max_trend * 0.3f);  // 30% влияние тренда
+    // === Выбор базовой позиции с учетом уверенности ===
+    // Приоритет сканам с правильной шириной линии (высокая уверенность)
+    float base_position = h_positions[3];  // По умолчанию нижняя линия (90%)
+    float best_confidence = h_confidence[3];
     
-    // Ограничиваем результат в диапазоне [-1.0, 1.0]
-    final_position = constrain(final_position, -1.0f, 1.0f);
+    // Ищем скан с наилучшей уверенностью среди нижних
+    for (int i = 3; i >= 0; i--) {
+        if (h_count[i] > 0) {
+            if (h_confidence[i] > best_confidence || best_confidence == 0.0f) {
+                base_position = h_positions[i];
+                best_confidence = h_confidence[i];
+            }
+            // Если уверенность приемлемая (>0.5), используем этот скан
+            if (h_confidence[i] > 0.5f) {
+                break;
+            }
+        }
+    }
+    
+    // Финальная позиция: базовая позиция + взвешенный тренд
+    // Влияние тренда увеличивается с уверенностью
+    float trend_weight = 0.3f * (1.0f + max_trend_confidence);  // 0.3 - 0.6
+    float raw_position = base_position + (max_trend * trend_weight);
+    
+    // Ограничиваем в диапазоне [-1.0, 1.0]
+    raw_position = constrain(raw_position, -1.0f, 1.0f);
+    
+    // === ПРИМЕНЯЕМ BEST PRACTICES ФИЛЬТРЫ ===
+    
+    // 1. Фильтр резких скачков (защита от шума)
+    float filtered_position = filterPositionJump(raw_position);
+    
+    // 2. Медианный фильтр для сглаживания
+    float final_position = applyMedianFilter(filtered_position);
+    
+    DEBUG_PRINTF("🎯 Позиция: raw=%.3f, filtered=%.3f, final=%.3f\n", 
+                 raw_position, filtered_position, final_position);
     
     return final_position;
 }
 
 void LinerRobot::applyPIDControl(float linePosition) {
+    // === PID УПРАВЛЕНИЕ С КАЛИБРОВАННОЙ ДЕТЕКЦИЕЙ ===
+    // 
+    // linePosition от detectLinePosition():
+    //   -1.0 = линия слева (робот должен повернуть влево)
+    //    0.0 = линия по центру (робот едет прямо)
+    //   +1.0 = линия справа (робот должен повернуть вправо)
+    //
+    // Благодаря калибровке камеры:
+    //   - Позиция взвешена по уверенности (сканы с правильной шириной линии важнее)
+    //   - Тренд направления учитывает уверенность детекции
+    //   - Фильтруются ложные срабатывания (слишком узкие/широкие объекты)
+    
     // PID расчет
     pidError_ = linePosition;
     pidIntegral_ += pidError_;
@@ -917,6 +1073,141 @@ void LinerRobot::handleStatus(AsyncWebServerRequest* request) {
     json += "}";
     
     request->send(200, "application/json", json);
+}
+
+// ═══════════════════════════════════════════════════════════════
+// ОПТИМИЗАЦИИ ДЕТЕКТИРОВАНИЯ (BEST PRACTICES)
+// ═══════════════════════════════════════════════════════════════
+
+uint8_t LinerRobot::calculateOtsuThreshold(uint8_t* img, int width, int height) {
+    // Метод Otsu для автоматического определения оптимального порога бинаризации
+    // Адаптируется к изменениям освещения
+    
+    // Построение гистограммы яркости
+    int histogram[256] = {0};
+    int totalPixels = width * height;
+    
+    // Используем ROI - только нижнюю часть кадра (важнее для управления)
+    int startY = (int)(height * LINE_ROI_START_PERCENT);
+    
+    for (int y = startY; y < height; y++) {
+        for (int x = 0; x < width; x++) {
+            histogram[img[y * width + x]]++;
+        }
+    }
+    
+    int roiPixels = width * (height - startY);
+    
+    // Вычисление порога методом Otsu
+    float sum = 0.0f;
+    for (int i = 0; i < 256; i++) {
+        sum += i * histogram[i];
+    }
+    
+    float sumB = 0.0f;
+    int wB = 0;
+    int wF = 0;
+    float maxVariance = 0.0f;
+    uint8_t threshold = 128;  // Значение по умолчанию
+    
+    for (int t = 0; t < 256; t++) {
+        wB += histogram[t];
+        if (wB == 0) continue;
+        
+        wF = roiPixels - wB;
+        if (wF == 0) break;
+        
+        sumB += (float)(t * histogram[t]);
+        
+        float mB = sumB / wB;
+        float mF = (sum - sumB) / wF;
+        
+        // Межклассовая дисперсия
+        float variance = (float)wB * (float)wF * (mB - mF) * (mB - mF);
+        
+        if (variance > maxVariance) {
+            maxVariance = variance;
+            threshold = t;
+        }
+    }
+    
+    return threshold;
+}
+
+float LinerRobot::applyMedianFilter(float newPosition) {
+#if LINE_USE_MEDIAN_FILTER
+    // Добавляем новую позицию в кольцевой буфер
+    positionHistory_[positionHistoryIndex_] = newPosition;
+    positionHistoryIndex_ = (positionHistoryIndex_ + 1) % LINE_MEDIAN_FILTER_SIZE;
+    
+    // Копируем массив для сортировки (не меняем оригинал)
+    float sorted[LINE_MEDIAN_FILTER_SIZE];
+    for (int i = 0; i < LINE_MEDIAN_FILTER_SIZE; i++) {
+        sorted[i] = positionHistory_[i];
+    }
+    
+    // Простая сортировка вставками (для маленького массива эффективнее)
+    for (int i = 1; i < LINE_MEDIAN_FILTER_SIZE; i++) {
+        float key = sorted[i];
+        int j = i - 1;
+        while (j >= 0 && sorted[j] > key) {
+            sorted[j + 1] = sorted[j];
+            j--;
+        }
+        sorted[j + 1] = key;
+    }
+    
+    // Возвращаем медиану
+    return sorted[LINE_MEDIAN_FILTER_SIZE / 2];
+#else
+    return newPosition;
+#endif
+}
+
+float LinerRobot::filterPositionJump(float newPosition) {
+    // Фильтрация резких скачков позиции (защита от шума)
+    float diff = newPosition - lastValidPosition_;
+    
+    if (abs(diff) > LINE_MAX_POSITION_JUMP) {
+        // Слишком большой скачок - ограничиваем изменение
+        if (diff > 0) {
+            newPosition = lastValidPosition_ + LINE_MAX_POSITION_JUMP;
+        } else {
+            newPosition = lastValidPosition_ - LINE_MAX_POSITION_JUMP;
+        }
+        DEBUG_PRINTF("⚠️ Фильтр скачка: %.3f -> %.3f (макс: %.3f)\n", 
+                     lastValidPosition_, newPosition, LINE_MAX_POSITION_JUMP);
+    }
+    
+    lastValidPosition_ = newPosition;
+    return newPosition;
+}
+
+LinerRobot::BootMode LinerRobot::detectBootMode() {
+#ifdef FEATURE_BUTTON
+    // Читаем состояние кнопки при старте
+    // Если кнопка зажата (LOW) - Configuration Mode
+    // Если кнопка не зажата (HIGH) - Line Following Mode
+    
+    pinMode(BUTTON_PIN, INPUT_PULLUP);
+    delay(50);  // Небольшая задержка для стабилизации
+    
+    bool buttonState = digitalRead(BUTTON_PIN);
+    
+    if (buttonState == LOW) {
+        // Кнопка ЗАЖАТА при старте -> Configuration Mode
+        DEBUG_PRINTLN("🔧 Кнопка зажата при старте -> Configuration Mode");
+        return BootMode::CONFIGURATION;
+    } else {
+        // Кнопка НЕ ЗАЖАТА при старте -> Line Following Mode
+        DEBUG_PRINTLN("🏁 Кнопка не зажата -> Line Following Mode");
+        return BootMode::LINE_FOLLOWING;
+    }
+#else
+    // Если кнопки нет, по умолчанию Configuration Mode для безопасности
+    DEBUG_PRINTLN("⚠️ Кнопка не определена -> Configuration Mode по умолчанию");
+    return BootMode::CONFIGURATION;
+#endif
 }
 
 #endif // TARGET_LINER

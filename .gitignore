@@ -62,4 +62,5 @@ __pycache__/
 *.pyo
 
 # embedded_resources.h
-embedded_resources.h
+embedded_resources.htest/output/
+test/test/
