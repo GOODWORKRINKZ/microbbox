@@ -151,8 +151,15 @@
     // FRAMESIZE_QQVGA = 160x120 (увеличено для захвата большего пространства по бокам)
     #define LINE_CAMERA_WIDTH 160       // Ширина изображения
     #define LINE_CAMERA_HEIGHT 120      // Высота изображения
-    #define LINE_THRESHOLD 128          // Порог для ЧБ изображения
+    #define LINE_THRESHOLD 128          // Порог для ЧБ изображения (используется как fallback)
     #define LINE_T_JUNCTION_THRESHOLD 0.7f  // Порог детектирования T-пересечения (70% ширины)
+    
+    // Оптимизации детектирования (Best Practices)
+    #define LINE_USE_ADAPTIVE_THRESHOLD true  // Использовать адаптивный порог (метод Otsu)
+    #define LINE_USE_MEDIAN_FILTER true       // Медианный фильтр для сглаживания позиции
+    #define LINE_MEDIAN_FILTER_SIZE 5         // Размер окна медианного фильтра
+    #define LINE_ROI_START_PERCENT 0.3f       // ROI: начало области интереса (30% от верха)
+    #define LINE_MAX_POSITION_JUMP 0.3f       // Максимальный скачок позиции за кадр (фильтр шума)
     
     // Калибровка камеры (физические размеры наблюдаемого пространства)
     // Эти параметры определяются экспериментально путем измерения

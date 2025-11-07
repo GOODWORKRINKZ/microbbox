@@ -55,10 +55,11 @@
     #define FEATURE_WIFI                // WiFi для конфигурации и мониторинга
     #define FEATURE_WEBSERVER           // Веб-интерфейс для настройки
     #define FEATURE_OTA_UPDATE          // OTA обновления
-    #define FEATURE_NEOPIXEL            // Светодиоды для индикации
-    #define FEATURE_BUTTON              // Кнопка запуска автономного режима
+    // #define FEATURE_NEOPIXEL         // ОТКЛЮЧЕНО: Оптимизация для следования по линии
+    #define FEATURE_BUTTON              // Кнопка запуска автономного режима + выбор режима загрузки
     #define FEATURE_LINE_FOLLOWING      // Алгоритм следования по линии
-    #define FEATURE_REMOTE_CONTROL      // Опциональное ручное управление
+    #define FEATURE_REMOTE_CONTROL      // Опциональное ручное управление (только в режиме настройки)
+    #define FEATURE_DUAL_CORE           // Детектирование линии на отдельном ядре
 #endif
 
 #ifdef TARGET_BRAIN

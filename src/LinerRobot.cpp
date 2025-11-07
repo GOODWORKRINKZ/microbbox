@@ -30,18 +30,36 @@ LinerRobot::LinerRobot() :
     currentEffectMode_(EffectMode::NORMAL),
 #endif
     currentMode_(Mode::MANUAL),
+    bootMode_(BootMode::LINE_FOLLOWING),  // По умолчанию режим следования
     buttonPressed_(false),
     lastButtonCheck_(0),
     lineDetected_(false),
     lineNotDetectedCount_(0),
     lineEndAnimationPlayed_(false),
+#if LINE_USE_MEDIAN_FILTER
+    positionHistoryIndex_(0),
+#endif
+    lastValidPosition_(0.0f),
+    adaptiveThreshold_(LINE_THRESHOLD),
     pidError_(0.0f),
     pidLastError_(0.0f),
     pidIntegral_(0.0f),
     targetThrottlePWM_(1500),
     targetSteeringPWM_(1500)
+#ifdef FEATURE_DUAL_CORE
+    , lineDetectionTaskHandle_(nullptr),
+    detectedLinePosition_(0.0f),
+    linePositionMutex_(nullptr)
+#endif
 {
     DEBUG_PRINTLN("Создание LinerRobot");
+    
+#if LINE_USE_MEDIAN_FILTER
+    // Инициализация истории позиций нулями
+    for (int i = 0; i < LINE_MEDIAN_FILTER_SIZE; i++) {
+        positionHistory_[i] = 0.0f;
+    }
+#endif
 }
 
 LinerRobot::~LinerRobot() {
@@ -369,16 +387,28 @@ float LinerRobot::detectLinePosition() {
     uint8_t* img = fb->buf;
     
     // ========================================================================
-    // ОПТИМИЗИРОВАННЫЙ АЛГОРИТМ: 4×4 сканирующих линий
-    // Объединены в 2 блока для лучшей кэш-локальности (4x ускорение)
+    // ОПТИМИЗИРОВАННЫЙ АЛГОРИТМ: 4×4 сканирующих линий + BEST PRACTICES
+    // - Адаптивная бинаризация (метод Otsu)
+    // - ROI оптимизация (приоритет нижней части кадра)
+    // - Объединены в 2 блока для лучшей кэш-локальности (4x ускорение)
     // ========================================================================
     
+#if LINE_USE_ADAPTIVE_THRESHOLD
+    // Вычисляем адаптивный порог на основе текущего освещения (метод Otsu)
+    adaptiveThreshold_ = calculateOtsuThreshold(img, width, height);
+    uint8_t threshold = adaptiveThreshold_;
+    DEBUG_PRINTF("📊 Адаптивный порог: %d\n", threshold);
+#else
+    uint8_t threshold = LINE_THRESHOLD;
+#endif
+    
     // БЛОК 1: Все 4 горизонтальных скана подряд (кэш-френдли!)
+    // ROI оптимизация: фокус на нижней части кадра
     int scan_y[4] = {
-        height * 25 / 100,  // 25% - верхняя линия
-        height * 50 / 100,  // 50% - средне-верхняя
+        height * 40 / 100,  // 40% - верхняя линия (ROI начало)
+        height * 55 / 100,  // 55% - средне-верхняя
         height * 75 / 100,  // 75% - средне-нижняя
-        height * 90 / 100   // 90% - нижняя (основная)
+        height * 90 / 100   // 90% - нижняя (самая важная!)
     };
     
     int h_sum_x[4] = {0, 0, 0, 0};     // Сумма X-координат пикселей линии
@@ -390,7 +420,7 @@ float LinerRobot::detectLinePosition() {
         uint8_t* row = &img[y * width];  // Указатель на строку (быстрый доступ)
         
         for (int x = 0; x < width; x++) {
-            if (row[x] < LINE_THRESHOLD) {  // Черный пиксель (линия)
+            if (row[x] < threshold) {  // Черный пиксель (линия) - адаптивный порог
                 h_sum_x[scan_idx] += x;
                 h_count[scan_idx]++;
             }
@@ -413,7 +443,7 @@ float LinerRobot::detectLinePosition() {
         int x = scan_x[scan_idx];
         
         for (int y = 0; y < height; y++) {
-            if (img[y * width + x] < LINE_THRESHOLD) {
+            if (img[y * width + x] < threshold) {  // Используем адаптивный порог
                 v_sum_y[scan_idx] += y;
                 v_count[scan_idx]++;
             }
@@ -558,10 +588,21 @@ float LinerRobot::detectLinePosition() {
     // Финальная позиция: базовая позиция + взвешенный тренд
     // Влияние тренда увеличивается с уверенностью
     float trend_weight = 0.3f * (1.0f + max_trend_confidence);  // 0.3 - 0.6
-    float final_position = base_position + (max_trend * trend_weight);
+    float raw_position = base_position + (max_trend * trend_weight);
     
-    // Ограничиваем результат в диапазоне [-1.0, 1.0]
-    final_position = constrain(final_position, -1.0f, 1.0f);
+    // Ограничиваем в диапазоне [-1.0, 1.0]
+    raw_position = constrain(raw_position, -1.0f, 1.0f);
+    
+    // === ПРИМЕНЯЕМ BEST PRACTICES ФИЛЬТРЫ ===
+    
+    // 1. Фильтр резких скачков (защита от шума)
+    float filtered_position = filterPositionJump(raw_position);
+    
+    // 2. Медианный фильтр для сглаживания
+    float final_position = applyMedianFilter(filtered_position);
+    
+    DEBUG_PRINTF("🎯 Позиция: raw=%.3f, filtered=%.3f, final=%.3f\n", 
+                 raw_position, filtered_position, final_position);
     
     return final_position;
 }
@@ -995,6 +1036,114 @@ void LinerRobot::handleStatus(AsyncWebServerRequest* request) {
     json += "}";
     
     request->send(200, "application/json", json);
+}
+
+// ═══════════════════════════════════════════════════════════════
+// ОПТИМИЗАЦИИ ДЕТЕКТИРОВАНИЯ (BEST PRACTICES)
+// ═══════════════════════════════════════════════════════════════
+
+uint8_t LinerRobot::calculateOtsuThreshold(uint8_t* img, int width, int height) {
+    // Метод Otsu для автоматического определения оптимального порога бинаризации
+    // Адаптируется к изменениям освещения
+    
+    // Построение гистограммы яркости
+    int histogram[256] = {0};
+    int totalPixels = width * height;
+    
+    // Используем ROI - только нижнюю часть кадра (важнее для управления)
+    int startY = (int)(height * LINE_ROI_START_PERCENT);
+    
+    for (int y = startY; y < height; y++) {
+        for (int x = 0; x < width; x++) {
+            histogram[img[y * width + x]]++;
+        }
+    }
+    
+    int roiPixels = width * (height - startY);
+    
+    // Вычисление порога методом Otsu
+    float sum = 0.0f;
+    for (int i = 0; i < 256; i++) {
+        sum += i * histogram[i];
+    }
+    
+    float sumB = 0.0f;
+    int wB = 0;
+    int wF = 0;
+    float maxVariance = 0.0f;
+    uint8_t threshold = 128;  // Значение по умолчанию
+    
+    for (int t = 0; t < 256; t++) {
+        wB += histogram[t];
+        if (wB == 0) continue;
+        
+        wF = roiPixels - wB;
+        if (wF == 0) break;
+        
+        sumB += (float)(t * histogram[t]);
+        
+        float mB = sumB / wB;
+        float mF = (sum - sumB) / wF;
+        
+        // Межклассовая дисперсия
+        float variance = (float)wB * (float)wF * (mB - mF) * (mB - mF);
+        
+        if (variance > maxVariance) {
+            maxVariance = variance;
+            threshold = t;
+        }
+    }
+    
+    return threshold;
+}
+
+float LinerRobot::applyMedianFilter(float newPosition) {
+#if LINE_USE_MEDIAN_FILTER
+    // Добавляем новую позицию в кольцевой буфер
+    positionHistory_[positionHistoryIndex_] = newPosition;
+    positionHistoryIndex_ = (positionHistoryIndex_ + 1) % LINE_MEDIAN_FILTER_SIZE;
+    
+    // Копируем массив для сортировки (не меняем оригинал)
+    float sorted[LINE_MEDIAN_FILTER_SIZE];
+    for (int i = 0; i < LINE_MEDIAN_FILTER_SIZE; i++) {
+        sorted[i] = positionHistory_[i];
+    }
+    
+    // Простая сортировка вставками (для маленького массива эффективнее)
+    for (int i = 1; i < LINE_MEDIAN_FILTER_SIZE; i++) {
+        float key = sorted[i];
+        int j = i - 1;
+        while (j >= 0 && sorted[j] > key) {
+            sorted[j + 1] = sorted[j];
+            j--;
+        }
+        sorted[j + 1] = key;
+    }
+    
+    // Возвращаем медиану
+    return sorted[LINE_MEDIAN_FILTER_SIZE / 2];
+#else
+    return newPosition;
+#endif
+}
+
+float LinerRobot::filterPositionJump(float newPosition) {
+    // Фильтрация резких скачков позиции (защита от шума)
+    float diff = newPosition - lastValidPosition_;
+    
+    if (abs(diff) > LINE_MAX_POSITION_JUMP) {
+        // Слишком большой скачок - ограничиваем изменение
+        if (diff > 0) {
+            newPosition = lastValidPosition_ + LINE_MAX_POSITION_JUMP;
+        } else {
+            newPosition = lastValidPosition_ - LINE_MAX_POSITION_JUMP;
+        }
+        DEBUG_PRINTF("⚠️ Фильтр скачка: %.3f -> %.3f (макс: %.3f)\n", 
+                     lastValidPosition_, newPosition, LINE_MAX_POSITION_JUMP);
+    }
+    
+    lastValidPosition_ = newPosition;
+    return newPosition;
 }
 
 #endif // TARGET_LINER
