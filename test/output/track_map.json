@@ -7,7 +7,7 @@
     "width": 160,
     "height": 120
   },
-  "total_frames": 257,
+  "total_frames": 260,
   "frames": [
     {
       "frame_id": 0,
@@ -22,7 +22,7 @@
     {
       "frame_id": 1,
       "position": {
-        "x": 226,
+        "x": 225,
         "y": 2500
       },
       "direction_angle": 0.0,
@@ -32,7 +32,7 @@
     {
       "frame_id": 2,
       "position": {
-        "x": 252,
+        "x": 250,
         "y": 2500
       },
       "direction_angle": 0.0,
@@ -42,7 +42,7 @@
     {
       "frame_id": 3,
       "position": {
-        "x": 279,
+        "x": 276,
         "y": 2500
       },
       "direction_angle": 0.0,
@@ -52,7 +52,7 @@
     {
       "frame_id": 4,
       "position": {
-        "x": 305,
+        "x": 301,
         "y": 2500
       },
       "direction_angle": 0.0,
@@ -62,7 +62,7 @@
     {
       "frame_id": 5,
       "position": {
-        "x": 332,
+        "x": 326,
         "y": 2500
       },
       "direction_angle": 0.0,
@@ -72,7 +72,7 @@
     {
       "frame_id": 6,
       "position": {
-        "x": 358,
+        "x": 352,
         "y": 2500
       },
       "direction_angle": 0.0,
@@ -82,7 +82,7 @@
     {
       "frame_id": 7,
       "position": {
-        "x": 385,
+        "x": 377,
         "y": 2500
       },
       "direction_angle": 0.0,
@@ -92,7 +92,7 @@
     {
       "frame_id": 8,
       "position": {
-        "x": 411,
+        "x": 403,
         "y": 2500
       },
       "direction_angle": 0.0,
@@ -102,7 +102,7 @@
     {
       "frame_id": 9,
       "position": {
-        "x": 438,
+        "x": 428,
         "y": 2500
       },
       "direction_angle": 0.0,
@@ -112,7 +112,7 @@
     {
       "frame_id": 10,
       "position": {
-        "x": 464,
+        "x": 453,
         "y": 2500
       },
       "direction_angle": 0.0,
@@ -122,7 +122,7 @@
     {
       "frame_id": 11,
       "position": {
-        "x": 491,
+        "x": 479,
         "y": 2500
       },
       "direction_angle": 0.0,
@@ -132,7 +132,7 @@
     {
       "frame_id": 12,
       "position": {
-        "x": 517,
+        "x": 504,
         "y": 2500
       },
       "direction_angle": 0.0,
@@ -142,2448 +142,2478 @@
     {
       "frame_id": 13,
       "position": {
-        "x": 544,
+        "x": 530,
         "y": 2500
       },
-      "direction_angle": -41.25050170959751,
+      "direction_angle": -4.180573313834515,
       "image": "output/frames/frame_0013.jpg",
       "expected_action": "straight"
     },
     {
       "frame_id": 14,
       "position": {
-        "x": 563,
-        "y": 2482
+        "x": 555,
+        "y": 2498
       },
-      "direction_angle": -41.25050170959751,
+      "direction_angle": -4.180573313834515,
       "image": "output/frames/frame_0014.jpg",
-      "expected_action": "left"
+      "expected_action": "straight"
     },
     {
       "frame_id": 15,
       "position": {
-        "x": 583,
-        "y": 2465
+        "x": 581,
+        "y": 2496
       },
-      "direction_angle": -41.25050170959751,
+      "direction_angle": -4.180573313834515,
       "image": "output/frames/frame_0015.jpg",
-      "expected_action": "left"
+      "expected_action": "straight"
     },
     {
       "frame_id": 16,
       "position": {
-        "x": 603,
-        "y": 2447
+        "x": 607,
+        "y": 2494
       },
-      "direction_angle": -41.25050170959751,
+      "direction_angle": -4.180573313834515,
       "image": "output/frames/frame_0016.jpg",
-      "expected_action": "left"
+      "expected_action": "straight"
     },
     {
       "frame_id": 17,
       "position": {
-        "x": 623,
-        "y": 2430
+        "x": 632,
+        "y": 2492
       },
-      "direction_angle": -41.25050170959751,
+      "direction_angle": -4.180573313834515,
       "image": "output/frames/frame_0017.jpg",
-      "expected_action": "left"
+      "expected_action": "straight"
     },
     {
       "frame_id": 18,
       "position": {
-        "x": 642,
-        "y": 2413
+        "x": 658,
+        "y": 2490
       },
-      "direction_angle": -41.25050170959751,
+      "direction_angle": -4.180573313834515,
       "image": "output/frames/frame_0018.jpg",
-      "expected_action": "left"
+      "expected_action": "straight"
     },
     {
       "frame_id": 19,
       "position": {
-        "x": 662,
-        "y": 2395
+        "x": 684,
+        "y": 2488
       },
-      "direction_angle": -41.25050170959751,
+      "direction_angle": -4.180573313834515,
       "image": "output/frames/frame_0019.jpg",
-      "expected_action": "left"
+      "expected_action": "straight"
     },
     {
       "frame_id": 20,
       "position": {
-        "x": 682,
-        "y": 2378
+        "x": 710,
+        "y": 2486
       },
-      "direction_angle": -41.25050170959751,
+      "direction_angle": -4.180573313834515,
       "image": "output/frames/frame_0020.jpg",
-      "expected_action": "left"
+      "expected_action": "straight"
     },
     {
       "frame_id": 21,
       "position": {
-        "x": 702,
-        "y": 2361
+        "x": 735,
+        "y": 2484
       },
-      "direction_angle": -41.25050170959751,
+      "direction_angle": -4.180573313834515,
       "image": "output/frames/frame_0021.jpg",
-      "expected_action": "left"
+      "expected_action": "straight"
     },
     {
       "frame_id": 22,
       "position": {
-        "x": 722,
-        "y": 2343
+        "x": 761,
+        "y": 2483
       },
-      "direction_angle": -41.25050170959751,
+      "direction_angle": -4.180573313834515,
       "image": "output/frames/frame_0022.jpg",
-      "expected_action": "left"
+      "expected_action": "straight"
     },
     {
       "frame_id": 23,
       "position": {
-        "x": 741,
-        "y": 2326
+        "x": 787,
+        "y": 2481
       },
-      "direction_angle": -41.25050170959751,
+      "direction_angle": -4.180573313834515,
       "image": "output/frames/frame_0023.jpg",
-      "expected_action": "left"
+      "expected_action": "right"
     },
     {
       "frame_id": 24,
       "position": {
-        "x": 761,
-        "y": 2309
+        "x": 813,
+        "y": 2479
       },
-      "direction_angle": -41.25050170959751,
+      "direction_angle": 16.098225509046685,
       "image": "output/frames/frame_0024.jpg",
-      "expected_action": "left"
+      "expected_action": "right"
     },
     {
       "frame_id": 25,
       "position": {
-        "x": 781,
-        "y": 2291
+        "x": 838,
+        "y": 2486
       },
-      "direction_angle": -41.25050170959751,
+      "direction_angle": 16.098225509046685,
       "image": "output/frames/frame_0025.jpg",
-      "expected_action": "left"
+      "expected_action": "right"
     },
     {
       "frame_id": 26,
       "position": {
-        "x": 801,
-        "y": 2274
+        "x": 864,
+        "y": 2494
       },
-      "direction_angle": -44.05645247315309,
+      "direction_angle": 16.098225509046685,
       "image": "output/frames/frame_0026.jpg",
-      "expected_action": "left"
+      "expected_action": "right"
     },
     {
       "frame_id": 27,
       "position": {
-        "x": 820,
-        "y": 2256
+        "x": 890,
+        "y": 2501
       },
-      "direction_angle": -44.05645247315309,
+      "direction_angle": 16.098225509046685,
       "image": "output/frames/frame_0027.jpg",
-      "expected_action": "left"
+      "expected_action": "right"
     },
     {
       "frame_id": 28,
       "position": {
-        "x": 839,
-        "y": 2237
+        "x": 915,
+        "y": 2508
       },
-      "direction_angle": -44.05645247315309,
+      "direction_angle": 16.098225509046685,
       "image": "output/frames/frame_0028.jpg",
-      "expected_action": "left"
+      "expected_action": "right"
     },
     {
       "frame_id": 29,
       "position": {
-        "x": 858,
-        "y": 2219
+        "x": 941,
+        "y": 2516
       },
-      "direction_angle": -44.05645247315309,
+      "direction_angle": 16.098225509046685,
       "image": "output/frames/frame_0029.jpg",
-      "expected_action": "left"
+      "expected_action": "right"
     },
     {
       "frame_id": 30,
       "position": {
-        "x": 877,
-        "y": 2200
+        "x": 967,
+        "y": 2523
       },
-      "direction_angle": -44.05645247315309,
+      "direction_angle": 16.098225509046685,
       "image": "output/frames/frame_0030.jpg",
-      "expected_action": "left"
+      "expected_action": "right"
     },
     {
       "frame_id": 31,
       "position": {
-        "x": 896,
-        "y": 2182
+        "x": 992,
+        "y": 2531
       },
-      "direction_angle": -44.05645247315309,
+      "direction_angle": 16.098225509046685,
       "image": "output/frames/frame_0031.jpg",
-      "expected_action": "left"
+      "expected_action": "right"
     },
     {
       "frame_id": 32,
       "position": {
-        "x": 915,
-        "y": 2163
+        "x": 1018,
+        "y": 2538
       },
-      "direction_angle": -44.05645247315309,
+      "direction_angle": 16.098225509046685,
       "image": "output/frames/frame_0032.jpg",
-      "expected_action": "left"
+      "expected_action": "right"
     },
     {
       "frame_id": 33,
       "position": {
-        "x": 934,
-        "y": 2145
+        "x": 1044,
+        "y": 2545
       },
-      "direction_angle": -44.05645247315309,
+      "direction_angle": 16.098225509046685,
       "image": "output/frames/frame_0033.jpg",
-      "expected_action": "left"
+      "expected_action": "right"
     },
     {
       "frame_id": 34,
       "position": {
-        "x": 954,
-        "y": 2126
+        "x": 1069,
+        "y": 2553
       },
-      "direction_angle": -44.05645247315309,
+      "direction_angle": 16.098225509046685,
       "image": "output/frames/frame_0034.jpg",
-      "expected_action": "left"
+      "expected_action": "right"
     },
     {
       "frame_id": 35,
       "position": {
-        "x": 973,
-        "y": 2108
+        "x": 1095,
+        "y": 2560
       },
-      "direction_angle": -44.05645247315309,
+      "direction_angle": 16.098225509046685,
       "image": "output/frames/frame_0035.jpg",
-      "expected_action": "left"
+      "expected_action": "right"
     },
     {
       "frame_id": 36,
       "position": {
-        "x": 992,
-        "y": 2089
+        "x": 1120,
+        "y": 2568
       },
-      "direction_angle": 12.73490096088973,
+      "direction_angle": 16.098225509046685,
       "image": "output/frames/frame_0036.jpg",
       "expected_action": "straight"
     },
     {
       "frame_id": 37,
       "position": {
-        "x": 1019,
-        "y": 2095
+        "x": 1146,
+        "y": 2575
       },
-      "direction_angle": 12.73490096088973,
+      "direction_angle": -18.72943125000005,
       "image": "output/frames/frame_0037.jpg",
-      "expected_action": "left"
+      "expected_action": "straight"
     },
     {
       "frame_id": 38,
       "position": {
-        "x": 1046,
-        "y": 2101
+        "x": 1170,
+        "y": 2567
       },
-      "direction_angle": 12.73490096088973,
+      "direction_angle": -18.72943125000005,
       "image": "output/frames/frame_0038.jpg",
-      "expected_action": "right"
+      "expected_action": "straight"
     },
     {
       "frame_id": 39,
       "position": {
-        "x": 1073,
-        "y": 2107
+        "x": 1195,
+        "y": 2559
       },
-      "direction_angle": 12.73490096088973,
+      "direction_angle": -18.72943125000005,
       "image": "output/frames/frame_0039.jpg",
-      "expected_action": "right"
+      "expected_action": "left"
     },
     {
       "frame_id": 40,
       "position": {
-        "x": 1100,
-        "y": 2113
+        "x": 1219,
+        "y": 2550
       },
-      "direction_angle": 12.73490096088973,
+      "direction_angle": -18.72943125000005,
       "image": "output/frames/frame_0040.jpg",
-      "expected_action": "right"
+      "expected_action": "left"
     },
     {
       "frame_id": 41,
       "position": {
-        "x": 1127,
-        "y": 2120
+        "x": 1243,
+        "y": 2542
       },
-      "direction_angle": 12.73490096088973,
+      "direction_angle": -18.72943125000005,
       "image": "output/frames/frame_0041.jpg",
-      "expected_action": "right"
+      "expected_action": "left"
     },
     {
       "frame_id": 42,
       "position": {
-        "x": 1154,
-        "y": 2126
+        "x": 1268,
+        "y": 2534
       },
-      "direction_angle": 12.73490096088973,
+      "direction_angle": -18.72943125000005,
       "image": "output/frames/frame_0042.jpg",
-      "expected_action": "right"
+      "expected_action": "left"
     },
     {
       "frame_id": 43,
       "position": {
-        "x": 1181,
-        "y": 2132
+        "x": 1292,
+        "y": 2526
       },
-      "direction_angle": 12.73490096088973,
+      "direction_angle": -18.72943125000005,
       "image": "output/frames/frame_0043.jpg",
-      "expected_action": "right"
+      "expected_action": "left"
     },
     {
       "frame_id": 44,
       "position": {
-        "x": 1208,
-        "y": 2138
+        "x": 1317,
+        "y": 2517
       },
-      "direction_angle": 12.73490096088973,
+      "direction_angle": -18.72943125000005,
       "image": "output/frames/frame_0044.jpg",
-      "expected_action": "right"
+      "expected_action": "left"
     },
     {
       "frame_id": 45,
       "position": {
-        "x": 1235,
-        "y": 2144
+        "x": 1341,
+        "y": 2509
       },
-      "direction_angle": 10.360803176410874,
+      "direction_angle": -18.72943125000005,
       "image": "output/frames/frame_0045.jpg",
-      "expected_action": "right"
+      "expected_action": "left"
     },
     {
       "frame_id": 46,
       "position": {
-        "x": 1261,
-        "y": 2149
+        "x": 1365,
+        "y": 2501
       },
-      "direction_angle": 10.360803176410874,
+      "direction_angle": -18.72943125000005,
       "image": "output/frames/frame_0046.jpg",
-      "expected_action": "right"
+      "expected_action": "left"
     },
     {
       "frame_id": 47,
       "position": {
-        "x": 1288,
-        "y": 2154
+        "x": 1390,
+        "y": 2492
       },
-      "direction_angle": 10.360803176410874,
+      "direction_angle": -69.71408957416423,
       "image": "output/frames/frame_0047.jpg",
-      "expected_action": "right"
+      "expected_action": "left"
     },
     {
       "frame_id": 48,
       "position": {
-        "x": 1315,
-        "y": 2159
+        "x": 1399,
+        "y": 2467
       },
-      "direction_angle": 10.360803176410874,
+      "direction_angle": -69.71408957416423,
       "image": "output/frames/frame_0048.jpg",
-      "expected_action": "right"
+      "expected_action": "left"
     },
     {
       "frame_id": 49,
       "position": {
-        "x": 1341,
-        "y": 2163
+        "x": 1408,
+        "y": 2442
       },
-      "direction_angle": 10.360803176410874,
+      "direction_angle": -69.71408957416423,
       "image": "output/frames/frame_0049.jpg",
-      "expected_action": "right"
+      "expected_action": "left"
     },
     {
       "frame_id": 50,
       "position": {
-        "x": 1368,
-        "y": 2168
+        "x": 1418,
+        "y": 2416
       },
-      "direction_angle": 10.360803176410874,
+      "direction_angle": -69.71408957416423,
       "image": "output/frames/frame_0050.jpg",
-      "expected_action": "right"
+      "expected_action": "left"
     },
     {
       "frame_id": 51,
       "position": {
-        "x": 1395,
-        "y": 2173
+        "x": 1427,
+        "y": 2391
       },
-      "direction_angle": 10.360803176410874,
+      "direction_angle": -69.71408957416423,
       "image": "output/frames/frame_0051.jpg",
-      "expected_action": "right"
+      "expected_action": "left"
     },
     {
       "frame_id": 52,
       "position": {
-        "x": 1421,
-        "y": 2178
+        "x": 1437,
+        "y": 2365
       },
-      "direction_angle": 10.360803176410874,
+      "direction_angle": -69.71408957416423,
       "image": "output/frames/frame_0052.jpg",
-      "expected_action": "right"
+      "expected_action": "left"
     },
     {
       "frame_id": 53,
       "position": {
-        "x": 1448,
-        "y": 2183
+        "x": 1446,
+        "y": 2340
       },
-      "direction_angle": 10.360803176410874,
+      "direction_angle": -69.71408957416423,
       "image": "output/frames/frame_0053.jpg",
-      "expected_action": "right"
+      "expected_action": "left"
     },
     {
       "frame_id": 54,
       "position": {
-        "x": 1475,
-        "y": 2188
+        "x": 1455,
+        "y": 2315
       },
-      "direction_angle": 62.31561260525492,
+      "direction_angle": -69.71408957416423,
       "image": "output/frames/frame_0054.jpg",
-      "expected_action": "right"
+      "expected_action": "left"
     },
     {
       "frame_id": 55,
       "position": {
-        "x": 1487,
-        "y": 2212
+        "x": 1465,
+        "y": 2289
       },
-      "direction_angle": 62.31561260525492,
+      "direction_angle": -69.71408957416423,
       "image": "output/frames/frame_0055.jpg",
-      "expected_action": "right"
+      "expected_action": "left"
     },
     {
       "frame_id": 56,
       "position": {
-        "x": 1500,
-        "y": 2236
+        "x": 1474,
+        "y": 2264
       },
-      "direction_angle": 62.31561260525492,
+      "direction_angle": -69.71408957416423,
       "image": "output/frames/frame_0056.jpg",
-      "expected_action": "right"
+      "expected_action": "left"
     },
     {
       "frame_id": 57,
       "position": {
-        "x": 1513,
-        "y": 2260
+        "x": 1483,
+        "y": 2238
       },
-      "direction_angle": 62.31561260525492,
+      "direction_angle": -65.02890978169829,
       "image": "output/frames/frame_0057.jpg",
-      "expected_action": "right"
+      "expected_action": "left"
     },
     {
       "frame_id": 58,
       "position": {
-        "x": 1525,
-        "y": 2285
+        "x": 1494,
+        "y": 2215
       },
-      "direction_angle": 62.31561260525492,
+      "direction_angle": -65.02890978169829,
       "image": "output/frames/frame_0058.jpg",
-      "expected_action": "right"
+      "expected_action": "left"
     },
     {
       "frame_id": 59,
       "position": {
-        "x": 1538,
-        "y": 2309
+        "x": 1505,
+        "y": 2193
       },
-      "direction_angle": 62.31561260525492,
+      "direction_angle": -65.02890978169829,
       "image": "output/frames/frame_0059.jpg",
-      "expected_action": "right"
+      "expected_action": "left"
     },
     {
       "frame_id": 60,
       "position": {
-        "x": 1551,
-        "y": 2333
+        "x": 1515,
+        "y": 2170
       },
-      "direction_angle": 62.31561260525492,
+      "direction_angle": -65.02890978169829,
       "image": "output/frames/frame_0060.jpg",
-      "expected_action": "right"
+      "expected_action": "left"
     },
     {
       "frame_id": 61,
       "position": {
-        "x": 1564,
-        "y": 2357
+        "x": 1526,
+        "y": 2147
       },
-      "direction_angle": 62.31561260525492,
+      "direction_angle": -65.02890978169829,
       "image": "output/frames/frame_0061.jpg",
-      "expected_action": "right"
+      "expected_action": "left"
     },
     {
       "frame_id": 62,
       "position": {
-        "x": 1576,
-        "y": 2381
+        "x": 1537,
+        "y": 2124
       },
-      "direction_angle": 62.31561260525492,
+      "direction_angle": -65.02890978169829,
       "image": "output/frames/frame_0062.jpg",
-      "expected_action": "right"
+      "expected_action": "left"
     },
     {
       "frame_id": 63,
       "position": {
-        "x": 1589,
-        "y": 2406
+        "x": 1547,
+        "y": 2101
       },
-      "direction_angle": 66.99488484776181,
+      "direction_angle": -61.367975172021374,
       "image": "output/frames/frame_0063.jpg",
-      "expected_action": "right"
+      "expected_action": "left"
     },
     {
       "frame_id": 64,
       "position": {
-        "x": 1599,
-        "y": 2430
+        "x": 1560,
+        "y": 2078
       },
-      "direction_angle": 66.99488484776181,
+      "direction_angle": -61.367975172021374,
       "image": "output/frames/frame_0064.jpg",
-      "expected_action": "right"
+      "expected_action": "left"
     },
     {
       "frame_id": 65,
       "position": {
-        "x": 1609,
-        "y": 2454
+        "x": 1572,
+        "y": 2055
       },
-      "direction_angle": 66.99488484776181,
+      "direction_angle": -61.367975172021374,
       "image": "output/frames/frame_0065.jpg",
-      "expected_action": "right"
+      "expected_action": "left"
     },
     {
       "frame_id": 66,
       "position": {
-        "x": 1619,
-        "y": 2477
+        "x": 1585,
+        "y": 2032
       },
-      "direction_angle": 66.99488484776181,
+      "direction_angle": -61.367975172021374,
       "image": "output/frames/frame_0066.jpg",
-      "expected_action": "right"
+      "expected_action": "left"
     },
     {
       "frame_id": 67,
       "position": {
-        "x": 1630,
-        "y": 2501
+        "x": 1597,
+        "y": 2009
       },
-      "direction_angle": 66.99488484776181,
+      "direction_angle": -61.367975172021374,
       "image": "output/frames/frame_0067.jpg",
-      "expected_action": "right"
+      "expected_action": "left"
     },
     {
       "frame_id": 68,
       "position": {
-        "x": 1640,
-        "y": 2525
+        "x": 1610,
+        "y": 1986
       },
-      "direction_angle": 66.99488484776181,
+      "direction_angle": -61.367975172021374,
       "image": "output/frames/frame_0068.jpg",
-      "expected_action": "right"
+      "expected_action": "left"
     },
     {
       "frame_id": 69,
       "position": {
-        "x": 1650,
-        "y": 2549
+        "x": 1623,
+        "y": 1963
       },
-      "direction_angle": 66.99488484776181,
+      "direction_angle": -61.367975172021374,
       "image": "output/frames/frame_0069.jpg",
-      "expected_action": "right"
+      "expected_action": "left"
     },
     {
       "frame_id": 70,
       "position": {
-        "x": 1660,
-        "y": 2573
+        "x": 1635,
+        "y": 1940
       },
-      "direction_angle": 66.99488484776181,
+      "direction_angle": -61.367975172021374,
       "image": "output/frames/frame_0070.jpg",
-      "expected_action": "right"
+      "expected_action": "left"
     },
     {
       "frame_id": 71,
       "position": {
-        "x": 1670,
-        "y": 2597
+        "x": 1648,
+        "y": 1917
       },
-      "direction_angle": 66.99488484776181,
+      "direction_angle": -61.367975172021374,
       "image": "output/frames/frame_0071.jpg",
-      "expected_action": "right"
+      "expected_action": "left"
     },
     {
       "frame_id": 72,
       "position": {
-        "x": 1680,
-        "y": 2621
+        "x": 1660,
+        "y": 1894
       },
-      "direction_angle": 66.99488484776181,
+      "direction_angle": -61.367975172021374,
       "image": "output/frames/frame_0072.jpg",
-      "expected_action": "straight"
+      "expected_action": "left"
     },
     {
       "frame_id": 73,
       "position": {
-        "x": 1691,
-        "y": 2645
+        "x": 1673,
+        "y": 1871
       },
-      "direction_angle": 66.99488484776181,
+      "direction_angle": -61.367975172021374,
       "image": "output/frames/frame_0073.jpg",
-      "expected_action": "straight"
+      "expected_action": "left"
     },
     {
       "frame_id": 74,
       "position": {
-        "x": 1701,
-        "y": 2669
+        "x": 1685,
+        "y": 1848
       },
-      "direction_angle": -58.38007020493575,
+      "direction_angle": -61.367975172021374,
       "image": "output/frames/frame_0074.jpg",
-      "expected_action": "straight"
+      "expected_action": "left"
     },
     {
       "frame_id": 75,
       "position": {
-        "x": 1715,
-        "y": 2645
+        "x": 1698,
+        "y": 1825
       },
-      "direction_angle": -58.38007020493575,
+      "direction_angle": -61.367975172021374,
       "image": "output/frames/frame_0075.jpg",
-      "expected_action": "straight"
+      "expected_action": "left"
     },
     {
       "frame_id": 76,
       "position": {
-        "x": 1730,
-        "y": 2622
+        "x": 1710,
+        "y": 1802
       },
-      "direction_angle": -58.38007020493575,
+      "direction_angle": -61.367975172021374,
       "image": "output/frames/frame_0076.jpg",
-      "expected_action": "straight"
+      "expected_action": "left"
     },
     {
       "frame_id": 77,
       "position": {
-        "x": 1744,
-        "y": 2598
+        "x": 1723,
+        "y": 1779
       },
-      "direction_angle": -58.38007020493575,
+      "direction_angle": -61.367975172021374,
       "image": "output/frames/frame_0077.jpg",
       "expected_action": "left"
     },
     {
       "frame_id": 78,
       "position": {
-        "x": 1759,
-        "y": 2574
+        "x": 1736,
+        "y": 1756
       },
-      "direction_angle": -58.38007020493575,
+      "direction_angle": -63.336118513033604,
       "image": "output/frames/frame_0078.jpg",
       "expected_action": "left"
     },
     {
       "frame_id": 79,
       "position": {
-        "x": 1773,
-        "y": 2551
+        "x": 1747,
+        "y": 1734
       },
-      "direction_angle": -58.38007020493575,
+      "direction_angle": -63.336118513033604,
       "image": "output/frames/frame_0079.jpg",
       "expected_action": "left"
     },
     {
       "frame_id": 80,
       "position": {
-        "x": 1788,
-        "y": 2527
+        "x": 1758,
+        "y": 1712
       },
-      "direction_angle": -58.38007020493575,
+      "direction_angle": -63.336118513033604,
       "image": "output/frames/frame_0080.jpg",
       "expected_action": "left"
     },
     {
       "frame_id": 81,
       "position": {
-        "x": 1803,
-        "y": 2503
+        "x": 1769,
+        "y": 1689
       },
-      "direction_angle": -58.38007020493575,
+      "direction_angle": -63.336118513033604,
       "image": "output/frames/frame_0081.jpg",
       "expected_action": "left"
     },
     {
       "frame_id": 82,
       "position": {
-        "x": 1817,
-        "y": 2480
+        "x": 1780,
+        "y": 1667
       },
-      "direction_angle": -103.92914422041625,
+      "direction_angle": -63.336118513033604,
       "image": "output/frames/frame_0082.jpg",
-      "expected_action": "straight"
+      "expected_action": "left"
     },
     {
       "frame_id": 83,
       "position": {
-        "x": 1811,
-        "y": 2454
+        "x": 1792,
+        "y": 1645
       },
-      "direction_angle": -103.92914422041625,
+      "direction_angle": -63.336118513033604,
       "image": "output/frames/frame_0083.jpg",
-      "expected_action": "straight"
+      "expected_action": "left"
     },
     {
       "frame_id": 84,
       "position": {
-        "x": 1804,
-        "y": 2427
+        "x": 1803,
+        "y": 1622
       },
-      "direction_angle": -103.92914422041625,
+      "direction_angle": -63.336118513033604,
       "image": "output/frames/frame_0084.jpg",
-      "expected_action": "straight"
+      "expected_action": "left"
     },
     {
       "frame_id": 85,
       "position": {
-        "x": 1798,
-        "y": 2401
+        "x": 1814,
+        "y": 1600
       },
-      "direction_angle": -103.92914422041625,
+      "direction_angle": -63.336118513033604,
       "image": "output/frames/frame_0085.jpg",
-      "expected_action": "straight"
+      "expected_action": "left"
     },
     {
       "frame_id": 86,
       "position": {
-        "x": 1791,
-        "y": 2375
+        "x": 1825,
+        "y": 1578
       },
-      "direction_angle": -103.92914422041625,
+      "direction_angle": -63.336118513033604,
       "image": "output/frames/frame_0086.jpg",
-      "expected_action": "straight"
+      "expected_action": "left"
     },
     {
       "frame_id": 87,
       "position": {
-        "x": 1785,
-        "y": 2349
+        "x": 1837,
+        "y": 1555
       },
-      "direction_angle": -103.92914422041625,
+      "direction_angle": -63.336118513033604,
       "image": "output/frames/frame_0087.jpg",
-      "expected_action": "straight"
+      "expected_action": "left"
     },
     {
       "frame_id": 88,
       "position": {
-        "x": 1778,
-        "y": 2323
+        "x": 1848,
+        "y": 1533
       },
-      "direction_angle": -103.92914422041625,
+      "direction_angle": -63.336118513033604,
       "image": "output/frames/frame_0088.jpg",
-      "expected_action": "right"
+      "expected_action": "left"
     },
     {
       "frame_id": 89,
       "position": {
-        "x": 1772,
-        "y": 2296
+        "x": 1859,
+        "y": 1511
       },
-      "direction_angle": -132.25403440196368,
+      "direction_angle": -63.336118513033604,
       "image": "output/frames/frame_0089.jpg",
-      "expected_action": "right"
+      "expected_action": "left"
     },
     {
       "frame_id": 90,
       "position": {
-        "x": 1754,
-        "y": 2277
+        "x": 1870,
+        "y": 1488
       },
-      "direction_angle": -132.25403440196368,
+      "direction_angle": -63.336118513033604,
       "image": "output/frames/frame_0090.jpg",
-      "expected_action": "right"
+      "expected_action": "left"
     },
     {
       "frame_id": 91,
       "position": {
-        "x": 1736,
-        "y": 2257
+        "x": 1881,
+        "y": 1466
       },
-      "direction_angle": -132.25403440196368,
+      "direction_angle": -63.336118513033604,
       "image": "output/frames/frame_0091.jpg",
-      "expected_action": "right"
+      "expected_action": "left"
     },
     {
       "frame_id": 92,
       "position": {
-        "x": 1718,
-        "y": 2238
+        "x": 1893,
+        "y": 1444
       },
-      "direction_angle": -132.25403440196368,
+      "direction_angle": -102.72904147935637,
       "image": "output/frames/frame_0092.jpg",
-      "expected_action": "right"
+      "expected_action": "straight"
     },
     {
       "frame_id": 93,
       "position": {
-        "x": 1701,
-        "y": 2218
+        "x": 1887,
+        "y": 1418
       },
-      "direction_angle": -132.25403440196368,
+      "direction_angle": -102.72904147935637,
       "image": "output/frames/frame_0093.jpg",
-      "expected_action": "right"
+      "expected_action": "straight"
     },
     {
       "frame_id": 94,
       "position": {
-        "x": 1683,
-        "y": 2199
+        "x": 1881,
+        "y": 1392
       },
-      "direction_angle": -132.25403440196368,
+      "direction_angle": -102.72904147935637,
       "image": "output/frames/frame_0094.jpg",
-      "expected_action": "right"
+      "expected_action": "straight"
     },
     {
       "frame_id": 95,
       "position": {
-        "x": 1665,
-        "y": 2179
+        "x": 1875,
+        "y": 1365
       },
-      "direction_angle": -132.25403440196368,
+      "direction_angle": -102.72904147935637,
       "image": "output/frames/frame_0095.jpg",
-      "expected_action": "right"
+      "expected_action": "straight"
     },
     {
       "frame_id": 96,
       "position": {
-        "x": 1647,
-        "y": 2160
+        "x": 1869,
+        "y": 1339
       },
-      "direction_angle": -132.25403440196368,
+      "direction_angle": -102.72904147935637,
       "image": "output/frames/frame_0096.jpg",
-      "expected_action": "right"
+      "expected_action": "straight"
     },
     {
       "frame_id": 97,
       "position": {
-        "x": 1630,
-        "y": 2140
+        "x": 1863,
+        "y": 1313
       },
-      "direction_angle": -132.25403440196368,
+      "direction_angle": -102.72904147935637,
       "image": "output/frames/frame_0097.jpg",
-      "expected_action": "right"
+      "expected_action": "straight"
     },
     {
       "frame_id": 98,
       "position": {
-        "x": 1612,
-        "y": 2121
+        "x": 1857,
+        "y": 1287
       },
-      "direction_angle": -132.25403440196368,
+      "direction_angle": -102.72904147935637,
       "image": "output/frames/frame_0098.jpg",
-      "expected_action": "right"
+      "expected_action": "straight"
     },
     {
       "frame_id": 99,
       "position": {
-        "x": 1594,
-        "y": 2101
+        "x": 1851,
+        "y": 1261
       },
-      "direction_angle": -132.25403440196368,
+      "direction_angle": -102.72904147935637,
       "image": "output/frames/frame_0099.jpg",
-      "expected_action": "right"
+      "expected_action": "straight"
     },
     {
       "frame_id": 100,
       "position": {
-        "x": 1576,
-        "y": 2082
+        "x": 1845,
+        "y": 1235
       },
-      "direction_angle": -132.25403440196368,
+      "direction_angle": -68.81388496988139,
       "image": "output/frames/frame_0100.jpg",
-      "expected_action": "right"
+      "expected_action": "left"
     },
     {
       "frame_id": 101,
       "position": {
-        "x": 1559,
-        "y": 2062
+        "x": 1855,
+        "y": 1211
       },
-      "direction_angle": -132.25403440196368,
+      "direction_angle": -68.81388496988139,
       "image": "output/frames/frame_0101.jpg",
-      "expected_action": "right"
+      "expected_action": "straight"
     },
     {
       "frame_id": 102,
       "position": {
-        "x": 1541,
-        "y": 2043
+        "x": 1864,
+        "y": 1187
       },
-      "direction_angle": -87.98914020734573,
+      "direction_angle": -68.81388496988139,
       "image": "output/frames/frame_0102.jpg",
-      "expected_action": "right"
+      "expected_action": "straight"
     },
     {
       "frame_id": 103,
       "position": {
-        "x": 1542,
-        "y": 2014
+        "x": 1873,
+        "y": 1163
       },
-      "direction_angle": -87.98914020734573,
+      "direction_angle": -68.81388496988139,
       "image": "output/frames/frame_0103.jpg",
       "expected_action": "straight"
     },
     {
       "frame_id": 104,
       "position": {
-        "x": 1543,
-        "y": 1986
+        "x": 1883,
+        "y": 1139
       },
-      "direction_angle": -87.98914020734573,
+      "direction_angle": -68.81388496988139,
       "image": "output/frames/frame_0104.jpg",
       "expected_action": "straight"
     },
     {
       "frame_id": 105,
       "position": {
-        "x": 1544,
-        "y": 1958
+        "x": 1892,
+        "y": 1115
       },
-      "direction_angle": -87.98914020734573,
+      "direction_angle": -68.81388496988139,
       "image": "output/frames/frame_0105.jpg",
       "expected_action": "straight"
     },
     {
       "frame_id": 106,
       "position": {
-        "x": 1545,
-        "y": 1929
+        "x": 1901,
+        "y": 1091
       },
-      "direction_angle": -87.98914020734573,
+      "direction_angle": -68.81388496988139,
       "image": "output/frames/frame_0106.jpg",
       "expected_action": "straight"
     },
     {
       "frame_id": 107,
       "position": {
-        "x": 1546,
-        "y": 1901
+        "x": 1911,
+        "y": 1067
       },
-      "direction_angle": -87.98914020734573,
+      "direction_angle": -68.81388496988139,
       "image": "output/frames/frame_0107.jpg",
-      "expected_action": "straight"
+      "expected_action": "left"
     },
     {
       "frame_id": 108,
       "position": {
-        "x": 1547,
-        "y": 1873
+        "x": 1920,
+        "y": 1043
       },
-      "direction_angle": -87.98914020734573,
+      "direction_angle": -68.81388496988139,
       "image": "output/frames/frame_0108.jpg",
-      "expected_action": "straight"
+      "expected_action": "left"
     },
     {
       "frame_id": 109,
       "position": {
-        "x": 1548,
-        "y": 1845
+        "x": 1929,
+        "y": 1019
       },
-      "direction_angle": -90.44252333308916,
+      "direction_angle": -68.81388496988139,
       "image": "output/frames/frame_0109.jpg",
-      "expected_action": "straight"
+      "expected_action": "left"
     },
     {
       "frame_id": 110,
       "position": {
-        "x": 1548,
-        "y": 1817
+        "x": 1939,
+        "y": 995
       },
-      "direction_angle": -90.44252333308916,
+      "direction_angle": -68.81388496988139,
       "image": "output/frames/frame_0110.jpg",
-      "expected_action": "straight"
+      "expected_action": "left"
     },
     {
       "frame_id": 111,
       "position": {
-        "x": 1548,
-        "y": 1790
+        "x": 1948,
+        "y": 970
       },
-      "direction_angle": -90.44252333308916,
+      "direction_angle": -68.81388496988139,
       "image": "output/frames/frame_0111.jpg",
-      "expected_action": "straight"
+      "expected_action": "left"
     },
     {
       "frame_id": 112,
       "position": {
-        "x": 1547,
-        "y": 1763
+        "x": 1957,
+        "y": 946
       },
-      "direction_angle": -90.44252333308916,
+      "direction_angle": -68.81388496988139,
       "image": "output/frames/frame_0112.jpg",
-      "expected_action": "straight"
+      "expected_action": "left"
     },
     {
       "frame_id": 113,
       "position": {
-        "x": 1547,
-        "y": 1735
+        "x": 1967,
+        "y": 922
       },
-      "direction_angle": -90.44252333308916,
+      "direction_angle": -68.81388496988139,
       "image": "output/frames/frame_0113.jpg",
       "expected_action": "straight"
     },
     {
       "frame_id": 114,
       "position": {
-        "x": 1547,
-        "y": 1708
+        "x": 1976,
+        "y": 898
       },
-      "direction_angle": -90.44252333308916,
+      "direction_angle": -115.94403328836096,
       "image": "output/frames/frame_0114.jpg",
       "expected_action": "straight"
     },
     {
       "frame_id": 115,
       "position": {
-        "x": 1547,
-        "y": 1681
+        "x": 1965,
+        "y": 875
       },
-      "direction_angle": -117.69291841498149,
+      "direction_angle": -115.94403328836096,
       "image": "output/frames/frame_0115.jpg",
-      "expected_action": "straight"
+      "expected_action": "right"
     },
     {
       "frame_id": 116,
       "position": {
-        "x": 1535,
-        "y": 1658
+        "x": 1953,
+        "y": 852
       },
-      "direction_angle": -117.69291841498149,
+      "direction_angle": -115.94403328836096,
       "image": "output/frames/frame_0116.jpg",
       "expected_action": "right"
     },
     {
       "frame_id": 117,
       "position": {
-        "x": 1523,
-        "y": 1635
+        "x": 1942,
+        "y": 829
       },
-      "direction_angle": -117.69291841498149,
+      "direction_angle": -115.94403328836096,
       "image": "output/frames/frame_0117.jpg",
       "expected_action": "right"
     },
     {
       "frame_id": 118,
       "position": {
-        "x": 1511,
-        "y": 1612
+        "x": 1931,
+        "y": 805
       },
-      "direction_angle": -117.69291841498149,
+      "direction_angle": -115.94403328836096,
       "image": "output/frames/frame_0118.jpg",
       "expected_action": "right"
     },
     {
       "frame_id": 119,
       "position": {
-        "x": 1499,
-        "y": 1590
+        "x": 1919,
+        "y": 782
       },
-      "direction_angle": -117.69291841498149,
+      "direction_angle": -115.94403328836096,
       "image": "output/frames/frame_0119.jpg",
       "expected_action": "right"
     },
     {
       "frame_id": 120,
       "position": {
-        "x": 1487,
-        "y": 1567
+        "x": 1908,
+        "y": 759
       },
-      "direction_angle": -117.69291841498149,
+      "direction_angle": -115.94403328836096,
       "image": "output/frames/frame_0120.jpg",
       "expected_action": "right"
     },
     {
       "frame_id": 121,
       "position": {
-        "x": 1475,
-        "y": 1544
+        "x": 1897,
+        "y": 736
       },
-      "direction_angle": -117.69291841498149,
+      "direction_angle": -115.94403328836096,
       "image": "output/frames/frame_0121.jpg",
-      "expected_action": "right"
+      "expected_action": "straight"
     },
     {
       "frame_id": 122,
       "position": {
-        "x": 1463,
-        "y": 1522
+        "x": 1885,
+        "y": 712
       },
-      "direction_angle": -117.69291841498149,
+      "direction_angle": -115.94403328836096,
       "image": "output/frames/frame_0122.jpg",
-      "expected_action": "right"
+      "expected_action": "straight"
     },
     {
       "frame_id": 123,
       "position": {
-        "x": 1451,
-        "y": 1499
+        "x": 1874,
+        "y": 689
       },
-      "direction_angle": -117.69291841498149,
+      "direction_angle": -115.94403328836096,
       "image": "output/frames/frame_0123.jpg",
-      "expected_action": "right"
+      "expected_action": "straight"
     },
     {
       "frame_id": 124,
       "position": {
-        "x": 1439,
-        "y": 1476
+        "x": 1863,
+        "y": 666
       },
-      "direction_angle": -117.69291841498149,
+      "direction_angle": -115.94403328836096,
       "image": "output/frames/frame_0124.jpg",
-      "expected_action": "right"
+      "expected_action": "straight"
     },
     {
       "frame_id": 125,
       "position": {
-        "x": 1427,
-        "y": 1453
+        "x": 1851,
+        "y": 642
       },
-      "direction_angle": -117.69291841498149,
+      "direction_angle": -115.94403328836096,
       "image": "output/frames/frame_0125.jpg",
-      "expected_action": "right"
+      "expected_action": "straight"
     },
     {
       "frame_id": 126,
       "position": {
-        "x": 1415,
-        "y": 1431
+        "x": 1840,
+        "y": 619
       },
-      "direction_angle": -117.69291841498149,
+      "direction_angle": -115.94403328836096,
       "image": "output/frames/frame_0126.jpg",
-      "expected_action": "right"
+      "expected_action": "straight"
     },
     {
       "frame_id": 127,
       "position": {
-        "x": 1404,
-        "y": 1408
+        "x": 1829,
+        "y": 596
       },
-      "direction_angle": -117.69291841498149,
+      "direction_angle": -115.94403328836096,
       "image": "output/frames/frame_0127.jpg",
-      "expected_action": "right"
+      "expected_action": "straight"
     },
     {
       "frame_id": 128,
       "position": {
-        "x": 1392,
-        "y": 1385
+        "x": 1817,
+        "y": 573
       },
-      "direction_angle": -117.69291841498149,
+      "direction_angle": -115.94403328836096,
       "image": "output/frames/frame_0128.jpg",
-      "expected_action": "right"
+      "expected_action": "straight"
     },
     {
       "frame_id": 129,
       "position": {
-        "x": 1380,
-        "y": 1362
+        "x": 1806,
+        "y": 549
       },
-      "direction_angle": -117.69291841498149,
+      "direction_angle": -112.83720761650248,
       "image": "output/frames/frame_0129.jpg",
-      "expected_action": "right"
+      "expected_action": "straight"
     },
     {
       "frame_id": 130,
       "position": {
-        "x": 1368,
-        "y": 1340
+        "x": 1796,
+        "y": 525
       },
-      "direction_angle": -114.65971139251798,
+      "direction_angle": -112.83720761650248,
       "image": "output/frames/frame_0130.jpg",
-      "expected_action": "right"
+      "expected_action": "straight"
     },
     {
       "frame_id": 131,
       "position": {
-        "x": 1357,
-        "y": 1316
+        "x": 1786,
+        "y": 501
       },
-      "direction_angle": -114.65971139251798,
+      "direction_angle": -112.83720761650248,
       "image": "output/frames/frame_0131.jpg",
-      "expected_action": "right"
+      "expected_action": "straight"
     },
     {
       "frame_id": 132,
       "position": {
-        "x": 1346,
-        "y": 1292
+        "x": 1776,
+        "y": 477
       },
-      "direction_angle": -114.65971139251798,
+      "direction_angle": -112.83720761650248,
       "image": "output/frames/frame_0132.jpg",
-      "expected_action": "right"
+      "expected_action": "straight"
     },
     {
       "frame_id": 133,
       "position": {
-        "x": 1335,
-        "y": 1268
+        "x": 1766,
+        "y": 453
       },
-      "direction_angle": -114.65971139251798,
+      "direction_angle": -112.83720761650248,
       "image": "output/frames/frame_0133.jpg",
-      "expected_action": "right"
+      "expected_action": "straight"
     },
     {
       "frame_id": 134,
       "position": {
-        "x": 1324,
-        "y": 1244
+        "x": 1755,
+        "y": 429
       },
-      "direction_angle": -114.65971139251798,
+      "direction_angle": -112.83720761650248,
       "image": "output/frames/frame_0134.jpg",
-      "expected_action": "right"
+      "expected_action": "straight"
     },
     {
       "frame_id": 135,
       "position": {
-        "x": 1313,
-        "y": 1220
+        "x": 1745,
+        "y": 405
       },
-      "direction_angle": -114.65971139251798,
+      "direction_angle": -112.83720761650248,
       "image": "output/frames/frame_0135.jpg",
       "expected_action": "right"
     },
     {
       "frame_id": 136,
       "position": {
-        "x": 1302,
-        "y": 1196
+        "x": 1735,
+        "y": 381
       },
-      "direction_angle": -115.72608026441709,
+      "direction_angle": -112.83720761650248,
       "image": "output/frames/frame_0136.jpg",
       "expected_action": "right"
     },
     {
       "frame_id": 137,
       "position": {
-        "x": 1290,
-        "y": 1172
+        "x": 1725,
+        "y": 356
       },
-      "direction_angle": -115.72608026441709,
+      "direction_angle": -112.83720761650248,
       "image": "output/frames/frame_0137.jpg",
       "expected_action": "right"
     },
     {
       "frame_id": 138,
       "position": {
-        "x": 1279,
-        "y": 1148
+        "x": 1715,
+        "y": 332
       },
-      "direction_angle": -115.72608026441709,
+      "direction_angle": -112.83720761650248,
       "image": "output/frames/frame_0138.jpg",
       "expected_action": "right"
     },
     {
       "frame_id": 139,
       "position": {
-        "x": 1267,
-        "y": 1124
+        "x": 1705,
+        "y": 308
       },
-      "direction_angle": -115.72608026441709,
+      "direction_angle": -112.83720761650248,
       "image": "output/frames/frame_0139.jpg",
       "expected_action": "right"
     },
     {
       "frame_id": 140,
       "position": {
-        "x": 1256,
-        "y": 1100
+        "x": 1694,
+        "y": 284
       },
-      "direction_angle": -115.72608026441709,
+      "direction_angle": 50.65788309956748,
       "image": "output/frames/frame_0140.jpg",
-      "expected_action": "right"
+      "expected_action": "straight"
     },
     {
       "frame_id": 141,
       "position": {
-        "x": 1244,
-        "y": 1076
+        "x": 1710,
+        "y": 303
       },
-      "direction_angle": -115.72608026441709,
+      "direction_angle": 50.65788309956748,
       "image": "output/frames/frame_0141.jpg",
       "expected_action": "right"
     },
     {
       "frame_id": 142,
       "position": {
-        "x": 1233,
-        "y": 1052
+        "x": 1726,
+        "y": 323
       },
-      "direction_angle": -115.72608026441709,
+      "direction_angle": 50.65788309956748,
       "image": "output/frames/frame_0142.jpg",
       "expected_action": "right"
     },
     {
       "frame_id": 143,
       "position": {
-        "x": 1221,
-        "y": 1028
+        "x": 1742,
+        "y": 342
       },
-      "direction_angle": -115.72608026441709,
+      "direction_angle": 50.65788309956748,
       "image": "output/frames/frame_0143.jpg",
       "expected_action": "right"
     },
     {
       "frame_id": 144,
       "position": {
-        "x": 1209,
-        "y": 1004
+        "x": 1758,
+        "y": 362
       },
-      "direction_angle": -115.72608026441709,
+      "direction_angle": 50.65788309956748,
       "image": "output/frames/frame_0144.jpg",
       "expected_action": "right"
     },
     {
       "frame_id": 145,
       "position": {
-        "x": 1198,
-        "y": 981
+        "x": 1774,
+        "y": 381
       },
-      "direction_angle": -115.72608026441709,
+      "direction_angle": 50.65788309956748,
       "image": "output/frames/frame_0145.jpg",
       "expected_action": "right"
     },
     {
       "frame_id": 146,
       "position": {
-        "x": 1186,
-        "y": 957
+        "x": 1790,
+        "y": 400
       },
-      "direction_angle": -115.72608026441709,
+      "direction_angle": 50.65788309956748,
       "image": "output/frames/frame_0146.jpg",
       "expected_action": "right"
     },
     {
       "frame_id": 147,
       "position": {
-        "x": 1175,
-        "y": 933
+        "x": 1806,
+        "y": 420
       },
-      "direction_angle": -115.72608026441709,
+      "direction_angle": 50.65788309956748,
       "image": "output/frames/frame_0147.jpg",
       "expected_action": "right"
     },
     {
       "frame_id": 148,
       "position": {
-        "x": 1163,
-        "y": 909
+        "x": 1822,
+        "y": 439
       },
-      "direction_angle": -115.72608026441709,
+      "direction_angle": 50.65788309956748,
       "image": "output/frames/frame_0148.jpg",
       "expected_action": "right"
     },
     {
       "frame_id": 149,
       "position": {
-        "x": 1152,
-        "y": 885
+        "x": 1838,
+        "y": 459
       },
-      "direction_angle": -115.72608026441709,
+      "direction_angle": 50.65788309956748,
       "image": "output/frames/frame_0149.jpg",
       "expected_action": "right"
     },
     {
       "frame_id": 150,
       "position": {
-        "x": 1140,
-        "y": 861
+        "x": 1853,
+        "y": 478
       },
-      "direction_angle": -115.72608026441709,
+      "direction_angle": 50.65788309956748,
       "image": "output/frames/frame_0150.jpg",
-      "expected_action": "right"
+      "expected_action": "straight"
     },
     {
       "frame_id": 151,
       "position": {
-        "x": 1129,
-        "y": 837
+        "x": 1869,
+        "y": 497
       },
-      "direction_angle": -73.45036963343962,
+      "direction_angle": 96.71056722128505,
       "image": "output/frames/frame_0151.jpg",
       "expected_action": "straight"
     },
     {
       "frame_id": 152,
       "position": {
-        "x": 1136,
-        "y": 811
+        "x": 1866,
+        "y": 526
       },
-      "direction_angle": -73.45036963343962,
+      "direction_angle": 96.71056722128505,
       "image": "output/frames/frame_0152.jpg",
       "expected_action": "straight"
     },
     {
       "frame_id": 153,
       "position": {
-        "x": 1144,
-        "y": 786
+        "x": 1863,
+        "y": 554
       },
-      "direction_angle": -73.45036963343962,
+      "direction_angle": 96.71056722128505,
       "image": "output/frames/frame_0153.jpg",
       "expected_action": "straight"
     },
     {
       "frame_id": 154,
       "position": {
-        "x": 1151,
-        "y": 761
+        "x": 1859,
+        "y": 582
       },
-      "direction_angle": -73.45036963343962,
+      "direction_angle": 96.71056722128505,
       "image": "output/frames/frame_0154.jpg",
       "expected_action": "straight"
     },
     {
       "frame_id": 155,
       "position": {
-        "x": 1159,
-        "y": 735
+        "x": 1856,
+        "y": 611
       },
-      "direction_angle": -73.45036963343962,
+      "direction_angle": 96.71056722128505,
       "image": "output/frames/frame_0155.jpg",
-      "expected_action": "left"
+      "expected_action": "straight"
     },
     {
       "frame_id": 156,
       "position": {
-        "x": 1166,
-        "y": 710
+        "x": 1853,
+        "y": 639
       },
-      "direction_angle": -73.45036963343962,
+      "direction_angle": 96.71056722128505,
       "image": "output/frames/frame_0156.jpg",
-      "expected_action": "left"
+      "expected_action": "straight"
     },
     {
       "frame_id": 157,
       "position": {
-        "x": 1174,
-        "y": 684
+        "x": 1849,
+        "y": 667
       },
-      "direction_angle": -48.282564693052436,
+      "direction_angle": 99.48763798025763,
       "image": "output/frames/frame_0157.jpg",
-      "expected_action": "left"
+      "expected_action": "straight"
     },
     {
       "frame_id": 158,
       "position": {
-        "x": 1192,
-        "y": 664
+        "x": 1845,
+        "y": 693
       },
-      "direction_angle": -48.282564693052436,
+      "direction_angle": 99.48763798025763,
       "image": "output/frames/frame_0158.jpg",
-      "expected_action": "left"
+      "expected_action": "straight"
     },
     {
       "frame_id": 159,
       "position": {
-        "x": 1210,
-        "y": 644
+        "x": 1841,
+        "y": 719
       },
-      "direction_angle": -48.282564693052436,
+      "direction_angle": 99.48763798025763,
       "image": "output/frames/frame_0159.jpg",
-      "expected_action": "left"
+      "expected_action": "straight"
     },
     {
       "frame_id": 160,
       "position": {
-        "x": 1227,
-        "y": 624
+        "x": 1836,
+        "y": 745
       },
-      "direction_angle": -48.282564693052436,
+      "direction_angle": 99.48763798025763,
       "image": "output/frames/frame_0160.jpg",
-      "expected_action": "left"
+      "expected_action": "straight"
     },
     {
       "frame_id": 161,
       "position": {
-        "x": 1245,
-        "y": 604
+        "x": 1832,
+        "y": 771
       },
-      "direction_angle": -48.282564693052436,
+      "direction_angle": 99.48763798025763,
       "image": "output/frames/frame_0161.jpg",
       "expected_action": "left"
     },
     {
       "frame_id": 162,
       "position": {
-        "x": 1263,
-        "y": 584
+        "x": 1828,
+        "y": 797
       },
-      "direction_angle": -48.282564693052436,
+      "direction_angle": 99.48763798025763,
       "image": "output/frames/frame_0162.jpg",
       "expected_action": "left"
     },
     {
       "frame_id": 163,
       "position": {
-        "x": 1281,
-        "y": 565
+        "x": 1823,
+        "y": 823
       },
-      "direction_angle": -48.282564693052436,
+      "direction_angle": 99.48763798025763,
       "image": "output/frames/frame_0163.jpg",
-      "expected_action": "left"
+      "expected_action": "straight"
     },
     {
       "frame_id": 164,
       "position": {
-        "x": 1299,
-        "y": 545
+        "x": 1819,
+        "y": 849
       },
-      "direction_angle": -48.282564693052436,
+      "direction_angle": 99.48763798025763,
       "image": "output/frames/frame_0164.jpg",
       "expected_action": "straight"
     },
     {
       "frame_id": 165,
       "position": {
-        "x": 1316,
-        "y": 525
+        "x": 1815,
+        "y": 875
       },
-      "direction_angle": 57.72344953441169,
+      "direction_angle": 99.48763798025763,
       "image": "output/frames/frame_0165.jpg",
       "expected_action": "straight"
     },
     {
       "frame_id": 166,
       "position": {
-        "x": 1331,
-        "y": 547
+        "x": 1810,
+        "y": 901
       },
-      "direction_angle": 57.72344953441169,
+      "direction_angle": 99.48763798025763,
       "image": "output/frames/frame_0166.jpg",
       "expected_action": "straight"
     },
     {
       "frame_id": 167,
       "position": {
-        "x": 1345,
-        "y": 570
+        "x": 1806,
+        "y": 927
       },
-      "direction_angle": 57.72344953441169,
+      "direction_angle": 99.48763798025763,
       "image": "output/frames/frame_0167.jpg",
-      "expected_action": "right"
+      "expected_action": "straight"
     },
     {
       "frame_id": 168,
       "position": {
-        "x": 1359,
-        "y": 593
+        "x": 1802,
+        "y": 953
       },
-      "direction_angle": 57.72344953441169,
+      "direction_angle": 99.48763798025763,
       "image": "output/frames/frame_0168.jpg",
-      "expected_action": "right"
+      "expected_action": "straight"
     },
     {
       "frame_id": 169,
       "position": {
-        "x": 1374,
-        "y": 616
+        "x": 1797,
+        "y": 979
       },
-      "direction_angle": 57.72344953441169,
+      "direction_angle": 99.48763798025763,
       "image": "output/frames/frame_0169.jpg",
-      "expected_action": "right"
+      "expected_action": "straight"
     },
     {
       "frame_id": 170,
       "position": {
-        "x": 1388,
-        "y": 638
+        "x": 1793,
+        "y": 1005
       },
-      "direction_angle": 57.72344953441169,
+      "direction_angle": 60.702161559455995,
       "image": "output/frames/frame_0170.jpg",
-      "expected_action": "right"
+      "expected_action": "straight"
     },
     {
       "frame_id": 171,
       "position": {
-        "x": 1403,
-        "y": 661
+        "x": 1806,
+        "y": 1028
       },
-      "direction_angle": 57.72344953441169,
+      "direction_angle": 60.702161559455995,
       "image": "output/frames/frame_0171.jpg",
       "expected_action": "right"
     },
     {
       "frame_id": 172,
       "position": {
-        "x": 1417,
-        "y": 684
+        "x": 1819,
+        "y": 1051
       },
-      "direction_angle": 57.72344953441169,
+      "direction_angle": 60.702161559455995,
       "image": "output/frames/frame_0172.jpg",
       "expected_action": "right"
     },
     {
       "frame_id": 173,
       "position": {
-        "x": 1431,
-        "y": 707
+        "x": 1832,
+        "y": 1074
       },
-      "direction_angle": 57.72344953441169,
+      "direction_angle": 60.702161559455995,
       "image": "output/frames/frame_0173.jpg",
       "expected_action": "right"
     },
     {
       "frame_id": 174,
       "position": {
-        "x": 1446,
-        "y": 729
+        "x": 1845,
+        "y": 1096
       },
-      "direction_angle": 57.72344953441169,
+      "direction_angle": 60.702161559455995,
       "image": "output/frames/frame_0174.jpg",
-      "expected_action": "right"
+      "expected_action": "straight"
     },
     {
       "frame_id": 175,
       "position": {
-        "x": 1460,
-        "y": 752
+        "x": 1857,
+        "y": 1119
       },
-      "direction_angle": 57.72344953441169,
+      "direction_angle": 60.702161559455995,
       "image": "output/frames/frame_0175.jpg",
-      "expected_action": "right"
+      "expected_action": "straight"
     },
     {
       "frame_id": 176,
       "position": {
-        "x": 1474,
-        "y": 775
+        "x": 1870,
+        "y": 1142
       },
-      "direction_angle": 53.84178918081589,
+      "direction_angle": 58.176369141274144,
       "image": "output/frames/frame_0176.jpg",
-      "expected_action": "right"
+      "expected_action": "straight"
     },
     {
       "frame_id": 177,
       "position": {
-        "x": 1490,
-        "y": 797
+        "x": 1885,
+        "y": 1165
       },
-      "direction_angle": 53.84178918081589,
+      "direction_angle": 58.176369141274144,
       "image": "output/frames/frame_0177.jpg",
-      "expected_action": "right"
+      "expected_action": "straight"
     },
     {
       "frame_id": 178,
       "position": {
-        "x": 1506,
-        "y": 819
+        "x": 1899,
+        "y": 1188
       },
-      "direction_angle": 53.84178918081589,
+      "direction_angle": 58.176369141274144,
       "image": "output/frames/frame_0178.jpg",
-      "expected_action": "right"
+      "expected_action": "straight"
     },
     {
       "frame_id": 179,
       "position": {
-        "x": 1522,
-        "y": 841
+        "x": 1913,
+        "y": 1211
       },
-      "direction_angle": 53.84178918081589,
+      "direction_angle": 58.176369141274144,
       "image": "output/frames/frame_0179.jpg",
-      "expected_action": "right"
+      "expected_action": "straight"
     },
     {
       "frame_id": 180,
       "position": {
-        "x": 1538,
-        "y": 862
+        "x": 1927,
+        "y": 1234
       },
-      "direction_angle": 53.84178918081589,
+      "direction_angle": 58.176369141274144,
       "image": "output/frames/frame_0180.jpg",
       "expected_action": "right"
     },
     {
       "frame_id": 181,
       "position": {
-        "x": 1554,
-        "y": 884
+        "x": 1942,
+        "y": 1257
       },
-      "direction_angle": 53.84178918081589,
+      "direction_angle": 58.176369141274144,
       "image": "output/frames/frame_0181.jpg",
       "expected_action": "right"
     },
     {
       "frame_id": 182,
       "position": {
-        "x": 1570,
-        "y": 906
+        "x": 1956,
+        "y": 1280
       },
-      "direction_angle": 53.84178918081589,
+      "direction_angle": 60.39477264880879,
       "image": "output/frames/frame_0182.jpg",
       "expected_action": "right"
     },
     {
       "frame_id": 183,
       "position": {
-        "x": 1586,
-        "y": 928
+        "x": 1968,
+        "y": 1302
       },
-      "direction_angle": 53.84178918081589,
+      "direction_angle": 60.39477264880879,
       "image": "output/frames/frame_0183.jpg",
       "expected_action": "right"
     },
     {
       "frame_id": 184,
       "position": {
-        "x": 1602,
-        "y": 950
+        "x": 1981,
+        "y": 1324
       },
-      "direction_angle": 12.998210185956175,
+      "direction_angle": 60.39477264880879,
       "image": "output/frames/frame_0184.jpg",
       "expected_action": "right"
     },
     {
       "frame_id": 185,
       "position": {
-        "x": 1628,
-        "y": 956
+        "x": 1993,
+        "y": 1346
       },
-      "direction_angle": 12.998210185956175,
+      "direction_angle": 60.39477264880879,
       "image": "output/frames/frame_0185.jpg",
       "expected_action": "right"
     },
     {
       "frame_id": 186,
       "position": {
-        "x": 1653,
-        "y": 962
+        "x": 2005,
+        "y": 1367
       },
-      "direction_angle": 12.998210185956175,
+      "direction_angle": 60.39477264880879,
       "image": "output/frames/frame_0186.jpg",
       "expected_action": "right"
     },
     {
       "frame_id": 187,
       "position": {
-        "x": 1678,
-        "y": 967
+        "x": 2018,
+        "y": 1389
       },
-      "direction_angle": 12.998210185956175,
+      "direction_angle": 60.39477264880879,
       "image": "output/frames/frame_0187.jpg",
       "expected_action": "right"
     },
     {
       "frame_id": 188,
       "position": {
-        "x": 1703,
-        "y": 973
+        "x": 2030,
+        "y": 1411
       },
-      "direction_angle": 12.998210185956175,
+      "direction_angle": 60.39477264880879,
       "image": "output/frames/frame_0188.jpg",
       "expected_action": "right"
     },
     {
       "frame_id": 189,
       "position": {
-        "x": 1728,
-        "y": 979
+        "x": 2043,
+        "y": 1433
       },
-      "direction_angle": 12.998210185956175,
+      "direction_angle": 60.39477264880879,
       "image": "output/frames/frame_0189.jpg",
       "expected_action": "right"
     },
     {
       "frame_id": 190,
       "position": {
-        "x": 1754,
-        "y": 985
+        "x": 2055,
+        "y": 1455
       },
-      "direction_angle": 12.998210185956175,
+      "direction_angle": 60.39477264880879,
       "image": "output/frames/frame_0190.jpg",
       "expected_action": "right"
     },
     {
       "frame_id": 191,
       "position": {
-        "x": 1779,
-        "y": 991
+        "x": 2067,
+        "y": 1477
       },
-      "direction_angle": 12.998210185956175,
+      "direction_angle": 113.7317532531263,
       "image": "output/frames/frame_0191.jpg",
-      "expected_action": "right"
+      "expected_action": "straight"
     },
     {
       "frame_id": 192,
       "position": {
-        "x": 1804,
-        "y": 997
+        "x": 2057,
+        "y": 1501
       },
-      "direction_angle": 12.998210185956175,
+      "direction_angle": 113.7317532531263,
       "image": "output/frames/frame_0192.jpg",
-      "expected_action": "right"
+      "expected_action": "straight"
     },
     {
       "frame_id": 193,
       "position": {
-        "x": 1829,
-        "y": 1002
+        "x": 2046,
+        "y": 1525
       },
-      "direction_angle": 12.998210185956175,
+      "direction_angle": 113.7317532531263,
       "image": "output/frames/frame_0193.jpg",
-      "expected_action": "right"
+      "expected_action": "left"
     },
     {
       "frame_id": 194,
       "position": {
-        "x": 1854,
-        "y": 1008
+        "x": 2036,
+        "y": 1549
       },
-      "direction_angle": 12.998210185956175,
+      "direction_angle": 113.7317532531263,
       "image": "output/frames/frame_0194.jpg",
-      "expected_action": "right"
+      "expected_action": "left"
     },
     {
       "frame_id": 195,
       "position": {
-        "x": 1880,
-        "y": 1014
+        "x": 2025,
+        "y": 1573
       },
-      "direction_angle": 12.998210185956175,
+      "direction_angle": 113.7317532531263,
       "image": "output/frames/frame_0195.jpg",
-      "expected_action": "right"
+      "expected_action": "left"
     },
     {
       "frame_id": 196,
       "position": {
-        "x": 1905,
-        "y": 1020
+        "x": 2015,
+        "y": 1597
       },
-      "direction_angle": 12.998210185956175,
+      "direction_angle": 113.7317532531263,
       "image": "output/frames/frame_0196.jpg",
-      "expected_action": "right"
+      "expected_action": "left"
     },
     {
       "frame_id": 197,
       "position": {
-        "x": 1930,
-        "y": 1026
+        "x": 2004,
+        "y": 1621
       },
-      "direction_angle": 12.998210185956175,
+      "direction_angle": 113.7317532531263,
       "image": "output/frames/frame_0197.jpg",
-      "expected_action": "right"
+      "expected_action": "left"
     },
     {
       "frame_id": 198,
       "position": {
-        "x": 1955,
-        "y": 1031
+        "x": 1993,
+        "y": 1645
       },
-      "direction_angle": 12.998210185956175,
+      "direction_angle": 115.97311701319607,
       "image": "output/frames/frame_0198.jpg",
-      "expected_action": "right"
+      "expected_action": "left"
     },
     {
       "frame_id": 199,
       "position": {
-        "x": 1981,
-        "y": 1037
+        "x": 1982,
+        "y": 1669
       },
-      "direction_angle": 35.9158905068917,
+      "direction_angle": 115.97311701319607,
       "image": "output/frames/frame_0199.jpg",
-      "expected_action": "right"
+      "expected_action": "left"
     },
     {
       "frame_id": 200,
       "position": {
-        "x": 2002,
-        "y": 1053
+        "x": 1970,
+        "y": 1692
       },
-      "direction_angle": 35.9158905068917,
+      "direction_angle": 115.97311701319607,
       "image": "output/frames/frame_0200.jpg",
-      "expected_action": "right"
+      "expected_action": "left"
     },
     {
       "frame_id": 201,
       "position": {
-        "x": 2023,
-        "y": 1068
+        "x": 1959,
+        "y": 1716
       },
-      "direction_angle": 35.9158905068917,
+      "direction_angle": 115.97311701319607,
       "image": "output/frames/frame_0201.jpg",
-      "expected_action": "right"
+      "expected_action": "left"
     },
     {
       "frame_id": 202,
       "position": {
-        "x": 2044,
-        "y": 1083
+        "x": 1947,
+        "y": 1740
       },
-      "direction_angle": 35.9158905068917,
+      "direction_angle": 115.97311701319607,
       "image": "output/frames/frame_0202.jpg",
-      "expected_action": "right"
+      "expected_action": "left"
     },
     {
       "frame_id": 203,
       "position": {
-        "x": 2065,
-        "y": 1099
+        "x": 1936,
+        "y": 1763
       },
-      "direction_angle": 35.9158905068917,
+      "direction_angle": 115.97311701319607,
       "image": "output/frames/frame_0203.jpg",
-      "expected_action": "right"
+      "expected_action": "straight"
     },
     {
       "frame_id": 204,
       "position": {
-        "x": 2086,
-        "y": 1114
+        "x": 1924,
+        "y": 1787
       },
-      "direction_angle": 35.9158905068917,
+      "direction_angle": 61.7492077121294,
       "image": "output/frames/frame_0204.jpg",
-      "expected_action": "right"
+      "expected_action": "straight"
     },
     {
       "frame_id": 205,
       "position": {
-        "x": 2108,
-        "y": 1129
+        "x": 1937,
+        "y": 1811
       },
-      "direction_angle": 35.9158905068917,
+      "direction_angle": 61.7492077121294,
       "image": "output/frames/frame_0205.jpg",
       "expected_action": "right"
     },
     {
       "frame_id": 206,
       "position": {
-        "x": 2129,
-        "y": 1145
+        "x": 1950,
+        "y": 1835
       },
-      "direction_angle": 58.79124156123149,
+      "direction_angle": 61.7492077121294,
       "image": "output/frames/frame_0206.jpg",
       "expected_action": "right"
     },
     {
       "frame_id": 207,
       "position": {
-        "x": 2142,
-        "y": 1167
+        "x": 1963,
+        "y": 1860
       },
-      "direction_angle": 58.79124156123149,
+      "direction_angle": 61.7492077121294,
       "image": "output/frames/frame_0207.jpg",
       "expected_action": "right"
     },
     {
       "frame_id": 208,
       "position": {
-        "x": 2156,
-        "y": 1189
+        "x": 1976,
+        "y": 1884
       },
-      "direction_angle": 58.79124156123149,
+      "direction_angle": 61.7492077121294,
       "image": "output/frames/frame_0208.jpg",
       "expected_action": "right"
     },
     {
       "frame_id": 209,
       "position": {
-        "x": 2169,
-        "y": 1211
+        "x": 1989,
+        "y": 1908
       },
-      "direction_angle": 58.79124156123149,
+      "direction_angle": 61.7492077121294,
       "image": "output/frames/frame_0209.jpg",
       "expected_action": "right"
     },
     {
       "frame_id": 210,
       "position": {
-        "x": 2182,
-        "y": 1233
+        "x": 2002,
+        "y": 1932
       },
-      "direction_angle": 58.79124156123149,
+      "direction_angle": 61.7492077121294,
       "image": "output/frames/frame_0210.jpg",
       "expected_action": "right"
     },
     {
       "frame_id": 211,
       "position": {
-        "x": 2196,
-        "y": 1256
+        "x": 2015,
+        "y": 1956
       },
-      "direction_angle": 58.79124156123149,
+      "direction_angle": 103.50969736940186,
       "image": "output/frames/frame_0211.jpg",
-      "expected_action": "right"
+      "expected_action": "straight"
     },
     {
       "frame_id": 212,
       "position": {
-        "x": 2209,
-        "y": 1278
+        "x": 2009,
+        "y": 1981
       },
-      "direction_angle": 58.79124156123149,
+      "direction_angle": 103.50969736940186,
       "image": "output/frames/frame_0212.jpg",
-      "expected_action": "right"
+      "expected_action": "straight"
     },
     {
       "frame_id": 213,
       "position": {
-        "x": 2223,
-        "y": 1300
+        "x": 2003,
+        "y": 2007
       },
-      "direction_angle": 58.79124156123149,
+      "direction_angle": 103.50969736940186,
       "image": "output/frames/frame_0213.jpg",
-      "expected_action": "right"
+      "expected_action": "straight"
     },
     {
       "frame_id": 214,
       "position": {
-        "x": 2236,
-        "y": 1322
+        "x": 1997,
+        "y": 2032
       },
-      "direction_angle": 58.79124156123149,
+      "direction_angle": 103.50969736940186,
       "image": "output/frames/frame_0214.jpg",
-      "expected_action": "right"
+      "expected_action": "straight"
     },
     {
       "frame_id": 215,
       "position": {
-        "x": 2250,
-        "y": 1344
+        "x": 1991,
+        "y": 2057
       },
-      "direction_angle": 58.79124156123149,
+      "direction_angle": 103.50969736940186,
       "image": "output/frames/frame_0215.jpg",
-      "expected_action": "right"
+      "expected_action": "straight"
     },
     {
       "frame_id": 216,
       "position": {
-        "x": 2263,
-        "y": 1366
+        "x": 1985,
+        "y": 2083
       },
-      "direction_angle": 58.79124156123149,
+      "direction_angle": 103.50969736940186,
       "image": "output/frames/frame_0216.jpg",
-      "expected_action": "right"
+      "expected_action": "straight"
     },
     {
       "frame_id": 217,
       "position": {
-        "x": 2277,
-        "y": 1389
+        "x": 1979,
+        "y": 2108
       },
-      "direction_angle": 58.79124156123149,
+      "direction_angle": 103.50969736940186,
       "image": "output/frames/frame_0217.jpg",
-      "expected_action": "right"
+      "expected_action": "straight"
     },
     {
       "frame_id": 218,
       "position": {
-        "x": 2290,
-        "y": 1411
+        "x": 1973,
+        "y": 2133
       },
-      "direction_angle": 58.79124156123149,
+      "direction_angle": 103.50969736940186,
       "image": "output/frames/frame_0218.jpg",
-      "expected_action": "right"
+      "expected_action": "straight"
     },
     {
       "frame_id": 219,
       "position": {
-        "x": 2303,
-        "y": 1433
+        "x": 1966,
+        "y": 2158
       },
-      "direction_angle": 58.79124156123149,
+      "direction_angle": 103.50969736940186,
       "image": "output/frames/frame_0219.jpg",
-      "expected_action": "right"
+      "expected_action": "straight"
     },
     {
       "frame_id": 220,
       "position": {
-        "x": 2317,
-        "y": 1455
+        "x": 1960,
+        "y": 2184
       },
-      "direction_angle": 58.79124156123149,
+      "direction_angle": 59.726166606643076,
       "image": "output/frames/frame_0220.jpg",
-      "expected_action": "right"
+      "expected_action": "straight"
     },
     {
       "frame_id": 221,
       "position": {
-        "x": 2330,
-        "y": 1477
+        "x": 1973,
+        "y": 2206
       },
-      "direction_angle": 58.51296768451736,
+      "direction_angle": 59.726166606643076,
       "image": "output/frames/frame_0221.jpg",
       "expected_action": "right"
     },
     {
       "frame_id": 222,
       "position": {
-        "x": 2343,
-        "y": 1499
+        "x": 1987,
+        "y": 2228
       },
-      "direction_angle": 58.51296768451736,
+      "direction_angle": 59.726166606643076,
       "image": "output/frames/frame_0222.jpg",
       "expected_action": "right"
     },
     {
       "frame_id": 223,
       "position": {
-        "x": 2357,
-        "y": 1520
+        "x": 2000,
+        "y": 2251
       },
-      "direction_angle": 58.51296768451736,
+      "direction_angle": 59.726166606643076,
       "image": "output/frames/frame_0223.jpg",
       "expected_action": "right"
     },
     {
       "frame_id": 224,
       "position": {
-        "x": 2370,
-        "y": 1542
+        "x": 2013,
+        "y": 2273
       },
-      "direction_angle": 58.51296768451736,
+      "direction_angle": 59.726166606643076,
       "image": "output/frames/frame_0224.jpg",
       "expected_action": "right"
     },
     {
       "frame_id": 225,
       "position": {
-        "x": 2383,
-        "y": 1563
+        "x": 2026,
+        "y": 2296
       },
-      "direction_angle": 58.51296768451736,
+      "direction_angle": 59.726166606643076,
       "image": "output/frames/frame_0225.jpg",
       "expected_action": "right"
     },
     {
       "frame_id": 226,
       "position": {
-        "x": 2396,
-        "y": 1585
+        "x": 2039,
+        "y": 2318
       },
-      "direction_angle": 58.51296768451736,
+      "direction_angle": 59.726166606643076,
       "image": "output/frames/frame_0226.jpg",
       "expected_action": "right"
     },
     {
       "frame_id": 227,
       "position": {
-        "x": 2409,
-        "y": 1606
+        "x": 2052,
+        "y": 2340
       },
-      "direction_angle": 58.51296768451736,
+      "direction_angle": 59.726166606643076,
       "image": "output/frames/frame_0227.jpg",
       "expected_action": "right"
     },
     {
       "frame_id": 228,
       "position": {
-        "x": 2422,
-        "y": 1628
+        "x": 2065,
+        "y": 2363
       },
-      "direction_angle": 58.51296768451736,
+      "direction_angle": 59.726166606643076,
       "image": "output/frames/frame_0228.jpg",
       "expected_action": "right"
     },
     {
       "frame_id": 229,
       "position": {
-        "x": 2436,
-        "y": 1649
+        "x": 2078,
+        "y": 2385
       },
-      "direction_angle": 58.51296768451736,
+      "direction_angle": 59.726166606643076,
       "image": "output/frames/frame_0229.jpg",
       "expected_action": "right"
     },
     {
       "frame_id": 230,
       "position": {
-        "x": 2449,
-        "y": 1671
+        "x": 2091,
+        "y": 2408
       },
-      "direction_angle": 58.51296768451736,
+      "direction_angle": 59.726166606643076,
       "image": "output/frames/frame_0230.jpg",
       "expected_action": "right"
     },
     {
       "frame_id": 231,
       "position": {
-        "x": 2462,
-        "y": 1692
+        "x": 2104,
+        "y": 2430
       },
-      "direction_angle": 58.51296768451736,
+      "direction_angle": 59.726166606643076,
       "image": "output/frames/frame_0231.jpg",
       "expected_action": "right"
     },
     {
       "frame_id": 232,
       "position": {
-        "x": 2475,
-        "y": 1714
+        "x": 2117,
+        "y": 2452
       },
-      "direction_angle": 58.51296768451736,
+      "direction_angle": 59.726166606643076,
       "image": "output/frames/frame_0232.jpg",
       "expected_action": "right"
     },
     {
       "frame_id": 233,
       "position": {
-        "x": 2488,
-        "y": 1735
+        "x": 2130,
+        "y": 2475
       },
-      "direction_angle": 58.51296768451736,
+      "direction_angle": 59.726166606643076,
       "image": "output/frames/frame_0233.jpg",
       "expected_action": "right"
     },
     {
       "frame_id": 234,
       "position": {
-        "x": 2501,
-        "y": 1757
+        "x": 2143,
+        "y": 2497
       },
-      "direction_angle": 58.51296768451736,
+      "direction_angle": 59.726166606643076,
       "image": "output/frames/frame_0234.jpg",
       "expected_action": "right"
     },
     {
       "frame_id": 235,
       "position": {
-        "x": 2515,
-        "y": 1778
+        "x": 2156,
+        "y": 2520
       },
-      "direction_angle": 58.51296768451736,
+      "direction_angle": 14.250019046146408,
       "image": "output/frames/frame_0235.jpg",
       "expected_action": "right"
     },
     {
       "frame_id": 236,
       "position": {
-        "x": 2528,
-        "y": 1800
+        "x": 2182,
+        "y": 2526
       },
-      "direction_angle": 100.93615369307717,
+      "direction_angle": 14.250019046146408,
       "image": "output/frames/frame_0236.jpg",
-      "expected_action": "straight"
+      "expected_action": "right"
     },
     {
       "frame_id": 237,
       "position": {
-        "x": 2523,
-        "y": 1825
+        "x": 2208,
+        "y": 2533
       },
-      "direction_angle": 100.93615369307717,
+      "direction_angle": 14.250019046146408,
       "image": "output/frames/frame_0237.jpg",
-      "expected_action": "straight"
+      "expected_action": "right"
     },
     {
       "frame_id": 238,
       "position": {
-        "x": 2518,
-        "y": 1850
+        "x": 2234,
+        "y": 2539
       },
-      "direction_angle": 100.93615369307717,
+      "direction_angle": 14.250019046146408,
       "image": "output/frames/frame_0238.jpg",
-      "expected_action": "straight"
+      "expected_action": "right"
     },
     {
       "frame_id": 239,
       "position": {
-        "x": 2513,
-        "y": 1875
+        "x": 2260,
+        "y": 2546
       },
-      "direction_angle": 100.93615369307717,
+      "direction_angle": 14.250019046146408,
       "image": "output/frames/frame_0239.jpg",
-      "expected_action": "straight"
+      "expected_action": "right"
     },
     {
       "frame_id": 240,
       "position": {
-        "x": 2508,
-        "y": 1900
+        "x": 2285,
+        "y": 2552
       },
-      "direction_angle": 100.93615369307717,
+      "direction_angle": 14.250019046146408,
       "image": "output/frames/frame_0240.jpg",
-      "expected_action": "straight"
+      "expected_action": "right"
     },
     {
       "frame_id": 241,
       "position": {
-        "x": 2503,
-        "y": 1925
+        "x": 2311,
+        "y": 2559
       },
-      "direction_angle": 100.93615369307717,
+      "direction_angle": 14.250019046146408,
       "image": "output/frames/frame_0241.jpg",
-      "expected_action": "straight"
+      "expected_action": "right"
     },
     {
       "frame_id": 242,
       "position": {
-        "x": 2499,
-        "y": 1950
+        "x": 2337,
+        "y": 2565
       },
-      "direction_angle": 100.93615369307717,
+      "direction_angle": 14.250019046146408,
       "image": "output/frames/frame_0242.jpg",
-      "expected_action": "straight"
+      "expected_action": "right"
     },
     {
       "frame_id": 243,
       "position": {
-        "x": 2494,
-        "y": 1975
+        "x": 2363,
+        "y": 2572
       },
-      "direction_angle": 100.93615369307717,
+      "direction_angle": 14.250019046146408,
       "image": "output/frames/frame_0243.jpg",
-      "expected_action": "straight"
+      "expected_action": "right"
     },
     {
       "frame_id": 244,
       "position": {
-        "x": 2489,
-        "y": 2000
+        "x": 2389,
+        "y": 2579
       },
-      "direction_angle": 100.93615369307717,
+      "direction_angle": 14.250019046146408,
       "image": "output/frames/frame_0244.jpg",
-      "expected_action": "left"
+      "expected_action": "right"
     },
     {
       "frame_id": 245,
       "position": {
-        "x": 2484,
-        "y": 2026
+        "x": 2414,
+        "y": 2585
       },
-      "direction_angle": 156.175771980036,
+      "direction_angle": 14.250019046146408,
       "image": "output/frames/frame_0245.jpg",
-      "expected_action": "left"
+      "expected_action": "right"
     },
     {
       "frame_id": 246,
       "position": {
-        "x": 2461,
-        "y": 2036
+        "x": 2440,
+        "y": 2592
       },
-      "direction_angle": 156.175771980036,
+      "direction_angle": 14.250019046146408,
       "image": "output/frames/frame_0246.jpg",
-      "expected_action": "left"
+      "expected_action": "right"
     },
     {
       "frame_id": 247,
       "position": {
-        "x": 2437,
-        "y": 2046
+        "x": 2466,
+        "y": 2598
       },
-      "direction_angle": 156.175771980036,
+      "direction_angle": 14.250019046146408,
       "image": "output/frames/frame_0247.jpg",
-      "expected_action": "left"
+      "expected_action": "right"
     },
     {
       "frame_id": 248,
       "position": {
-        "x": 2413,
-        "y": 2057
+        "x": 2492,
+        "y": 2605
       },
-      "direction_angle": 156.175771980036,
+      "direction_angle": 14.250019046146408,
       "image": "output/frames/frame_0248.jpg",
-      "expected_action": "left"
+      "expected_action": "right"
     },
     {
       "frame_id": 249,
       "position": {
-        "x": 2390,
-        "y": 2067
+        "x": 2517,
+        "y": 2611
       },
-      "direction_angle": 156.175771980036,
+      "direction_angle": 14.250019046146408,
       "image": "output/frames/frame_0249.jpg",
-      "expected_action": "left"
+      "expected_action": "right"
     },
     {
       "frame_id": 250,
       "position": {
-        "x": 2366,
-        "y": 2077
+        "x": 2543,
+        "y": 2618
       },
-      "direction_angle": 156.175771980036,
+      "direction_angle": 151.39031439242245,
       "image": "output/frames/frame_0250.jpg",
-      "expected_action": "left"
+      "expected_action": "straight"
     },
     {
       "frame_id": 251,
       "position": {
-        "x": 2343,
-        "y": 2088
+        "x": 2519,
+        "y": 2631
       },
-      "direction_angle": 156.175771980036,
+      "direction_angle": 151.39031439242245,
       "image": "output/frames/frame_0251.jpg",
-      "expected_action": "left"
+      "expected_action": "straight"
     },
     {
       "frame_id": 252,
       "position": {
-        "x": 2319,
-        "y": 2098
+        "x": 2496,
+        "y": 2644
       },
-      "direction_angle": 156.175771980036,
+      "direction_angle": 151.39031439242245,
       "image": "output/frames/frame_0252.jpg",
       "expected_action": "left"
     },
     {
       "frame_id": 253,
       "position": {
-        "x": 2296,
-        "y": 2109
+        "x": 2472,
+        "y": 2657
       },
-      "direction_angle": 156.175771980036,
+      "direction_angle": 151.39031439242245,
       "image": "output/frames/frame_0253.jpg",
       "expected_action": "left"
     },
     {
       "frame_id": 254,
       "position": {
-        "x": 2272,
-        "y": 2119
+        "x": 2448,
+        "y": 2670
       },
-      "direction_angle": 156.175771980036,
+      "direction_angle": 151.39031439242245,
       "image": "output/frames/frame_0254.jpg",
       "expected_action": "left"
     },
     {
       "frame_id": 255,
       "position": {
-        "x": 2249,
-        "y": 2129
+        "x": 2424,
+        "y": 2683
       },
-      "direction_angle": 156.175771980036,
+      "direction_angle": 151.39031439242245,
       "image": "output/frames/frame_0255.jpg",
       "expected_action": "left"
     },
     {
       "frame_id": 256,
       "position": {
-        "x": 2225,
-        "y": 2140
+        "x": 2400,
+        "y": 2696
       },
-      "direction_angle": 156.175771980036,
+      "direction_angle": 151.39031439242245,
       "image": "output/frames/frame_0256.jpg",
+      "expected_action": "left"
+    },
+    {
+      "frame_id": 257,
+      "position": {
+        "x": 2377,
+        "y": 2709
+      },
+      "direction_angle": 151.39031439242245,
+      "image": "output/frames/frame_0257.jpg",
+      "expected_action": "left"
+    },
+    {
+      "frame_id": 258,
+      "position": {
+        "x": 2353,
+        "y": 2722
+      },
+      "direction_angle": 151.39031439242245,
+      "image": "output/frames/frame_0258.jpg",
+      "expected_action": "left"
+    },
+    {
+      "frame_id": 259,
+      "position": {
+        "x": 2329,
+        "y": 2735
+      },
+      "direction_angle": 151.39031439242245,
+      "image": "output/frames/frame_0259.jpg",
       "expected_action": "left"
     }
   ],
   "statistics": {
-    "straight": 54,
-    "left": 50,
-    "right": 153,
+    "straight": 98,
+    "left": 80,
+    "right": 82,
     "terminate": 0
   }
 }
