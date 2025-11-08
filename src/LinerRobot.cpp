@@ -55,9 +55,13 @@ LinerRobot::LinerRobot() :
 {
     DEBUG_PRINTLN("Создание LinerRobot");
     
-    // Инициализация калибровочных значений
+    // Инициализация калибровочных массивов (выделяем память для каждой линии)
     for (int i = 0; i < 4; i++) {
-        calibrationLines_[i] = 0;
+        calibrationLines_[i] = new uint8_t[LINE_CAMERA_WIDTH];
+        // Заполняем нулями
+        for (int x = 0; x < LINE_CAMERA_WIDTH; x++) {
+            calibrationLines_[i][x] = 0;
+        }
     }
     
 #if LINE_USE_MEDIAN_FILTER
@@ -69,6 +73,14 @@ LinerRobot::LinerRobot() :
 }
 
 LinerRobot::~LinerRobot() {
+    // Освобождаем память калибровочных массивов
+    for (int i = 0; i < 4; i++) {
+        if (calibrationLines_[i]) {
+            delete[] calibrationLines_[i];
+            calibrationLines_[i] = nullptr;
+        }
+    }
+    
     shutdown();
 }
 
@@ -479,10 +491,10 @@ float LinerRobot::detectLinePosition() {
             
             // Применяем калибровку: вычитаем калибровочное значение для усиления контраста
             if (hasCalibration_) {
-                // Вычитание калибровочного значения
-                // Если пиксель темнее калибровки - становится еще темнее
-                // Если светлее - разница будет положительной
-                int calibrated = (int)pixelValue - (int)calibrationLines_[scan_idx];
+                // Вычитание калибровочного значения для КОНКРЕТНОГО пикселя
+                // Если пиксель темнее калибровки - становится еще темнее (усиливается линия)
+                // Если светлее - разница будет положительной (фон остается светлым)
+                int calibrated = (int)pixelValue - (int)calibrationLines_[scan_idx][x];
                 // Ограничиваем диапазон [0, 255]
                 if (calibrated < 0) {
                     pixelValue = 0;  // Очень темный пиксель (линия)
@@ -1279,27 +1291,31 @@ void LinerRobot::captureCalibration() {
         height * 90 / 100   // 90% - нижняя
     };
     
-    // Для каждой сканирующей линии вычисляем среднее значение яркости
+    // Для каждой сканирующей линии копируем ВСЮ строку пикселей
     for (int scan_idx = 0; scan_idx < 4; scan_idx++) {
         int y = scan_y[scan_idx];
         uint8_t* row = &img[y * width];
         
-        uint32_t sum = 0;
+        // Копируем всю строку (160 пикселей)
         for (int x = 0; x < width; x++) {
-            sum += row[x];
+            calibrationLines_[scan_idx][x] = row[x];
         }
         
-        // Среднее значение яркости для этой линии
-        calibrationLines_[scan_idx] = sum / width;
+        // Для диагностики выводим среднее значение
+        uint32_t sum = 0;
+        for (int x = 0; x < width; x++) {
+            sum += calibrationLines_[scan_idx][x];
+        }
+        uint8_t avg = sum / width;
         
-        DEBUG_PRINTF("Линия %d (y=%d): среднее значение = %d\n", 
-                     scan_idx, y, calibrationLines_[scan_idx]);
+        DEBUG_PRINTF("Линия %d (y=%d): %d пикселей, среднее = %d\n", 
+                     scan_idx, y, width, avg);
     }
     
     hasCalibration_ = true;
     esp_camera_fb_return(fb);
     
-    DEBUG_PRINTLN("✓ Калибровка захвачена успешно");
+    DEBUG_PRINTLN("✓ Калибровка захвачена успешно (4 линии × 160 пикселей)");
     DEBUG_PRINTLN("  Не забудьте сохранить настройки для применения!");
 }
 
@@ -1310,12 +1326,34 @@ void LinerRobot::loadCalibration() {
     }
     
     if (wifiSettings_->hasLineCalibration()) {
-        wifiSettings_->getLineCalibration(calibrationLines_, 4);
-        hasCalibration_ = true;
+        uint8_t* calibData = nullptr;
+        size_t calibSize = 0;
+        wifiSettings_->getLineCalibration(&calibData, &calibSize);
         
-        DEBUG_PRINTLN("✓ Калибровка линий загружена из памяти:");
-        for (int i = 0; i < 4; i++) {
-            DEBUG_PRINTF("  Линия %d: %d\n", i, calibrationLines_[i]);
+        if (calibData && calibSize == 4 * LINE_CAMERA_WIDTH) {
+            // Копируем данные из WiFiSettings в наши массивы
+            for (int line = 0; line < 4; line++) {
+                for (int x = 0; x < LINE_CAMERA_WIDTH; x++) {
+                    calibrationLines_[line][x] = calibData[line * LINE_CAMERA_WIDTH + x];
+                }
+            }
+            hasCalibration_ = true;
+            
+            DEBUG_PRINTLN("✓ Калибровка линий загружена из памяти:");
+            DEBUG_PRINTF("  Размер: %d байт (4 линии × %d пикселей)\n", calibSize, LINE_CAMERA_WIDTH);
+            
+            // Для диагностики выводим среднее значение для каждой линии
+            for (int line = 0; line < 4; line++) {
+                uint32_t sum = 0;
+                for (int x = 0; x < LINE_CAMERA_WIDTH; x++) {
+                    sum += calibrationLines_[line][x];
+                }
+                uint8_t avg = sum / LINE_CAMERA_WIDTH;
+                DEBUG_PRINTF("  Линия %d: среднее = %d\n", line, avg);
+            }
+        } else {
+            DEBUG_PRINTLN("⚠️ Некорректный размер калибровочных данных");
+            hasCalibration_ = false;
         }
     } else {
         DEBUG_PRINTLN("  Калибровка линий не найдена в памяти");
@@ -1335,7 +1373,8 @@ void LinerRobot::saveCalibration() {
     }
     
     // Передаем калибровочные данные в WiFiSettings
-    wifiSettings_->setLineCalibration(calibrationLines_, 4);
+    // Передаем указатель на первый массив (calibrationLines_[0])
+    wifiSettings_->setLineCalibration(calibrationLines_, 4 * LINE_CAMERA_WIDTH);
     DEBUG_PRINTLN("✓ Калибровка передана в WiFiSettings для сохранения");
 }
 
@@ -1343,8 +1382,10 @@ void LinerRobot::onBeforeSaveSettings() {
     // Метод вызывается BaseRobot перед сохранением всех настроек
     // Синхронизируем захваченную калибровку в WiFiSettings
     if (hasCalibration_ && wifiSettings_) {
-        wifiSettings_->setLineCalibration(calibrationLines_, 4);
+        wifiSettings_->setLineCalibration(calibrationLines_, 4 * LINE_CAMERA_WIDTH);
         DEBUG_PRINTLN("✓ Калибровка синхронизирована перед сохранением настроек");
+        DEBUG_PRINTF("  Размер данных: %d байт (4 линии × %d пикселей)\n", 
+                     4 * LINE_CAMERA_WIDTH, LINE_CAMERA_WIDTH);
     }
 }
 

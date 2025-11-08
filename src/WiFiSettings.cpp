@@ -15,15 +15,21 @@ WiFiSettings::WiFiSettings() :
     cameraHMirror(false),
     cameraVFlip(false),
     effectMode(0),
-    hasLineCalibration(false)
+    hasLineCalibration(false),
+    lineCalibration(nullptr)
 {
-    // Инициализируем массив калибровки нулями
-    for (int i = 0; i < 4; i++) {
+    // Выделяем память для калибровочных данных (4 линии × 160 пикселей)
+    lineCalibration = new uint8_t[4 * 160];
+    for (int i = 0; i < 4 * 160; i++) {
         lineCalibration[i] = 0;
     }
 }
 
 WiFiSettings::~WiFiSettings() {
+    if (lineCalibration) {
+        delete[] lineCalibration;
+        lineCalibration = nullptr;
+    }
     preferences.end();
 }
 
@@ -68,8 +74,10 @@ void WiFiSettings::loadDefaults() {
     
     // По умолчанию нет калибровки линий
     hasLineCalibration = false;
-    for (int i = 0; i < 4; i++) {
-        lineCalibration[i] = 0;
+    if (lineCalibration) {
+        for (int i = 0; i < 4 * 160; i++) {
+            lineCalibration[i] = 0;
+        }
     }
     
     DEBUG_PRINTLN("WiFiSettings::loadDefaults()");
@@ -117,12 +125,13 @@ void WiFiSettings::loadFromMemory() {
         // Загружаем калибровочные данные линий
         hasLineCalibration = preferences.getBool("hasLineCal", false);
         if (hasLineCalibration) {
-            size_t len = preferences.getBytes("lineCal", lineCalibration, 4);
-            if (len != 4) {
-                DEBUG_PRINTLN("  ⚠️ Ошибка загрузки калибровки линий");
+            size_t expectedSize = 4 * 160;  // 4 линии × 160 пикселей
+            size_t len = preferences.getBytes("lineCal", lineCalibration, expectedSize);
+            if (len != expectedSize) {
+                DEBUG_PRINTF("  ⚠️ Ошибка загрузки калибровки линий: ожидалось %d байт, получено %d\n", expectedSize, len);
                 hasLineCalibration = false;
             } else {
-                DEBUG_PRINTLN("  ✓ Калибровка линий загружена");
+                DEBUG_PRINTF("  ✓ Калибровка линий загружена (%d байт, 4 линии × 160 пикселей)\n", len);
             }
         }
         
@@ -197,26 +206,32 @@ void WiFiSettings::setEffectMode(int value) {
     effectMode = value;
 }
 
-void WiFiSettings::getLineCalibration(uint8_t* buffer, size_t size) const {
-    if (buffer && size >= 4) {
-        for (int i = 0; i < 4; i++) {
-            buffer[i] = lineCalibration[i];
-        }
+void WiFiSettings::getLineCalibration(uint8_t** buffer, size_t* size) const {
+    if (buffer && size) {
+        *buffer = lineCalibration;
+        *size = 4 * 160;  // 4 линии × 160 пикселей
     }
 }
 
-void WiFiSettings::setLineCalibration(const uint8_t* buffer, size_t size) {
-    if (buffer && size >= 4) {
-        for (int i = 0; i < 4; i++) {
-            lineCalibration[i] = buffer[i];
+void WiFiSettings::setLineCalibration(uint8_t** buffer, size_t size) {
+    if (buffer && *buffer && size == 4 * 160 && lineCalibration) {
+        // Копируем все 4 линии (640 байт)
+        for (size_t i = 0; i < size; i++) {
+            lineCalibration[i] = (*buffer)[i];
         }
         hasLineCalibration = true;
+        
         DEBUG_PRINTLN("Калибровка линий установлена:");
-        for (int i = 0; i < 4; i++) {
-            DEBUG_PRINT("  Линия ");
-            DEBUG_PRINT(i);
-            DEBUG_PRINT(": ");
-            DEBUG_PRINTLN(lineCalibration[i]);
+        DEBUG_PRINTF("  Всего данных: %d байт (4 линии × 160 пикселей)\n", size);
+        
+        // Для диагностики выводим среднее значение для каждой линии
+        for (int line = 0; line < 4; line++) {
+            uint32_t sum = 0;
+            for (int x = 0; x < 160; x++) {
+                sum += lineCalibration[line * 160 + x];
+            }
+            uint8_t avg = sum / 160;
+            DEBUG_PRINTF("  Линия %d: среднее значение = %d\n", line, avg);
         }
     }
 }
@@ -262,8 +277,9 @@ bool WiFiSettings::save() {
     // Сохраняем калибровочные данные линий
     size_t w14 = preferences.putBool("hasLineCal", hasLineCalibration);
     size_t w15 = 0;
-    if (hasLineCalibration) {
-        w15 = preferences.putBytes("lineCal", lineCalibration, 4);
+    if (hasLineCalibration && lineCalibration) {
+        w15 = preferences.putBytes("lineCal", lineCalibration, 4 * 160);
+        DEBUG_PRINTF("  Сохранение калибровки: %d байт (4 линии × 160 пикселей)\n", w15);
     }
     
     DEBUG_PRINT("  Записано байт - initialized: "); DEBUG_PRINTLN(w1);

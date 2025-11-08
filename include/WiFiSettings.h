@@ -45,7 +45,7 @@ public:
     
     // Получение калибровочных данных линий (для Liner)
     bool hasLineCalibration() const { return hasLineCalibration; }
-    void getLineCalibration(uint8_t* buffer, size_t size) const;
+    void getLineCalibration(uint8_t** buffer, size_t* size) const;
 
     // Установка настроек
     void setSSID(const String& value);
@@ -70,7 +70,7 @@ public:
     void setEffectMode(int value);
     
     // Установка калибровочных данных линий (для Liner)
-    void setLineCalibration(const uint8_t* buffer, size_t size);
+    void setLineCalibration(uint8_t** buffer, size_t size);
 
     // Сохранение в память
     bool save();
@@ -107,7 +107,7 @@ private:
     
     // Калибровочные данные для линий (Liner)
     bool hasLineCalibration;    // Есть ли сохраненная калибровка
-    uint8_t lineCalibration[4]; // Калибровочные значения яркости для 4 горизонтальных линий
+    uint8_t* lineCalibration;   // Калибровочные данные (4 линии × 160 пикселей = 640 байт)
 
     void loadDefaults();
     void loadFromMemory();
