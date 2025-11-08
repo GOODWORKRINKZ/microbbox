@@ -42,6 +42,10 @@ public:
     
     // Получение настроек эффектов
     int getEffectMode() const { return effectMode; }
+    
+    // Получение калибровочных данных линий (для Liner)
+    bool hasLineCalibration() const { return hasLineCalibration; }
+    void getLineCalibration(uint8_t* buffer, size_t size) const;
 
     // Установка настроек
     void setSSID(const String& value);
@@ -64,6 +68,9 @@ public:
     
     // Установка настроек эффектов
     void setEffectMode(int value);
+    
+    // Установка калибровочных данных линий (для Liner)
+    void setLineCalibration(const uint8_t* buffer, size_t size);
 
     // Сохранение в память
     bool save();
@@ -97,6 +104,10 @@ private:
     
     // Настройки эффектов
     int effectMode;             // Режим световых эффектов (0-4: normal, police, fire, ambulance, terminator)
+    
+    // Калибровочные данные для линий (Liner)
+    bool hasLineCalibration;    // Есть ли сохраненная калибровка
+    uint8_t lineCalibration[4]; // Калибровочные значения яркости для 4 горизонтальных линий
 
     void loadDefaults();
     void loadFromMemory();

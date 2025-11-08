@@ -36,6 +36,7 @@ LinerRobot::LinerRobot() :
     lineDetected_(false),
     lineNotDetectedCount_(0),
     lineEndAnimationPlayed_(false),
+    hasCalibration_(false),
 #if LINE_USE_MEDIAN_FILTER
     positionHistoryIndex_(0),
 #endif
@@ -53,6 +54,11 @@ LinerRobot::LinerRobot() :
 #endif
 {
     DEBUG_PRINTLN("Создание LinerRobot");
+    
+    // Инициализация калибровочных значений
+    for (int i = 0; i < 4; i++) {
+        calibrationLines_[i] = 0;
+    }
     
 #if LINE_USE_MEDIAN_FILTER
     // Инициализация истории позиций нулями
@@ -92,6 +98,9 @@ bool LinerRobot::initSpecificComponents() {
         DEBUG_PRINTLN("ОШИБКА: Не удалось инициализировать моторы");
         return false;
     }
+    
+    // Загружаем калибровку из памяти
+    loadCalibration();
     
 #ifdef FEATURE_NEOPIXEL
     // Инициализация LED для индикации
@@ -186,6 +195,15 @@ void LinerRobot::setupWebHandlers(AsyncWebServer* server) {
     server->on("/api/robot-type", HTTP_GET, [this](AsyncWebServerRequest* request) {
         String json = "{\"type\":\"liner\",\"name\":\"MicroBox Liner\"}";
         request->send(200, "application/json", json);
+    });
+    
+    // API: Захват калибровочных значений (для Liner)
+    // Захватывает значения с камеры, но НЕ сохраняет - сохранение через общую кнопку "Сохранить настройки"
+    server->on("/api/capture-calibration", HTTP_POST, [this](AsyncWebServerRequest* request) {
+        DEBUG_PRINTLN("📸 Запрос на захват калибровки");
+        captureCalibration();
+        request->send(200, "application/json", 
+            "{\"status\":\"ok\",\"message\":\"Калибровка захвачена! Нажмите 'Сохранить настройки' для применения\"}");
     });
     
     // Специфичные для Liner endpoints
@@ -457,7 +475,25 @@ float LinerRobot::detectLinePosition() {
         uint8_t* row = &img[y * width];  // Указатель на строку (быстрый доступ)
         
         for (int x = 0; x < width; x++) {
-            if (row[x] < threshold) {  // Черный пиксель (линия) - адаптивный порог
+            uint8_t pixelValue = row[x];
+            
+            // Применяем калибровку: вычитаем калибровочное значение для усиления контраста
+            if (hasCalibration_) {
+                // Вычитание калибровочного значения
+                // Если пиксель темнее калибровки - становится еще темнее
+                // Если светлее - разница будет положительной
+                int calibrated = (int)pixelValue - (int)calibrationLines_[scan_idx];
+                // Ограничиваем диапазон [0, 255]
+                if (calibrated < 0) {
+                    pixelValue = 0;  // Очень темный пиксель (линия)
+                } else if (calibrated > 255) {
+                    pixelValue = 255;  // Очень светлый пиксель (фон)
+                } else {
+                    pixelValue = (uint8_t)calibrated;
+                }
+            }
+            
+            if (pixelValue < threshold) {  // Черный пиксель (линия) - адаптивный порог
                 h_sum_x[scan_idx] += x;
                 h_count[scan_idx]++;
             }
@@ -1208,6 +1244,108 @@ LinerRobot::BootMode LinerRobot::detectBootMode() {
     DEBUG_PRINTLN("⚠️ Кнопка не определена -> Configuration Mode по умолчанию");
     return BootMode::CONFIGURATION;
 #endif
+}
+
+// ═══════════════════════════════════════════════════════════════
+// КАЛИБРОВКА СКАНИРУЮЩИХ ЛИНИЙ
+// ═══════════════════════════════════════════════════════════════
+
+void LinerRobot::captureCalibration() {
+    DEBUG_PRINTLN("=== Захват калибровочных значений ===");
+    
+    // Захватываем кадр с камеры
+    camera_fb_t* fb = esp_camera_fb_get();
+    if (!fb) {
+        DEBUG_PRINTLN("ОШИБКА: Не удалось получить кадр для калибровки");
+        return;
+    }
+    
+    // Проверка формата
+    if (fb->format != PIXFORMAT_GRAYSCALE) {
+        DEBUG_PRINTLN("ОШИБКА: Камера не в режиме GRAYSCALE");
+        esp_camera_fb_return(fb);
+        return;
+    }
+    
+    int width = fb->width;
+    int height = fb->height;
+    uint8_t* img = fb->buf;
+    
+    // Те же позиции сканирующих линий, что и в detectLinePosition
+    int scan_y[4] = {
+        height * 40 / 100,  // 40% - верхняя линия
+        height * 55 / 100,  // 55% - средне-верхняя
+        height * 75 / 100,  // 75% - средне-нижняя
+        height * 90 / 100   // 90% - нижняя
+    };
+    
+    // Для каждой сканирующей линии вычисляем среднее значение яркости
+    for (int scan_idx = 0; scan_idx < 4; scan_idx++) {
+        int y = scan_y[scan_idx];
+        uint8_t* row = &img[y * width];
+        
+        uint32_t sum = 0;
+        for (int x = 0; x < width; x++) {
+            sum += row[x];
+        }
+        
+        // Среднее значение яркости для этой линии
+        calibrationLines_[scan_idx] = sum / width;
+        
+        DEBUG_PRINTF("Линия %d (y=%d): среднее значение = %d\n", 
+                     scan_idx, y, calibrationLines_[scan_idx]);
+    }
+    
+    hasCalibration_ = true;
+    esp_camera_fb_return(fb);
+    
+    DEBUG_PRINTLN("✓ Калибровка захвачена успешно");
+    DEBUG_PRINTLN("  Не забудьте сохранить настройки для применения!");
+}
+
+void LinerRobot::loadCalibration() {
+    if (!wifiSettings_) {
+        DEBUG_PRINTLN("⚠️ WiFiSettings не инициализированы, калибровка не загружена");
+        return;
+    }
+    
+    if (wifiSettings_->hasLineCalibration()) {
+        wifiSettings_->getLineCalibration(calibrationLines_, 4);
+        hasCalibration_ = true;
+        
+        DEBUG_PRINTLN("✓ Калибровка линий загружена из памяти:");
+        for (int i = 0; i < 4; i++) {
+            DEBUG_PRINTF("  Линия %d: %d\n", i, calibrationLines_[i]);
+        }
+    } else {
+        DEBUG_PRINTLN("  Калибровка линий не найдена в памяти");
+        hasCalibration_ = false;
+    }
+}
+
+void LinerRobot::saveCalibration() {
+    if (!wifiSettings_) {
+        DEBUG_PRINTLN("ОШИБКА: WiFiSettings не инициализированы");
+        return;
+    }
+    
+    if (!hasCalibration_) {
+        DEBUG_PRINTLN("⚠️ Нет данных калибровки для сохранения");
+        return;
+    }
+    
+    // Передаем калибровочные данные в WiFiSettings
+    wifiSettings_->setLineCalibration(calibrationLines_, 4);
+    DEBUG_PRINTLN("✓ Калибровка передана в WiFiSettings для сохранения");
+}
+
+void LinerRobot::onBeforeSaveSettings() {
+    // Метод вызывается BaseRobot перед сохранением всех настроек
+    // Синхронизируем захваченную калибровку в WiFiSettings
+    if (hasCalibration_ && wifiSettings_) {
+        wifiSettings_->setLineCalibration(calibrationLines_, 4);
+        DEBUG_PRINTLN("✓ Калибровка синхронизирована перед сохранением настроек");
+    }
 }
 
 #endif // TARGET_LINER

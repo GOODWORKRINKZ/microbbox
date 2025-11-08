@@ -31,6 +31,9 @@ protected:
     void shutdownSpecificComponents() override;
     void setupWebHandlers(AsyncWebServer* server) override;
     
+    // Переопределяем для синхронизации калибровки перед сохранением
+    void onBeforeSaveSettings() override;
+    
 private:
     // Инициализация компонентов
     bool initMotors();
@@ -53,6 +56,11 @@ private:
     void updateLineFollowing();
     float detectLinePosition(); // Возвращает позицию линии от -1.0 (слева) до 1.0 (справа)
     void applyPIDControl(float linePosition);
+    
+    // Калибровка
+    void captureCalibration();       // Захват калибровочных значений с белого поля
+    void loadCalibration();          // Загрузка калибровки из памяти
+    void saveCalibration();          // Сохранение калибровки в память
     
     // Оптимизации детектирования (Best Practices)
     uint8_t calculateOtsuThreshold(uint8_t* img, int width, int height);  // Метод Otsu для адаптивного порога
@@ -107,6 +115,10 @@ private:
     bool lineDetected_;              // Обнаружена ли линия
     int lineNotDetectedCount_;       // Счетчик кадров без линии
     bool lineEndAnimationPlayed_;    // Проиграна ли анимация конца линии
+    
+    // Калибровка сканирующих линий
+    bool hasCalibration_;            // Есть ли сохраненная калибровка
+    uint8_t calibrationLines_[4];    // Калибровочные значения яркости для 4 горизонтальных линий
     
     // Оптимизации детектирования (Best Practices)
 #if LINE_USE_MEDIAN_FILTER

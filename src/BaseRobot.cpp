@@ -370,6 +370,9 @@ bool BaseRobot::initWebServer() {
                     }
                 }
                 
+                // Вызываем метод для синхронизации специфичных данных перед сохранением
+                onBeforeSaveSettings();
+                
                 // Сохраняем в NVS
                 if (wifiSettings_->save()) {
                     String response = "{\"status\":\"ok\",\"message\":\"Настройки сохранены\"";

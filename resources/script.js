@@ -2061,7 +2061,6 @@ class ClassicRobotUI extends BaseRobotUI {
 // ═══════════════════════════════════════════════════════════════
 // LINER ROBOT UI - Автономный робот следующий по линии
 // ═══════════════════════════════════════════════════════════════
-// Liner идентичен Classic - переключение режима через физическую кнопку на GPIO4
 
 class LinerRobotUI extends ClassicRobotUI {
     constructor() {
@@ -2069,9 +2068,55 @@ class LinerRobotUI extends ClassicRobotUI {
         this.robotType = 'liner';
     }
     
-    // Liner полностью идентичен Classic UI
-    // Переключение автономного режима происходит через физическую кнопку на GPIO4
-    // Никаких дополнительных UI элементов не требуется
+    setupEventListeners() {
+        super.setupEventListeners();
+        
+        // Показываем секцию калибровки линий для Liner
+        const calibrationSection = document.getElementById('lineCalibrationSection');
+        if (calibrationSection) {
+            calibrationSection.classList.remove('hidden');
+        }
+        
+        // Обработчик кнопки захвата калибровки
+        const captureCalibrationBtn = document.getElementById('captureCalibrationBtn');
+        if (captureCalibrationBtn) {
+            captureCalibrationBtn.addEventListener('click', () => this.captureCalibration());
+        }
+    }
+    
+    async captureCalibration() {
+        const btn = document.getElementById('captureCalibrationBtn');
+        if (!btn) return;
+        
+        try {
+            btn.disabled = true;
+            btn.textContent = '⏳ Захват калибровки...';
+            
+            const response = await fetch('/api/capture-calibration', {
+                method: 'POST'
+            });
+            
+            if (response.ok) {
+                const data = await response.json();
+                await ModalDialog.showAlert(
+                    data.message || 'Калибровка захвачена! Не забудьте нажать "Сохранить настройки" для применения.',
+                    '✅ Калибровка захвачена'
+                );
+                Logger.info('Калибровка линий захвачена успешно');
+            } else {
+                throw new Error('Ошибка захвата калибровки');
+            }
+        } catch (error) {
+            Logger.error('Ошибка при захвате калибровки:', error);
+            await ModalDialog.showAlert(
+                'Не удалось захватить калибровку. Убедитесь, что робот подключен.',
+                '❌ Ошибка'
+            );
+        } finally {
+            btn.disabled = false;
+            btn.textContent = '📸 Захватить калибровку';
+        }
+    }
 }
 
 // ═══════════════════════════════════════════════════════════════

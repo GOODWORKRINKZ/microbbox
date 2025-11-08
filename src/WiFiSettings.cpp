@@ -14,8 +14,13 @@ WiFiSettings::WiFiSettings() :
     invertSteeringStick(false),
     cameraHMirror(false),
     cameraVFlip(false),
-    effectMode(0)
+    effectMode(0),
+    hasLineCalibration(false)
 {
+    // Инициализируем массив калибровки нулями
+    for (int i = 0; i < 4; i++) {
+        lineCalibration[i] = 0;
+    }
 }
 
 WiFiSettings::~WiFiSettings() {
@@ -61,6 +66,12 @@ void WiFiSettings::loadDefaults() {
     // По умолчанию эффект normal (0)
     effectMode = 0;
     
+    // По умолчанию нет калибровки линий
+    hasLineCalibration = false;
+    for (int i = 0; i < 4; i++) {
+        lineCalibration[i] = 0;
+    }
+    
     DEBUG_PRINTLN("WiFiSettings::loadDefaults()");
     DEBUG_PRINT("  SSID: ");
     DEBUG_PRINTLN(ssid);
@@ -102,6 +113,18 @@ void WiFiSettings::loadFromMemory() {
         
         // Загружаем настройки эффектов
         effectMode = preferences.getInt("effectMode", 0);
+        
+        // Загружаем калибровочные данные линий
+        hasLineCalibration = preferences.getBool("hasLineCal", false);
+        if (hasLineCalibration) {
+            size_t len = preferences.getBytes("lineCal", lineCalibration, 4);
+            if (len != 4) {
+                DEBUG_PRINTLN("  ⚠️ Ошибка загрузки калибровки линий");
+                hasLineCalibration = false;
+            } else {
+                DEBUG_PRINTLN("  ✓ Калибровка линий загружена");
+            }
+        }
         
         DEBUG_PRINTLN("  Загружены сохраненные настройки:");
         DEBUG_PRINT("    SSID: '"); DEBUG_PRINT(ssid); DEBUG_PRINTLN("'");
@@ -174,6 +197,30 @@ void WiFiSettings::setEffectMode(int value) {
     effectMode = value;
 }
 
+void WiFiSettings::getLineCalibration(uint8_t* buffer, size_t size) const {
+    if (buffer && size >= 4) {
+        for (int i = 0; i < 4; i++) {
+            buffer[i] = lineCalibration[i];
+        }
+    }
+}
+
+void WiFiSettings::setLineCalibration(const uint8_t* buffer, size_t size) {
+    if (buffer && size >= 4) {
+        for (int i = 0; i < 4; i++) {
+            lineCalibration[i] = buffer[i];
+        }
+        hasLineCalibration = true;
+        DEBUG_PRINTLN("Калибровка линий установлена:");
+        for (int i = 0; i < 4; i++) {
+            DEBUG_PRINT("  Линия ");
+            DEBUG_PRINT(i);
+            DEBUG_PRINT(": ");
+            DEBUG_PRINTLN(lineCalibration[i]);
+        }
+    }
+}
+
 bool WiFiSettings::save() {
     DEBUG_PRINTLN("WiFiSettings::save() - начало сохранения");
     DEBUG_PRINT("  SSID: '"); DEBUG_PRINT(ssid); DEBUG_PRINTLN("'");
@@ -212,6 +259,13 @@ bool WiFiSettings::save() {
     // Сохраняем настройки эффектов
     size_t w13 = preferences.putInt("effectMode", effectMode);
     
+    // Сохраняем калибровочные данные линий
+    size_t w14 = preferences.putBool("hasLineCal", hasLineCalibration);
+    size_t w15 = 0;
+    if (hasLineCalibration) {
+        w15 = preferences.putBytes("lineCal", lineCalibration, 4);
+    }
+    
     DEBUG_PRINT("  Записано байт - initialized: "); DEBUG_PRINTLN(w1);
     DEBUG_PRINT("  Записано байт - ssid: "); DEBUG_PRINTLN(w2);
     DEBUG_PRINT("  Записано байт - password: "); DEBUG_PRINTLN(w3);
@@ -225,6 +279,8 @@ bool WiFiSettings::save() {
     DEBUG_PRINT("  Записано байт - camHMirror: "); DEBUG_PRINTLN(w11);
     DEBUG_PRINT("  Записано байт - camVFlip: "); DEBUG_PRINTLN(w12);
     DEBUG_PRINT("  Записано байт - effectMode: "); DEBUG_PRINTLN(w13);
+    DEBUG_PRINT("  Записано байт - hasLineCal: "); DEBUG_PRINTLN(w14);
+    DEBUG_PRINT("  Записано байт - lineCal: "); DEBUG_PRINTLN(w15);
     
     // Принудительно сохраняем изменения (commit)
     bool committed = preferences.putBool("_commit", true);

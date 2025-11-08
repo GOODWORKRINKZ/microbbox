@@ -61,10 +61,15 @@
 #endif
 
 #ifdef FEATURE_BUTTON
-    #define BUTTON_PIN 4            // Кнопка на пин 4 (GPIO4, безопасный пин)
+    #define BUTTON_PIN 2            // Кнопка на пин 2 (GPIO2, безопасный пин)
     #define BUTTON_DEBOUNCE_MS 200  // Время антидребезга (увеличено для предотвращения ложных срабатываний при загрузке)
     #define BUTTON_INIT_DELAY_MS 2000  // Задержка перед первой проверкой кнопки после инициализации
     #define BUTTON_DIAG_INTERVAL_MS 2000  // Интервал вывода диагностики кнопки
+#endif
+
+#ifdef TARGET_LINER
+    // Штатный светодиод для Liner (GPIO4)
+    #define LINER_LED_PIN 4         // Светодиод на пин 4 (GPIO4, штатный LED для индикации)
 #endif
 
 #ifdef FEATURE_MOTORS
