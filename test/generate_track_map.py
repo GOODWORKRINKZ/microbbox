@@ -1,11 +1,13 @@
 #!/usr/bin/env python3
 """
-Генератор карты трассы с черной линией.
+Генератор карты трассы с черной линией (алгоритм Гамильтонова пути).
 
 Создает:
 1. Генерирует изображение трассы (3000×3000 пикселей) с черной линией на белом фоне
-2. Извлекает последовательные кадры 160×120, двигаясь вдоль линии
-3. JSON-файл с метаданными (правильные ответы для каждого кадра)
+2. Линия состоит только из сегментов под углом 90° (вверх, вниз, влево, вправо)
+3. Линия НИКОГДА не пересекает сама себя (гарантия алгоритма)
+4. Извлекает последовательные кадры 160×120, двигаясь вдоль линии
+5. JSON-файл с метаданными (правильные ответы для каждого кадра)
 """
 
 import os
@@ -13,7 +15,7 @@ import json
 import random
 import math
 from pathlib import Path
-from PIL import Image, ImageDraw, ImageFont
+from PIL import Image, ImageDraw
 import numpy as np
 
 # Константы
@@ -30,73 +32,158 @@ LINE_WIDTH = 20    # Ширина черной линии (примерно 20 �
 CAMERA_WIDTH = 160
 CAMERA_HEIGHT = 120
 
-# Параметры генерации линии
-MIN_SEGMENT_LENGTH = 150
-MAX_SEGMENT_LENGTH = 400
+# Параметры генерации сетки
+GRID_CELL_SIZE = 150  # Размер ячейки сетки (пикселей)
+GRID_SIZE = TRACK_SIZE // GRID_CELL_SIZE  # Количество ячеек в сетке
 
-def generate_line_path():
+
+def generate_hamiltonian_path():
     """
-    Генерирует путь черной линии на трассе.
+    Генерирует Гамильтонов путь на сетке (змейка).
+    Гарантирует, что путь не пересекает сам себя и покрывает все ячейки.
     
     Returns:
-        list: Список точек [(x, y), ...] пути линии
+        list: Список точек [(grid_x, grid_y), ...] в координатах сетки
     """
     path = []
     
-    # Стартовая позиция (левый нижний угол)
-    current_x = 200
-    current_y = TRACK_SIZE - 500
-    current_angle = 0  # Направление вправо (0° = вправо, 90° = вверх, 180° = влево, 270° = вниз)
-    
-    path.append((current_x, current_y))
-    
-    # Генерируем путь
-    segments_count = 0
-    max_segments = 25
-    
-    while segments_count < max_segments:
-        # Длина следующего сегмента
-        segment_length = random.randint(MIN_SEGMENT_LENGTH, MAX_SEGMENT_LENGTH)
-        
-        # Вычисляем следующую точку
-        next_x = current_x + segment_length * math.cos(math.radians(current_angle))
-        next_y = current_y + segment_length * math.sin(math.radians(current_angle))
-        
-        # Проверяем границы
-        margin = 200
-        if next_x < margin or next_x > TRACK_SIZE - margin or \
-           next_y < margin or next_y > TRACK_SIZE - margin:
-            # Достигли границы, корректируем угол
-            if next_x < margin:
-                current_angle = random.uniform(-45, 45)  # Поворот вправо
-            elif next_x > TRACK_SIZE - margin:
-                current_angle = random.uniform(135, 225)  # Поворот влево
-            elif next_y < margin:
-                current_angle = random.uniform(45, 135)  # Поворот вниз
-            elif next_y > TRACK_SIZE - margin:
-                current_angle = random.uniform(-135, -45)  # Поворот вверх
-            continue
-        
-        path.append((next_x, next_y))
-        current_x, current_y = next_x, next_y
-        
-        # Решаем, куда повернуть дальше
-        turn_choice = random.choices(['straight', 'left', 'right'], 
-                                     weights=[0.5, 0.25, 0.25])[0]
-        
-        if turn_choice == 'straight':
-            # Небольшое отклонение для реализма
-            current_angle += random.uniform(-5, 5)
-        elif turn_choice == 'left':
-            # Поворот влево (против часовой стрелки)
-            current_angle += random.uniform(20, 60)
-        elif turn_choice == 'right':
-            # Поворот вправо (по часовой стрелке)
-            current_angle -= random.uniform(20, 60)
-        
-        segments_count += 1
+    # Простой алгоритм "змейка" - проходим по всем ячейкам зигзагом
+    # Это гарантирует отсутствие пересечений
+    for y in range(GRID_SIZE):
+        if y % 2 == 0:
+            # Четные строки: слева направо
+            for x in range(GRID_SIZE):
+                path.append((x, y))
+        else:
+            # Нечетные строки: справа налево
+            for x in range(GRID_SIZE - 1, -1, -1):
+                path.append((x, y))
     
     return path
+
+
+def add_random_variations(grid_path, variation_prob=0.3):
+    """
+    Добавляет случайные вариации к змейке, сохраняя отсутствие пересечений.
+    
+    Args:
+        grid_path: Базовый Гамильтонов путь
+        variation_prob: Вероятность добавления дополнительного сегмента
+    
+    Returns:
+        list: Модифицированный путь с вариациями
+    """
+    # Создаем множество посещенных ячеек для быстрой проверки
+    visited = set(grid_path)
+    
+    # Направления движения (вверх, вниз, влево, вправо)
+    directions = [(0, -1), (0, 1), (-1, 0), (1, 0)]
+    
+    result_path = [grid_path[0]]
+    
+    for i in range(1, len(grid_path)):
+        current = result_path[-1]
+        target = grid_path[i]
+        
+        # С некоторой вероятностью пробуем добавить промежуточный сегмент
+        if random.random() < variation_prob and i < len(grid_path) - 1:
+            # Пробуем найти соседнюю непосещенную ячейку
+            for dx, dy in random.sample(directions, len(directions)):
+                neighbor_x = current[0] + dx
+                neighbor_y = current[1] + dy
+                
+                # Проверяем границы и что ячейка не посещена ранее в текущем пути
+                if (0 <= neighbor_x < GRID_SIZE and 
+                    0 <= neighbor_y < GRID_SIZE and
+                    (neighbor_x, neighbor_y) not in visited and
+                    (neighbor_x, neighbor_y) != target):
+                    
+                    # Проверяем, можем ли мы вернуться к основному пути
+                    # (есть ли путь от neighbor к target)
+                    if can_reach(neighbor_x, neighbor_y, target[0], target[1]):
+                        result_path.append((neighbor_x, neighbor_y))
+                        visited.add((neighbor_x, neighbor_y))
+                        break
+        
+        result_path.append(target)
+    
+    return result_path
+
+
+def can_reach(from_x, from_y, to_x, to_y):
+    """
+    Простая проверка: можно ли достичь целевой ячейки (манхэттенское расстояние).
+    """
+    return abs(to_x - from_x) + abs(to_y - from_y) <= 3
+
+
+def grid_to_pixel_path(grid_path):
+    """
+    Конвертирует путь в координатах сетки в пиксельные координаты.
+    Добавляет интерполяцию для плавных линий.
+    
+    Args:
+        grid_path: Путь в координатах сетки [(grid_x, grid_y), ...]
+    
+    Returns:
+        list: Путь в пиксельных координатах [(x, y), ...]
+    """
+    pixel_path = []
+    
+    # Отступ от краев
+    margin = GRID_CELL_SIZE // 2
+    
+    for i, (gx, gy) in enumerate(grid_path):
+        # Центр текущей ячейки
+        center_x = margin + gx * GRID_CELL_SIZE + GRID_CELL_SIZE // 2
+        center_y = margin + gy * GRID_CELL_SIZE + GRID_CELL_SIZE // 2
+        
+        pixel_path.append((center_x, center_y))
+        
+        # Добавляем промежуточные точки для плавности (между текущей и следующей ячейкой)
+        if i < len(grid_path) - 1:
+            next_gx, next_gy = grid_path[i + 1]
+            next_center_x = margin + next_gx * GRID_CELL_SIZE + GRID_CELL_SIZE // 2
+            next_center_y = margin + next_gy * GRID_CELL_SIZE + GRID_CELL_SIZE // 2
+            
+            # Направление движения (только 90° углы!)
+            if next_gx != gx:  # Горизонтальное движение
+                step = 1 if next_gx > gx else -1
+                for dx in range(step * 10, (next_center_x - center_x), step * 10):
+                    pixel_path.append((center_x + dx, center_y))
+            elif next_gy != gy:  # Вертикальное движение
+                step = 1 if next_gy > gy else -1
+                for dy in range(step * 10, (next_center_y - center_y), step * 10):
+                    pixel_path.append((center_x, center_y + dy))
+    
+    return pixel_path
+
+
+def generate_line_path():
+    """
+    Генерирует путь черной линии на трассе используя Гамильтонов путь.
+    Гарантирует отсутствие самопересечений и строгие углы 90°.
+    
+    Returns:
+        list: Список точек [(x, y), ...] пути линии в пиксельных координатах
+    """
+    print("Генерация Гамильтонова пути на сетке...")
+    grid_path = generate_hamiltonian_path()
+    print(f"  ✓ Базовый путь: {len(grid_path)} ячеек")
+    
+    print("Добавление случайных вариаций...")
+    # Пока используем базовый путь без вариаций для гарантии работоспособности
+    # varied_path = add_random_variations(grid_path, variation_prob=0.2)
+    varied_path = grid_path
+    print(f"  ✓ Итоговый путь: {len(varied_path)} ячеек")
+    
+    print("Конвертация в пиксельные координаты...")
+    pixel_path = grid_to_pixel_path(varied_path)
+    print(f"  ✓ Пиксельный путь: {len(pixel_path)} точек")
+    
+    return pixel_path
+
+
 
 
 def draw_track_map(path):
@@ -185,20 +272,41 @@ def extract_camera_frames(track_image, path, step_size=30):
     
     # Извлекаем кадры
     for cx, cy, direction_angle in interpolated_path:
-        # Камера находится в точке (cx, cy)
-        # Берем область вокруг этой точки
+        # Камера находится в точке (cx, cy) и смотрит по направлению direction_angle
+        # Нужно извлечь область И ПОВЕРНУТЬ её так, чтобы линия шла снизу вверх
         
-        left = int(cx - CAMERA_WIDTH // 2)
-        top = int(cy - CAMERA_HEIGHT // 2)
-        right = left + CAMERA_WIDTH
-        bottom = top + CAMERA_HEIGHT
+        # Увеличенная область для поворота (чтобы после поворота не было обрезки)
+        extract_size = max(CAMERA_WIDTH, CAMERA_HEIGHT) * 2
+        
+        left = int(cx - extract_size // 2)
+        top = int(cy - extract_size // 2)
+        right = left + extract_size
+        bottom = top + extract_size
         
         # Проверяем границы
         if left < 0 or top < 0 or right > TRACK_SIZE or bottom > TRACK_SIZE:
             continue
         
-        # Извлекаем кадр
-        frame_img = track_image.crop((left, top, right, bottom))
+        # Извлекаем увеличенный кадр
+        large_frame = track_image.crop((left, top, right, bottom))
+        
+        # КЛЮЧЕВОЙ МОМЕНТ: Поворачиваем изображение так, чтобы направление движения
+        # было "вверх" (т.е. линия идет от низа кадра к верху)
+        # direction_angle: 0° = вправо, 90° = вверх, 180° = влево, 270° = вниз
+        # Нам нужно повернуть на (90 - direction_angle), чтобы направление стало вверх
+        rotation_angle = 90 - direction_angle
+        rotated_frame = large_frame.rotate(rotation_angle, expand=False, fillcolor=(255, 255, 255))
+        
+        # Вырезаем центральную часть нужного размера
+        center_x = rotated_frame.width // 2
+        center_y = rotated_frame.height // 2
+        
+        crop_left = center_x - CAMERA_WIDTH // 2
+        crop_top = center_y - CAMERA_HEIGHT // 2
+        crop_right = crop_left + CAMERA_WIDTH
+        crop_bottom = crop_top + CAMERA_HEIGHT
+        
+        frame_img = rotated_frame.crop((crop_left, crop_top, crop_right, crop_bottom))
         
         # Анализируем кадр для определения категории
         expected_action = analyze_frame(frame_img)
