@@ -62,5 +62,10 @@ __pycache__/
 *.pyo
 
 # embedded_resources.h
-embedded_resources.htest/output/
+embedded_resources.h
+
+# Test output files (visualizations, etc.)
+test/output/*.png
+test/output/*.json
+test/output/*.html
 test/test/
