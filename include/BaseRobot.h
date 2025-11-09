@@ -35,6 +35,9 @@ protected:
     virtual void shutdownSpecificComponents() = 0;
     virtual void setupWebHandlers(AsyncWebServer* server) = 0;
     
+    // Метод вызывается перед сохранением настроек (для синхронизации специфичных данных)
+    virtual void onBeforeSaveSettings() {}
+    
     // Метод для обработки команд управления моторами (переопределяется в наследниках)
     virtual void handleMotorCommand(int throttlePWM, int steeringPWM) = 0;
     

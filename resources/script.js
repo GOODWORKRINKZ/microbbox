@@ -2061,17 +2061,156 @@ class ClassicRobotUI extends BaseRobotUI {
 // ═══════════════════════════════════════════════════════════════
 // LINER ROBOT UI - Автономный робот следующий по линии
 // ═══════════════════════════════════════════════════════════════
-// Liner идентичен Classic - переключение режима через физическую кнопку на GPIO4
 
 class LinerRobotUI extends ClassicRobotUI {
     constructor() {
         super();
         this.robotType = 'liner';
+        this.calibrationData = null;
+        this.overlayCanvas = null;
+        this.overlayCtx = null;
     }
     
-    // Liner полностью идентичен Classic UI
-    // Переключение автономного режима происходит через физическую кнопку на GPIO4
-    // Никаких дополнительных UI элементов не требуется
+    setupEventListeners() {
+        super.setupEventListeners();
+        
+        // Показываем секцию калибровки линий для Liner
+        const calibrationSection = document.getElementById('lineCalibrationSection');
+        if (calibrationSection) {
+            calibrationSection.classList.remove('hidden');
+        }
+        
+        // Обработчик кнопки захвата калибровки
+        const captureCalibrationBtn = document.getElementById('captureCalibrationBtn');
+        if (captureCalibrationBtn) {
+            captureCalibrationBtn.addEventListener('click', () => this.captureCalibration());
+        }
+        
+        // Инициализация overlay canvas
+        this.initCalibrationOverlay();
+        
+        // Загружаем калибровочные данные если есть
+        this.loadCalibrationData();
+    }
+    
+    initCalibrationOverlay() {
+        this.overlayCanvas = document.getElementById('calibrationOverlay');
+        if (!this.overlayCanvas) {
+            Logger.warn('Calibration overlay canvas not found');
+            return;
+        }
+        
+        this.overlayCtx = this.overlayCanvas.getContext('2d');
+        
+        // Синхронизируем размер canvas с видео потоком
+        const streamImg = document.getElementById('cameraStream');
+        if (streamImg) {
+            streamImg.addEventListener('load', () => {
+                this.overlayCanvas.width = streamImg.naturalWidth || 160;
+                this.overlayCanvas.height = streamImg.naturalHeight || 120;
+                this.drawCalibrationOverlay();
+            });
+        }
+    }
+    
+    async loadCalibrationData() {
+        try {
+            const response = await fetch('/api/settings/get');
+            if (response.ok) {
+                const data = await response.json();
+                if (data.calibration && data.calibration.hasCalibration) {
+                    this.calibrationData = data.calibration.lines;
+                    this.drawCalibrationOverlay();
+                    Logger.info('Калибровочные данные загружены из настроек');
+                }
+            }
+        } catch (error) {
+            Logger.warn('Не удалось загрузить калибровочные данные:', error);
+        }
+    }
+    
+    drawCalibrationOverlay() {
+        if (!this.overlayCanvas || !this.overlayCtx || !this.calibrationData) {
+            return;
+        }
+        
+        const width = this.overlayCanvas.width;
+        const height = this.overlayCanvas.height;
+        
+        // Очищаем canvas
+        this.overlayCtx.clearRect(0, 0, width, height);
+        
+        // Позиции сканирующих линий (40%, 55%, 75%, 90%)
+        const linePositions = [
+            Math.floor(height * 0.40),
+            Math.floor(height * 0.55),
+            Math.floor(height * 0.75),
+            Math.floor(height * 0.90)
+        ];
+        
+        // Рисуем калибровочные линии с вычитанием
+        for (let i = 0; i < 4; i++) {
+            const y = linePositions[i];
+            const calibLine = this.calibrationData[i];
+            
+            // Создаем ImageData для линии
+            const imageData = this.overlayCtx.createImageData(width, 1);
+            
+            for (let x = 0; x < width; x++) {
+                // Калибровочное значение (инвертируем для вычитания)
+                const calibValue = 255 - (calibLine[x] || 0);
+                const idx = x * 4;
+                imageData.data[idx] = calibValue;     // R
+                imageData.data[idx + 1] = calibValue; // G
+                imageData.data[idx + 2] = calibValue; // B
+                imageData.data[idx + 3] = 100;        // Alpha (полупрозрачность)
+            }
+            
+            // Рисуем линию
+            this.overlayCtx.putImageData(imageData, 0, y);
+        }
+        
+        // Показываем overlay
+        this.overlayCanvas.style.display = 'block';
+        Logger.info('Калибровочный overlay отображен');
+    }
+    
+    async captureCalibration() {
+        const btn = document.getElementById('captureCalibrationBtn');
+        if (!btn) return;
+        
+        try {
+            btn.disabled = true;
+            btn.textContent = '⏳ Захват калибровки...';
+            
+            const response = await fetch('/api/capture-calibration', {
+                method: 'POST'
+            });
+            
+            if (response.ok) {
+                const data = await response.json();
+                await ModalDialog.showAlert(
+                    data.message || 'Калибровка захвачена! Не забудьте нажать "Сохранить настройки" для применения.',
+                    '✅ Калибровка захвачена'
+                );
+                Logger.info('Калибровка линий захвачена успешно');
+                
+                // Перезагружаем калибровочные данные для визуализации
+                await this.loadCalibrationData();
+            } else {
+                throw new Error('Ошибка захвата калибровки');
+            }
+        } catch (error) {
+            Logger.error('Ошибка при захвате калибровки:', error);
+            await ModalDialog.showAlert(
+                'Не удалось захватить калибровку. Убедитесь, что робот подключен.',
+                '❌ Ошибка'
+            );
+        } finally {
+            btn.disabled = false;
+            btn.textContent = '📸 Захватить калибровку';
+        }
+    }
 }
 
 // ═══════════════════════════════════════════════════════════════
