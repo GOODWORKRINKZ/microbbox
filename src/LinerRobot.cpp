@@ -218,6 +218,29 @@ void LinerRobot::setupWebHandlers(AsyncWebServer* server) {
             "{\"status\":\"ok\",\"message\":\"Калибровка захвачена! Нажмите 'Сохранить настройки' для применения\"}");
     });
     
+    // API: Получение калибровочных данных для визуализации (для Liner)
+    server->on("/api/get-calibration", HTTP_GET, [this](AsyncWebServerRequest* request) {
+        if (!hasCalibration_) {
+            request->send(200, "application/json", "{\"hasCalibration\":false}");
+            return;
+        }
+        
+        // Формируем JSON с калибровочными данными
+        String json = "{\"hasCalibration\":true,\"lines\":[";
+        for (int line = 0; line < 4; line++) {
+            if (line > 0) json += ",";
+            json += "[";
+            for (int x = 0; x < LINE_CAMERA_WIDTH; x++) {
+                if (x > 0) json += ",";
+                json += String(calibrationLines_[line][x]);
+            }
+            json += "]";
+        }
+        json += "]}";
+        
+        request->send(200, "application/json", json);
+    });
+    
     // Специфичные для Liner endpoints
     // (общие /api/settings/*, /api/restart уже в BaseRobot)
 }

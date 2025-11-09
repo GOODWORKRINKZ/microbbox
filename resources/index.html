@@ -35,8 +35,9 @@
         </header>
 
         <!-- Видео стрим от камеры -->
-        <div class="video-container">
+        <div class="video-container" style="position: relative;">
             <img id="cameraStream" src="" alt="Камера робота" class="camera-stream">
+            <canvas id="calibrationOverlay" style="position: absolute; top: 0; left: 0; pointer-events: none; display: none;"></canvas>
             <!-- Fallback overlay when stream is unavailable -->
             <div id="streamFallback" class="stream-fallback hidden">
                 <div class="fallback-content">
