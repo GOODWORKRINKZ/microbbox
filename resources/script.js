@@ -2115,13 +2115,13 @@ class LinerRobotUI extends ClassicRobotUI {
     
     async loadCalibrationData() {
         try {
-            const response = await fetch('/api/get-calibration');
+            const response = await fetch('/api/settings/get');
             if (response.ok) {
                 const data = await response.json();
-                if (data.hasCalibration) {
-                    this.calibrationData = data.lines;
+                if (data.calibration && data.calibration.hasCalibration) {
+                    this.calibrationData = data.calibration.lines;
                     this.drawCalibrationOverlay();
-                    Logger.info('Калибровочные данные загружены');
+                    Logger.info('Калибровочные данные загружены из настроек');
                 }
             }
         } catch (error) {

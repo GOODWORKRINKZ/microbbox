@@ -209,6 +209,69 @@ void LinerRobot::setupWebHandlers(AsyncWebServer* server) {
         request->send(200, "application/json", json);
     });
     
+    // Переопределяем /api/settings/get для добавления калибровочных данных
+    server->on("/api/settings/get", HTTP_GET, [this](AsyncWebServerRequest* request) {
+        if (!wifiSettings_) {
+            request->send(500, "application/json", "{\"error\":\"WiFiSettings not initialized\"}");
+            return;
+        }
+        
+        String json = "{";
+        
+        // WiFi настройки
+        json += "\"wifi\":{";
+        json += "\"ssid\":\"" + wifiSettings_->getSSID() + "\",";
+        json += "\"mode\":\"" + String(wifiSettings_->getMode() == WiFiMode::CLIENT ? "CLIENT" : "AP") + "\",";
+        json += "\"deviceName\":\"" + wifiSettings_->getDeviceName() + "\"";
+        json += "},";
+        
+        // Настройки моторов
+        json += "\"motors\":{";
+        json += "\"swapLeftRight\":" + String(wifiSettings_->getMotorSwapLeftRight() ? "true" : "false") + ",";
+        json += "\"invertLeft\":" + String(wifiSettings_->getMotorInvertLeft() ? "true" : "false") + ",";
+        json += "\"invertRight\":" + String(wifiSettings_->getMotorInvertRight() ? "true" : "false");
+        json += "},";
+        
+        // Настройки стиков
+        json += "\"sticks\":{";
+        json += "\"invertThrottle\":" + String(wifiSettings_->getInvertThrottleStick() ? "true" : "false") + ",";
+        json += "\"invertSteering\":" + String(wifiSettings_->getInvertSteeringStick() ? "true" : "false");
+        json += "},";
+        
+        // Настройки камеры
+        json += "\"camera\":{";
+        json += "\"hMirror\":" + String(wifiSettings_->getCameraHMirror() ? "true" : "false") + ",";
+        json += "\"vFlip\":" + String(wifiSettings_->getCameraVFlip() ? "true" : "false");
+        json += "},";
+        
+        // Настройки эффектов
+        json += "\"effects\":{";
+        json += "\"effectMode\":" + String(wifiSettings_->getEffectMode());
+        json += "},";
+        
+        // Калибровочные данные линий (специфично для Liner)
+        json += "\"calibration\":{";
+        json += "\"hasCalibration\":" + String(hasCalibration_ ? "true" : "false");
+        if (hasCalibration_) {
+            json += ",\"lines\":[";
+            for (int line = 0; line < 4; line++) {
+                if (line > 0) json += ",";
+                json += "[";
+                for (int x = 0; x < LINE_CAMERA_WIDTH; x++) {
+                    if (x > 0) json += ",";
+                    json += String(calibrationLines_[line][x]);
+                }
+                json += "]";
+            }
+            json += "]";
+        }
+        json += "}";
+        
+        json += "}";
+        
+        request->send(200, "application/json", json);
+    });
+    
     // API: Захват калибровочных значений (для Liner)
     // Захватывает значения с камеры, но НЕ сохраняет - сохранение через общую кнопку "Сохранить настройки"
     server->on("/api/capture-calibration", HTTP_POST, [this](AsyncWebServerRequest* request) {
@@ -216,29 +279,6 @@ void LinerRobot::setupWebHandlers(AsyncWebServer* server) {
         captureCalibration();
         request->send(200, "application/json", 
             "{\"status\":\"ok\",\"message\":\"Калибровка захвачена! Нажмите 'Сохранить настройки' для применения\"}");
-    });
-    
-    // API: Получение калибровочных данных для визуализации (для Liner)
-    server->on("/api/get-calibration", HTTP_GET, [this](AsyncWebServerRequest* request) {
-        if (!hasCalibration_) {
-            request->send(200, "application/json", "{\"hasCalibration\":false}");
-            return;
-        }
-        
-        // Формируем JSON с калибровочными данными
-        String json = "{\"hasCalibration\":true,\"lines\":[";
-        for (int line = 0; line < 4; line++) {
-            if (line > 0) json += ",";
-            json += "[";
-            for (int x = 0; x < LINE_CAMERA_WIDTH; x++) {
-                if (x > 0) json += ",";
-                json += String(calibrationLines_[line][x]);
-            }
-            json += "]";
-        }
-        json += "]}";
-        
-        request->send(200, "application/json", json);
     });
     
     // Специфичные для Liner endpoints
