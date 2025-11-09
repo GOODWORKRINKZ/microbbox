@@ -43,14 +43,38 @@ private:
         AUTONOMOUS   // Автономное следование по линии
     };
     
+    // Режимы загрузки
+    enum class BootMode {
+        CONFIGURATION,  // Режим настройки (с веб-сервером и стримом)
+        LINE_FOLLOWING  // Режим следования по линии (оптимизирован, без веб/стрима)
+    };
+    
     // Алгоритм следования по линии
     void updateLineFollowing();
     float detectLinePosition(); // Возвращает позицию линии от -1.0 (слева) до 1.0 (справа)
     void applyPIDControl(float linePosition);
     
+    // Оптимизации детектирования (Best Practices)
+    uint8_t calculateOtsuThreshold(uint8_t* img, int width, int height);  // Метод Otsu для адаптивного порога
+    float applyMedianFilter(float newPosition);  // Медианный фильтр для сглаживания
+    float filterPositionJump(float newPosition); // Фильтрация резких скачков
+    
     // Обработка кнопки
     void updateButton();
     void onButtonPressed();
+    BootMode detectBootMode();       // Определяет режим загрузки по кнопке при старте
+    
+#ifdef FEATURE_DUAL_CORE
+    // Детектирование линии на отдельном ядре ESP32 для максимальной производительности
+    // В РЕЖИМЕ СЛЕДОВАНИЯ (веб/стрим ВЫКЛЮЧЕНЫ):
+    // - Core 0: Детектирование линии (приоритет 2, изолированный цикл)
+    // - Core 1: Управление моторами, PID контроллер, основной цикл
+    // Обеспечивает стабильный FPS без конкуренции за CPU
+    static void lineDetectionTask(void* parameter);
+    TaskHandle_t lineDetectionTaskHandle_;
+    volatile float detectedLinePosition_;
+    SemaphoreHandle_t linePositionMutex_;
+#endif
     
     // Обновление управления
     void updateMotors();
@@ -75,6 +99,7 @@ private:
     
     // Состояние робота
     Mode currentMode_;
+    BootMode bootMode_;              // Режим загрузки (определяется при старте)
     bool buttonPressed_;
     unsigned long lastButtonCheck_;
     
@@ -82,6 +107,14 @@ private:
     bool lineDetected_;              // Обнаружена ли линия
     int lineNotDetectedCount_;       // Счетчик кадров без линии
     bool lineEndAnimationPlayed_;    // Проиграна ли анимация конца линии
+    
+    // Оптимизации детектирования (Best Practices)
+#if LINE_USE_MEDIAN_FILTER
+    float positionHistory_[LINE_MEDIAN_FILTER_SIZE];  // История позиций для медианного фильтра
+    int positionHistoryIndex_;                         // Индекс в кольцевом буфере
+#endif
+    float lastValidPosition_;        // Последняя валидная позиция (для фильтрации скачков)
+    uint8_t adaptiveThreshold_;      // Адаптивный порог бинаризации (вычисляется динамически)
     
     // PID контроллер
     float pidError_;

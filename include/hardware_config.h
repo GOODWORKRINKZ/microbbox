@@ -151,8 +151,28 @@
     // FRAMESIZE_QQVGA = 160x120 (увеличено для захвата большего пространства по бокам)
     #define LINE_CAMERA_WIDTH 160       // Ширина изображения
     #define LINE_CAMERA_HEIGHT 120      // Высота изображения
-    #define LINE_THRESHOLD 128          // Порог для ЧБ изображения
+    #define LINE_THRESHOLD 128          // Порог для ЧБ изображения (используется как fallback)
     #define LINE_T_JUNCTION_THRESHOLD 0.7f  // Порог детектирования T-пересечения (70% ширины)
+    
+    // Оптимизации детектирования (Best Practices)
+    #define LINE_USE_ADAPTIVE_THRESHOLD true  // Использовать адаптивный порог (метод Otsu)
+    #define LINE_USE_MEDIAN_FILTER true       // Медианный фильтр для сглаживания позиции
+    #define LINE_MEDIAN_FILTER_SIZE 5         // Размер окна медианного фильтра
+    #define LINE_ROI_START_PERCENT 0.3f       // ROI: начало области интереса (30% от верха)
+    #define LINE_MAX_POSITION_JUMP 0.3f       // Максимальный скачок позиции за кадр (фильтр шума)
+    
+    // Калибровка камеры (физические размеры наблюдаемого пространства)
+    // Эти параметры определяются экспериментально путем измерения
+    // физического размера кадра на определенном расстоянии от камеры
+    #define LINE_PIXELS_PER_CM_WIDTH 16.0f   // Пикселей на 1 см по ширине кадра
+    #define LINE_PIXELS_PER_CM_HEIGHT 12.0f  // Пикселей на 1 см по высоте кадра
+    #define LINE_WIDTH_MM 19.5f              // Ширина линии в миллиметрах (19-20мм)
+    
+    // Вычисленные параметры на основе калибровки
+    #define LINE_WIDTH_CM (LINE_WIDTH_MM / 10.0f)  // Ширина линии в см
+    #define LINE_EXPECTED_WIDTH_PIXELS_H (LINE_WIDTH_CM * LINE_PIXELS_PER_CM_WIDTH)   // Ожидаемая ширина линии в пикселях по горизонтали
+    #define LINE_EXPECTED_WIDTH_PIXELS_V (LINE_WIDTH_CM * LINE_PIXELS_PER_CM_HEIGHT)  // Ожидаемая ширина линии в пикселях по вертикали
+    
     #define LINE_PID_KP 1.0            // Пропорциональный коэффициент PID
     #define LINE_PID_KI 0.0            // Интегральный коэффициент PID
     #define LINE_PID_KD 0.1            // Дифференциальный коэффициент PID

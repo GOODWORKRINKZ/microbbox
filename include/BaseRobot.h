@@ -44,6 +44,10 @@ protected:
     bool initMDNS();
     bool initCamera();
     
+    // Методы управления ресурсами (для оптимизации в Liner режиме)
+    void stopWebServer();
+    void stopCameraStream();
+    
     void startWiFiAP();
     bool connectToSavedWiFi();
     bool connectWiFiDHCP(const char* ssid, const char* password);
@@ -57,6 +61,8 @@ protected:
     bool wifiConnected_;
     bool wifiAPMode_;
     String deviceName_;
+    bool webServerRunning_;        // Флаг работы веб-сервера
+    bool cameraStreamRunning_;     // Флаг работы видеопотока
     
     // Объекты
     AsyncWebServer* server_;
