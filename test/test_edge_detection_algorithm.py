@@ -88,6 +88,8 @@ def classify_scenario(centers, confidences, roi_width, segments_per_line):
     """
     Классификация сценария на основе центров линии на сканлайнах
     
+    TERMINATE = обрыв линии ИЛИ Т-развилка
+    
     Returns: (scenario, position, confidence)
         scenario: "white_field", "straight", "left", "right", "terminate"
         position: normalized position [-1, 1]
@@ -109,12 +111,19 @@ def classify_scenario(centers, confidences, roi_width, segments_per_line):
     # Нормализовать к [-1, 1]
     normalized_position = (avg_position - roi_width / 2) / (roi_width / 2)
     
-    # Детекция окончания линии (совсем мало детектированных сканлайнов)
+    # Детекция TERMINATE (обрыв или Т-развилка)
+    
     detection_ratio = len(centers) / NUM_SCAN_LINES
-    if detection_ratio < 0.4:
+    
+    # 1. Обрыв линии - мало детектированных сканлайнов
+    if detection_ratio < 0.5:
         return "terminate", normalized_position, avg_confidence
     
-    # СНАЧАЛА детекция поворота (приоритет над terminate)
+    # 2. Т-развилка - есть сканлайны с множественными сегментами И хорошая детектируемость
+    multi_segment_lines = sum(1 for segs in segments_per_line if len(segs) >= 2)
+    if multi_segment_lines >= 5 and detection_ratio >= 0.7:  # Т-развилка: много сегментов (>=5) И высокая детектируемость
+        return "terminate", normalized_position, avg_confidence
+    
     # Детекция поворота по изменению позиции от НИЖНИХ к ВЕРХНИМ сканлайнам
     # В перспективе камеры:
     # - нижние сканлайны (ближе к роботу) - начало массива centers
@@ -136,17 +145,6 @@ def classify_scenario(centers, confidences, roi_width, segments_per_line):
             return "left", normalized_position, avg_confidence
         elif position_drift < -0.08:
             return "right", normalized_position, avg_confidence
-    
-    # ПОТОМ детекция окончания линии/T-пересечения
-    # Считаем сколько сканлайнов детектировано в верхней и нижней половине
-    n_half = NUM_SCAN_LINES // 2
-    top_detected = sum(1 for segs in segments_per_line[:n_half] if len(segs) > 0)
-    bottom_detected = sum(1 for segs in segments_per_line[n_half:] if len(segs) > 0)
-    
-    # Если нижние детектируются намного лучше верхних И нет поворота -> terminate
-    detection_diff = bottom_detected - top_detected
-    if detection_diff >= 3 and bottom_detected >= 5 and abs(position_drift) < 0.08:
-        return "terminate", normalized_position, avg_confidence
     
     # Если нет явного поворота -> прямо
     return "straight", normalized_position, avg_confidence
