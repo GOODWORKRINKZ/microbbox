@@ -421,20 +421,49 @@ def detect_line_position(image_path):
     # Применяем трансформации камеры согласно конфигурации
     img_array = apply_camera_transforms(img)
     
-    # Применяем обработку изображения: усиление контраста, edge detection, бинаризацию
-    img_array = normalize_image(img_array)
+    # ВАЖНО: Калибровка применяется к RAW grayscale данным ДО нормализации!
+    # Это соответствует C++ коду в LinerRobot.cpp
     
     # Параметры сканирования
     width = img_array.shape[1]
     height = img_array.shape[0]
     
+    # === ПРИМЕНЕНИЕ КАЛИБРОВКИ К RAW ИЗОБРАЖЕНИЮ ===
+    # В C++ это делается в цикле сканирования, но здесь удобнее сделать заранее
+    if has_calibration:
+        # Применяем калибровку попиксельно для каждой сканирующей линии
+        # Создаем копию для калиброванного изображения
+        calibrated_img = img_array.copy()
+        
+        scan_y_calib = [
+            int(height * 0.40),  # 40% - верхняя линия
+            int(height * 0.55),  # 55% - средне-верхняя
+            int(height * 0.75),  # 75% - средне-нижняя
+            int(height * 0.90),  # 90% - нижняя
+        ]
+        
+        for scan_idx in range(4):
+            y = scan_y_calib[scan_idx]
+            for x in range(width):
+                # Вычитаем калибровочное значение
+                calibrated = int(img_array[y, x]) - int(calibration_lines[scan_idx, x])
+                # Ограничиваем диапазон [0, 255]
+                calibrated_img[y, x] = np.clip(calibrated, 0, 255)
+        
+        img_array = calibrated_img
+    
+    # === АДАПТИВНАЯ БИНАРИЗАЦИЯ (метод Otsu) ===
+    # В C++ это делается через calculateOtsuThreshold()
+    threshold = calculate_otsu_threshold(img_array)
+    
     # === 1. ЧЕТЫРЕ ГОРИЗОНТАЛЬНЫЕ СКАНИРУЮЩИЕ ЛИНИИ ===
     # Для точного определения крутых поворотов и направления движения
+    # ВАЖНО: Позиции ДОЛЖНЫ СОВПАДАТЬ с C++ кодом в LinerRobot.cpp
     horizontal_scan_heights = [
-        int(height * 0.25),  # 25% - верхняя (самая дальняя)
-        int(height * 0.50),  # 50% - средняя-верхняя
-        int(height * 0.75),  # 75% - средняя-нижняя
-        int(height * 0.90),  # 90% - нижняя (самая близкая к роботу)
+        int(height * 0.40),  # 40% - верхняя линия (ROI начало)
+        int(height * 0.55),  # 55% - средне-верхняя
+        int(height * 0.75),  # 75% - средне-нижняя
+        int(height * 0.90),  # 90% - нижняя (самая важная!)
     ]
     
     horizontal_results = []
@@ -444,25 +473,11 @@ def detect_line_position(image_path):
         count = 0
         
         # Сканируем горизонтально
-        # ВАЖНО: После бинаризации ЧЕРНАЯ линия имеет значение 0 (темная), белый фон = 255 (светлый)
-        # Нужно искать ТЕМНЫЕ пиксели (линию), а не светлые (фон)
+        # ВАЖНО: Ищем ТЕМНЫЕ пиксели (линию) - значения < threshold
         for x in range(width):
             pixel = img_array[scan_y, x]
             
-            # Применяем калибровку: вычитаем калибровочное значение для усиления контраста
-            if has_calibration:
-                # Вычитаем калибровочное значение КОНКРЕТНОГО пикселя
-                # Это убирает неравномерность освещения от фонаря
-                calibrated = int(pixel) - int(calibration_lines[scan_idx, x])
-                # Ограничиваем диапазон [0, 255]
-                if calibrated < 0:
-                    pixel = 0  # Очень темный пиксель (усиливается линия)
-                elif calibrated > 255:
-                    pixel = 255  # Очень светлый
-                else:
-                    pixel = calibrated
-            
-            if pixel < LINE_THRESHOLD:  # Ищем ТЕМНЫЕ пиксели (черная линия)
+            if pixel < threshold:  # Ищем ТЕМНЫЕ пиксели (черная линия)
                 sum_position += float(x)
                 count += 1
         
