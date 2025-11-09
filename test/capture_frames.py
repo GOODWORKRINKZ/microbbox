@@ -29,7 +29,8 @@ def capture_frames(stream_url, output_dir, num_frames=50, interval=1.0, category
         'straight': 'img_straight',
         'left': 'img_left',
         'right': 'img_right',
-        'terminate': 'img_terminate'
+        'terminate': 'img_terminate',
+        'calibration': 'img_calibration'  # Пустое поле для калибровки
     }
     
     folder_name = category_map.get(category, f'img_{category}')
@@ -157,15 +158,19 @@ def main():
 
   # Захватить 20 кадров с интервалом 2 секунды
   python capture_frames.py --interval 2.0 --num 20
-
+  
+  # Захватить калибровочные изображения (БЕЛОЕ ПОЛЕ БЕЗ ЛИНИЙ!)
+  python capture_frames.py --category calibration --num 10
+  
   # Использовать другой URL стрима
   python capture_frames.py --url http://192.168.1.100:81/stream
 
 Категории:
-  straight   - линия прямо (робот едет по центру)
-  left       - линия слева (робот должен повернуть налево)
-  right      - линия справа (робот должен повернуть направо)
-  terminate  - T-пересечение или конец линии
+  straight     - линия прямо (робот едет по центру)
+  left         - линия слева (робот должен повернуть налево)
+  right        - линия справа (робот должен повернуть направо)
+  terminate    - T-пересечение или конец линии
+  calibration  - пустое БЕЛОЕ поле БЕЗ линий (для калибровки освещения)
         """
     )
     
@@ -200,7 +205,7 @@ def main():
     parser.add_argument(
         '--category',
         type=str,
-        choices=['straight', 'left', 'right', 'terminate'],
+        choices=['straight', 'left', 'right', 'terminate', 'calibration'],
         default='straight',
         help='Категория изображений (по умолчанию: straight)'
     )
