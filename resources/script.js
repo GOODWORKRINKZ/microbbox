@@ -202,7 +202,8 @@ const Logger = {
             this._logToPage(formattedMessage);
         }
         
-        if (this.outputs.api && (level === 'ERROR' || level === 'WARN' || level === 'VR')) {
+        // Когда API включен - шлём все логи (не только ERROR/WARN/VR)
+        if (this.outputs.api) {
             this._logToAPI(level, message);
         }
     },
@@ -221,22 +222,15 @@ const Logger = {
     },
     
     async _logToAPI(level, message) {
+        // Используем GET чтобы сообщение попало в access.log nginx
+        // Даже если endpoint не существует - в логе увидим запрос!
         try {
-            const response = await fetch('/api/vr-log', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    level,
-                    message,
-                    timestamp: new Date().toISOString()
-                })
-            });
-            
-            if (!response.ok) {
-                throw new Error(`API returned ${response.status}`);
-            }
-        } catch (error) {
-            console.error('[Logger] Failed to send to API:', error.message);
+            const encoded = encodeURIComponent(`[${level}] ${message}`.substring(0, 500));
+            const ts = Date.now();
+            // fire-and-forget, нам важен только лог nginx
+            fetch(`/api/vr-log?t=${ts}&msg=${encoded}`).catch(() => {});
+        } catch (e) {
+            // Игнорируем ошибки
         }
     },
     
@@ -507,7 +501,11 @@ class BaseRobotUI {
                 this.setupMobileJoysticks();
                 break;
             case 'vr':
-                if (vrControls) vrControls.classList.remove('hidden');
+                if (vrControls) {
+                    // В VR режиме сразу скрываем панель — она не нужна
+                    // Управление идёт через контроллеры
+                    vrControls.classList.add('hidden');
+                }
                 break;
         }
     }
@@ -862,10 +860,420 @@ class BaseRobotUI {
     }
     
     async enterVR() {
-        Logger.info('Вход в VR режим...');
-        // Переопределяется в наследниках
+        // Включаем API логирование для VR отладки
+        Logger.enableAPI(true);
+        Logger.info('VR: enterVR started');
+        
+        if (this.xrSession) {
+            Logger.info('VR: Сессия уже активна');
+            return;
+        }
+        
+        try {
+            // Создаём WebGL контекст для VR рендеринга
+            this.initVRWebGL();
+            
+            // Запрашиваем VR сессию
+            this.xrSession = await navigator.xr.requestSession('immersive-vr', {
+                optionalFeatures: ['local-floor', 'bounded-floor', 'hand-tracking']
+            });
+            
+            Logger.info('VR: сессия запущена');
+            
+            // Создаём XRWebGLLayer для рендеринга
+            const glLayer = new XRWebGLLayer(this.xrSession, this.vrGL);
+            this.xrSession.updateRenderState({ baseLayer: glLayer });
+            Logger.info('VR: XRWebGLLayer создан');
+            
+            // Слушаем появление контроллеров
+            this.xrSession.addEventListener('inputsourceschange', (event) => {
+                Logger.info('VR: Контроллеров: ' + (this.xrSession?.inputSources?.length || 0));
+                for (const source of this.xrSession?.inputSources || []) {
+                    Logger.info(`VR: [${source.handedness}] gamepad=${!!source.gamepad}`);
+                }
+            });
+            
+            // Обработчик завершения сессии
+            this.xrSession.addEventListener('end', () => {
+                Logger.info('VR: сессия завершена');
+                this.xrSession = null;
+                this.vrControllerState = null;
+                this.xrRefSpace = null;
+            });
+            
+            // Инициализация состояния контроллеров
+            this.vrControllerState = {
+                leftStick: { x: 0, y: 0 },
+                rightStick: { x: 0, y: 0 },
+                leftTrigger: 0,
+                rightTrigger: 0,
+                leftSqueeze: 0,
+                rightSqueeze: 0,
+                buttons: {}
+            };
+            
+            // Получаем reference space
+            try {
+                this.xrRefSpace = await this.xrSession.requestReferenceSpace('local-floor');
+                Logger.info('VR: Reference space (local-floor)');
+            } catch {
+                try {
+                    this.xrRefSpace = await this.xrSession.requestReferenceSpace('local');
+                    Logger.info('VR: Reference space (local)');
+                } catch (e) {
+                    Logger.error('VR: Не удалось получить reference space: ' + e.message);
+                    return;
+                }
+            }
+            
+            // Запускаем XR render loop
+            this.xrSession.requestAnimationFrame((time, frame) => this.onXRFrame(time, frame));
+            Logger.info('VR: XR loop started');
+            
+        } catch (error) {
+            Logger.error('VR: ' + (error.message || error));
+        }
     }
     
+    // Инициализация WebGL для VR
+    initVRWebGL() {
+        if (this.vrGL) return;
+        
+        // Создаём canvas для WebGL
+        this.vrCanvas = document.createElement('canvas');
+        this.vrGL = this.vrCanvas.getContext('webgl', { xrCompatible: true });
+        
+        const gl = this.vrGL;
+        
+        // Шейдеры для отрисовки текстуры на fullscreen quad
+        const vsSource = `
+            attribute vec2 aPosition;
+            varying vec2 vTexCoord;
+            void main() {
+                vTexCoord = (aPosition + 1.0) * 0.5;
+                vTexCoord.y = 1.0 - vTexCoord.y; // Flip Y
+                gl_Position = vec4(aPosition, 0.0, 1.0);
+            }
+        `;
+        
+        const fsSource = `
+            precision mediump float;
+            varying vec2 vTexCoord;
+            uniform sampler2D uTexture;
+            void main() {
+                gl_FragColor = texture2D(uTexture, vTexCoord);
+            }
+        `;
+        
+        // Компилируем шейдеры
+        const vs = gl.createShader(gl.VERTEX_SHADER);
+        gl.shaderSource(vs, vsSource);
+        gl.compileShader(vs);
+        
+        const fs = gl.createShader(gl.FRAGMENT_SHADER);
+        gl.shaderSource(fs, fsSource);
+        gl.compileShader(fs);
+        
+        this.vrProgram = gl.createProgram();
+        gl.attachShader(this.vrProgram, vs);
+        gl.attachShader(this.vrProgram, fs);
+        gl.linkProgram(this.vrProgram);
+        
+        // Fullscreen quad vertices
+        const vertices = new Float32Array([-1,-1, 1,-1, -1,1, 1,1]);
+        this.vrQuadBuffer = gl.createBuffer();
+        gl.bindBuffer(gl.ARRAY_BUFFER, this.vrQuadBuffer);
+        gl.bufferData(gl.ARRAY_BUFFER, vertices, gl.STATIC_DRAW);
+        
+        // Текстура для стрима
+        this.vrTexture = gl.createTexture();
+        gl.bindTexture(gl.TEXTURE_2D, this.vrTexture);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+        
+        // Атрибуты и униформы
+        this.vrAttrPosition = gl.getAttribLocation(this.vrProgram, 'aPosition');
+        this.vrUniformTexture = gl.getUniformLocation(this.vrProgram, 'uTexture');
+        
+        Logger.info('VR: WebGL initialized');
+    }
+    
+    // XR frame callback - вызывается каждый кадр VR сессии
+    onXRFrame(time, frame) {
+        if (!this.xrSession) return;
+        
+        // Продолжаем XR render loop
+        this.xrSession.requestAnimationFrame((t, f) => this.onXRFrame(t, f));
+        
+        try {
+            // Рендерим стрим в VR
+            this.renderVRFrame(frame);
+            
+            // Читаем и применяем контроллеры
+            this.readVRControllers();
+            this.applyVRControls();
+        } catch (e) {
+            if (!this._vrErrorLogged) {
+                Logger.error('VR', `Frame error: ${e.message}`);
+                this._vrErrorLogged = true;
+            }
+        }
+    }
+    
+    // Рендеринг кадра в VR - показываем MJPEG стрим
+    renderVRFrame(frame) {
+        const gl = this.vrGL;
+        if (!gl) {
+            if (!this._vrNoGLLogged) {
+                Logger.warn('VR', 'No GL context');
+                this._vrNoGLLogged = true;
+            }
+            return;
+        }
+        
+        const session = frame.session;
+        const glLayer = session.renderState.baseLayer;
+        if (!glLayer) {
+            if (!this._vrNoLayerLogged) {
+                Logger.warn('VR', 'No GL layer');
+                this._vrNoLayerLogged = true;
+            }
+            return;
+        }
+        
+        const pose = frame.getViewerPose(this.xrRefSpace);
+        if (!pose) {
+            if (!this._vrNoPoseLogged) {
+                Logger.warn('VR', 'No viewer pose - check reference space');
+                this._vrNoPoseLogged = true;
+            }
+            return;
+        }
+        
+        // Логируем количество views один раз
+        if (!this.vrViewsLogged) {
+            Logger.info('VR', `Stereo views count: ${pose.views.length}`);
+            for (let i = 0; i < pose.views.length; i++) {
+                const vp = glLayer.getViewport(pose.views[i]);
+                Logger.info('VR', `View ${i} (${pose.views[i].eye}): viewport ${vp.x},${vp.y} ${vp.width}x${vp.height}`);
+            }
+            this.vrViewsLogged = true;
+        }
+        
+        // Биндим framebuffer VR слоя
+        gl.bindFramebuffer(gl.FRAMEBUFFER, glLayer.framebuffer);
+        
+        // Получаем img элемент стрима
+        const streamImg = document.getElementById('cameraStream');
+        if (streamImg && streamImg.complete && streamImg.naturalWidth > 0) {
+            // Обновляем текстуру из img
+            gl.bindTexture(gl.TEXTURE_2D, this.vrTexture);
+            gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, streamImg);
+        }
+        
+        // Рендерим для каждого глаза (обязательно для стерео VR!)
+        const views = pose.views;
+        
+        for (let i = 0; i < views.length; i++) {
+            const view = views[i];
+            const viewport = glLayer.getViewport(view);
+            
+            if (!viewport) {
+                Logger.warn('VR', `No viewport for view ${i}`);
+                continue;
+            }
+            
+            // Устанавливаем viewport для этого глаза
+            gl.viewport(viewport.x, viewport.y, viewport.width, viewport.height);
+            
+            // Очищаем только эту область
+            gl.scissor(viewport.x, viewport.y, viewport.width, viewport.height);
+            gl.enable(gl.SCISSOR_TEST);
+            gl.clearColor(0.1, 0.1, 0.1, 1.0);
+            gl.clear(gl.COLOR_BUFFER_BIT);
+            gl.disable(gl.SCISSOR_TEST);
+            
+            // Рисуем текстуру стрима для каждого глаза
+            gl.useProgram(this.vrProgram);
+            
+            gl.bindBuffer(gl.ARRAY_BUFFER, this.vrQuadBuffer);
+            gl.enableVertexAttribArray(this.vrAttrPosition);
+            gl.vertexAttribPointer(this.vrAttrPosition, 2, gl.FLOAT, false, 0, 0);
+            
+            gl.activeTexture(gl.TEXTURE0);
+            gl.bindTexture(gl.TEXTURE_2D, this.vrTexture);
+            gl.uniform1i(this.vrUniformTexture, 0);
+            
+            gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+        }
+    }
+    
+    // Чтение данных с VR контроллеров через XR Input Sources
+    readVRControllers() {
+        if (!this.vrControllerState) return;
+        
+        // Логируем input sources один раз
+        if (this.xrSession && this.xrSession.inputSources && !this._vrInputSourcesLogged) {
+            const sources = Array.from(this.xrSession.inputSources);
+            Logger.info('VR', `Input sources count: ${sources.length}`);
+            for (let i = 0; i < sources.length; i++) {
+                const src = sources[i];
+                Logger.info('VR', `Source ${i}: handedness=${src.handedness}, targetRayMode=${src.targetRayMode}, hasGamepad=${!!src.gamepad}`);
+                if (src.gamepad) {
+                    Logger.info('VR', `  Gamepad: id=${src.gamepad.id}, axes=${src.gamepad.axes.length}, buttons=${src.gamepad.buttons.length}`);
+                }
+            }
+            this._vrInputSourcesLogged = true;
+        }
+        
+        // Используем XR Input Sources для VR контроллеров
+        if (this.xrSession && this.xrSession.inputSources) {
+            for (const inputSource of this.xrSession.inputSources) {
+                if (!inputSource.gamepad) continue;
+                
+                const gamepad = inputSource.gamepad;
+                const handedness = inputSource.handedness; // 'left', 'right', или 'none'
+                
+                // Логируем RAW данные геймпада один раз в секунду
+                if (!this._vrGamepadLastLog || Date.now() - this._vrGamepadLastLog > 1000) {
+                    this._vrGamepadLastLog = Date.now();
+                    const axesStr = gamepad.axes.map(a => a.toFixed(2)).join(',');
+                    const btnsStr = gamepad.buttons.slice(0, 4).map(b => b.value.toFixed(2)).join(',');
+                    Logger.info('VR', `Gamepad[${handedness}] axes=[${axesStr}] btns=[${btnsStr}]`);
+                }
+                
+                // Quest Touch controllers:
+                // axes[0] = thumbstick X (-1 left, +1 right)
+                // axes[1] = thumbstick Y (-1 up, +1 down)
+                // buttons[0] = trigger (index finger)
+                // buttons[1] = squeeze/grip (middle finger)
+                // buttons[2] = touchpad/thumbstick touch
+                // buttons[3] = thumbstick click
+                // buttons[4] = A/X button
+                // buttons[5] = B/Y button
+                
+                // Quest Touch: axes[2]=thumbstick X, axes[3]=thumbstick Y (axes[0-1] не используются)
+                if (handedness === 'left') {
+                    if (gamepad.axes.length >= 4) {
+                        this.vrControllerState.leftStick.x = gamepad.axes[2] || 0;
+                        this.vrControllerState.leftStick.y = gamepad.axes[3] || 0;
+                    }
+                    if (gamepad.buttons.length > 1) {
+                        this.vrControllerState.leftTrigger = gamepad.buttons[0]?.value || 0;
+                        this.vrControllerState.leftSqueeze = gamepad.buttons[1]?.value || 0;
+                    }
+                } else if (handedness === 'right') {
+                    if (gamepad.axes.length >= 4) {
+                        this.vrControllerState.rightStick.x = gamepad.axes[2] || 0;
+                        this.vrControllerState.rightStick.y = gamepad.axes[3] || 0;
+                    }
+                    if (gamepad.buttons.length > 1) {
+                        this.vrControllerState.rightTrigger = gamepad.buttons[0]?.value || 0;
+                        this.vrControllerState.rightSqueeze = gamepad.buttons[1]?.value || 0;
+                    }
+                }
+            }
+        }
+        
+        // Fallback: обычный Gamepad API для не-XR контроллеров
+        const gamepads = navigator.getGamepads ? navigator.getGamepads() : [];
+        
+        for (const gamepad of gamepads) {
+            if (!gamepad || !gamepad.id) continue;
+            
+            // Пропускаем XR геймпады (они обрабатываются выше)
+            if (gamepad.id.includes('xr') || gamepad.id.includes('XR')) continue;
+            
+            // Для обычных геймпадов (Xbox, PlayStation и т.д.)
+            if (gamepad.axes.length >= 4) {
+                // Левый стик
+                this.vrControllerState.leftStick.x = gamepad.axes[0] || 0;
+                this.vrControllerState.leftStick.y = gamepad.axes[1] || 0;
+                // Правый стик
+                this.vrControllerState.rightStick.x = gamepad.axes[2] || 0;
+                this.vrControllerState.rightStick.y = gamepad.axes[3] || 0;
+            }
+            
+            if (gamepad.buttons.length > 7) {
+                // LT/RT триггеры на Xbox/PS контроллерах
+                this.vrControllerState.leftTrigger = gamepad.buttons[6]?.value || 0;
+                this.vrControllerState.rightTrigger = gamepad.buttons[7]?.value || 0;
+            }
+        }
+    }
+    
+    // Применяем VR управление к роботу
+    applyVRControls() {
+        if (!this.vrControllerState) return;
+        
+        // Логируем состояние XR input sources
+        if (this.xrSession && this.xrSession.inputSources) {
+            const sources = Array.from(this.xrSession.inputSources);
+            if (sources.length === 0 && !this._vrNoControllersLogged) {
+                Logger.warn('VR: Нет input sources в XR сессии. Убедитесь что контроллеры активны.');
+                this._vrNoControllersLogged = true;
+            } else if (sources.length > 0) {
+                this._vrNoControllersLogged = false;
+            }
+        }
+        
+        // Левый стик X = поворот (steering)
+        // Правый стик Y = газ/тормоз (throttle), инвертируем т.к. вверх = -Y
+        const rawSteerX = this.vrControllerState.leftStick.x;
+        const rawThrottleY = this.vrControllerState.rightStick.y;
+        const steering = rawSteerX * 100 * (this.turnSensitivity / 100);
+        const throttle = -rawThrottleY * 100 * (this.speedSensitivity / 100);
+        
+        // Применяем мертвую зону (deadzone)
+        const deadzone = 0.15;
+        const finalSteering = Math.abs(steering) > deadzone * 100 ? steering : 0;
+        const finalThrottle = Math.abs(throttle) > deadzone * 100 ? throttle : 0;
+        
+        // Логируем RAW значения стиков периодически (каждые 500мс)
+        if (!this._vrLastLog || Date.now() - this._vrLastLog > 500) {
+            this._vrLastLog = Date.now();
+            // Логируем всегда если стики хоть немного двигаются
+            if (Math.abs(rawSteerX) > 0.01 || Math.abs(rawThrottleY) > 0.01) {
+                Logger.info('VR', `Sticks: L.x=${rawSteerX.toFixed(2)} R.y=${rawThrottleY.toFixed(2)} -> steer=${finalSteering.toFixed(0)} throttle=${finalThrottle.toFixed(0)}`);
+            } else {
+                Logger.info('VR', `Sticks idle: L=(${rawSteerX.toFixed(2)},${this.vrControllerState.leftStick.y.toFixed(2)}) R=(${this.vrControllerState.rightStick.x.toFixed(2)},${rawThrottleY.toFixed(2)})`);
+            }
+        }
+        
+        // Отправляем команду
+        this.commandController.setTarget(finalThrottle, finalSteering);
+        
+        // Дополнительные функции на триггерах
+        // Правый триггер > 0.5 = фонарик
+        if (this.vrControllerState.rightTrigger > 0.5 && !this._vrFlashlightOn) {
+            this._vrFlashlightOn = true;
+            this.toggleFlashlight(true);
+        } else if (this.vrControllerState.rightTrigger < 0.3 && this._vrFlashlightOn) {
+            this._vrFlashlightOn = false;
+            this.toggleFlashlight(false);
+        }
+        
+        // Левый триггер > 0.5 = сигнал
+        if (this.vrControllerState.leftTrigger > 0.5 && !this._vrHornOn) {
+            this._vrHornOn = true;
+            this.horn(true);
+        } else if (this.vrControllerState.leftTrigger < 0.3 && this._vrHornOn) {
+            this._vrHornOn = false;
+            this.horn(false);
+        }
+    }
+    
+    // Вспомогательные методы для VR (могут быть переопределены)
+    toggleFlashlight(on) {
+        fetch(`/api/flashlight?state=${on ? 1 : 0}`).catch(() => {});
+    }
+    
+    horn(on) {
+        fetch(`/api/horn?state=${on ? 1 : 0}`).catch(() => {});
+    }
+
     startMainLoop() {
         setInterval(() => this.mainLoop(), 50); // 20 Hz
     }
@@ -1411,7 +1819,7 @@ class BaseRobotUI {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ autoUpdate, dontOffer, channel })
             });
-            Logger.log(`Настройки обновлений сохранены (канал: ${channel})`);
+            Logger.info(`Настройки обновлений сохранены (канал: ${channel})`);
         } catch (error) {
             Logger.error('Ошибка сохранения настроек обновлений:', error);
         }

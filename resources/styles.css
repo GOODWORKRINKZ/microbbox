@@ -541,6 +541,31 @@ body {
     background: rgba(255, 255, 255, 0.1);
     border-radius: 20px;
     backdrop-filter: blur(10px);
+    transition: all 0.3s ease;
+}
+
+/* Минимизированное состояние VR панели */
+.vr-info-minimized {
+    padding: 10px 20px;
+    opacity: 0.3;
+    transform: scale(0.5);
+    pointer-events: none;
+}
+
+.vr-info-minimized * {
+    display: none;
+}
+
+.vr-info-minimized::after {
+    content: '🥽 Тап для показа';
+    display: block;
+    font-size: 12px;
+    color: white;
+}
+
+/* Разрешить клик на свёрнутой панели */
+.vr-controls {
+    pointer-events: auto;
 }
 
 .vr-info h2 {
