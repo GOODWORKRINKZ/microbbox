@@ -131,9 +131,19 @@ echo ""
 
 # DNS проверка
 echo -e "${BLUE}🌍 DNS:${NC}"
-if nslookup $DOMAIN_NAME &> /dev/null; then
-    DNS_IP=$(nslookup $DOMAIN_NAME | grep -A1 "Name:" | grep "Address:" | awk '{print $2}' | head -1)
+# Попробуем использовать dig, если доступен, иначе nslookup
+if command -v dig &> /dev/null; then
+    DNS_IP=$(dig +short $DOMAIN_NAME 2>/dev/null | head -1)
     if [ ! -z "$DNS_IP" ]; then
+        echo -e "${GREEN}✅ DNS резолвится: $DOMAIN_NAME → $DNS_IP${NC}"
+    else
+        echo -e "${YELLOW}⚠️  DNS запись для $DOMAIN_NAME не найдена${NC}"
+        echo "   Добавьте в локальный DNS или /etc/hosts"
+    fi
+elif nslookup $DOMAIN_NAME &> /dev/null; then
+    # Используем более надежный способ парсинга nslookup
+    DNS_IP=$(nslookup $DOMAIN_NAME 2>/dev/null | grep -v '#' | grep 'Address:' | tail -1 | awk '{print $2}')
+    if [ ! -z "$DNS_IP" ] && [ "$DNS_IP" != "" ]; then
         echo -e "${GREEN}✅ DNS резолвится: $DOMAIN_NAME → $DNS_IP${NC}"
     else
         echo -e "${YELLOW}⚠️  DNS найден, но IP не определен${NC}"

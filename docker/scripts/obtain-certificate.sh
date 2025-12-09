@@ -55,11 +55,13 @@ fi
 
 # Проверка доступности порта 80
 echo "🔍 Проверка доступности порта 80..."
-if curl -s --connect-timeout 5 http://$DOMAIN_NAME/.well-known/acme-challenge/test &> /dev/null; then
-    echo "✅ Порт 80 доступен"
+# Проверяем доступность через nginx health endpoint
+if curl -s --connect-timeout 5 http://$DOMAIN_NAME/nginx-health &> /dev/null; then
+    echo "✅ Порт 80 доступен (nginx отвечает)"
 else
     echo "⚠️  Порт 80 может быть недоступен из интернета"
     echo "   Проверьте проброс портов на роутере"
+    echo "   Убедитесь что nginx запущен"
 fi
 
 echo ""

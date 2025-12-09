@@ -37,6 +37,14 @@ echo ""
 # Проверка существования .env файла
 if [ ! -f .env ]; then
     echo "📝 Создание файла конфигурации .env из шаблона..."
+    
+    # Проверка существования шаблона
+    if [ ! -f .env.example ]; then
+        echo "❌ Файл .env.example не найден!"
+        echo "Убедитесь что вы находитесь в директории docker/"
+        exit 1
+    fi
+    
     cp .env.example .env
     echo "✅ Файл .env создан"
     echo ""
@@ -58,7 +66,9 @@ if [ -z "$ESP32_IP" ] || [ "$ESP32_IP" == "192.168.1.100" ]; then
     read -p "IP адрес ESP32 [192.168.1.100]: " user_ip
     if [ ! -z "$user_ip" ]; then
         ESP32_IP=$user_ip
-        sed -i "s/ESP32_IP=.*/ESP32_IP=$ESP32_IP/" .env
+        # Экранирование точек в IP адресе для sed
+        ESCAPED_IP=$(echo "$ESP32_IP" | sed 's/\./\\./g')
+        sed -i "s/ESP32_IP=.*/ESP32_IP=$ESCAPED_IP/" .env
     fi
 fi
 
@@ -89,14 +99,23 @@ echo ""
 
 # Создание конфигурации nginx из шаблона
 echo "📝 Создание конфигурации nginx..."
+
+# Проверка существования шаблона
+if [ ! -f nginx/device-template.conf ]; then
+    echo "❌ Файл nginx/device-template.conf не найден!"
+    echo "Убедитесь что вы находитесь в директории docker/"
+    exit 1
+fi
+
 cp nginx/device-template.conf nginx/conf.d/${DOMAIN_NAME}.conf
 
-# Замена переменных в конфигурации
-sed -i "s/ESP32_IP/$ESP32_IP/g" nginx/conf.d/${DOMAIN_NAME}.conf
-sed -i "s/ESP32_API_PORT/$ESP32_API_PORT/g" nginx/conf.d/${DOMAIN_NAME}.conf
-sed -i "s/ESP32_STREAM_PORT/$ESP32_STREAM_PORT/g" nginx/conf.d/${DOMAIN_NAME}.conf
-sed -i "s/DOMAIN_NAME/$DOMAIN_NAME/g" nginx/conf.d/${DOMAIN_NAME}.conf
-sed -i "s/DEVICE_NAME/$DEVICE_NAME/g" nginx/conf.d/${DOMAIN_NAME}.conf
+# Замена переменных в конфигурации с использованием | как разделителя для sed
+# чтобы избежать проблем со спецсимволами в IP и доменах
+sed -i "s|ESP32_IP|$ESP32_IP|g" nginx/conf.d/${DOMAIN_NAME}.conf
+sed -i "s|ESP32_API_PORT|$ESP32_API_PORT|g" nginx/conf.d/${DOMAIN_NAME}.conf
+sed -i "s|ESP32_STREAM_PORT|$ESP32_STREAM_PORT|g" nginx/conf.d/${DOMAIN_NAME}.conf
+sed -i "s|DOMAIN_NAME|$DOMAIN_NAME|g" nginx/conf.d/${DOMAIN_NAME}.conf
+sed -i "s|DEVICE_NAME|$DEVICE_NAME|g" nginx/conf.d/${DOMAIN_NAME}.conf
 
 echo "✅ Конфигурация nginx создана: nginx/conf.d/${DOMAIN_NAME}.conf"
 echo ""
