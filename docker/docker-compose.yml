@@ -1,5 +1,3 @@
-version: '3.8'
-
 # Docker Compose конфигурация для nginx reverse proxy
 # Проксирует ESP32 устройство на HTTPS с поддержкой Let's Encrypt SSL сертификатов
 # Может быть запущена на любой системе: ноутбук, Raspberry Pi, сервер
