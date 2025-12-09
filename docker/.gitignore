@@ -1,0 +1,32 @@
+# Файлы конфигурации
+.env
+
+# SSL сертификаты и ключи
+certbot/conf/
+certbot/www/
+certbot/logs/
+
+# Логи nginx
+nginx/logs/
+
+# Сгенерированные конфигурации nginx
+nginx/conf.d/*.conf
+
+# Docker volumes
+volumes/
+
+# Временные файлы
+*.tmp
+*.swp
+*.swo
+*~
+
+# macOS
+.DS_Store
+
+# Linux
+.directory
+
+# Windows
+Thumbs.db
+desktop.ini

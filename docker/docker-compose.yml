@@ -1,0 +1,55 @@
+# Docker Compose конфигурация для nginx reverse proxy
+# Проксирует ESP32 устройство на HTTPS с поддержкой Let's Encrypt SSL сертификатов
+# Может быть запущена на любой системе: ноутбук, Raspberry Pi, сервер
+
+services:
+  nginx:
+    image: nginx:alpine
+    container_name: microbbox-proxy-nginx
+    restart: unless-stopped
+    ports:
+      - "80:80"      # HTTP (для редиректа и Let's Encrypt проверки)
+      - "443:443"    # HTTPS (основной доступ)
+    volumes:
+      # Конфигурация nginx
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/conf.d:/etc/nginx/conf.d:ro
+      
+      # SSL сертификаты от Let's Encrypt
+      - ./certbot/conf:/etc/letsencrypt:ro
+      - ./certbot/www:/var/www/certbot:ro
+      
+      # Логи
+      - ./nginx/logs:/var/log/nginx
+    networks:
+      - microbbox-proxy-network
+    depends_on:
+      - certbot
+    command: ["/bin/sh", "-c", "echo 'Waiting for SSL...'; while [ ! -f /etc/letsencrypt/options-ssl-nginx.conf ]; do sleep 2; done; echo 'SSL ready, starting nginx...'; nginx -g 'daemon off;'"]
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost/nginx-health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  certbot:
+    image: certbot/certbot
+    container_name: microbbox-proxy-certbot
+    restart: unless-stopped
+    volumes:
+      - ./certbot/conf:/etc/letsencrypt
+      - ./certbot/www:/var/www/certbot
+      - ./certbot/logs:/var/log/letsencrypt
+      - ./certbot/ssl-defaults:/etc/letsencrypt/ssl-defaults:ro
+    environment:
+      - TZ=${TZ:-Europe/Moscow}
+    # Для self-signed сертификатов просто спим (certbot не используется)
+    entrypoint: ["/bin/sh", "-c", "echo 'Certbot ready (self-signed mode)'; mkdir -p /etc/letsencrypt /var/www/certbot; if [ ! -f /etc/letsencrypt/options-ssl-nginx.conf ] && [ -f /etc/letsencrypt/ssl-defaults/options-ssl-nginx.conf ]; then cp /etc/letsencrypt/ssl-defaults/options-ssl-nginx.conf /etc/letsencrypt/options-ssl-nginx.conf; fi; if [ ! -f /etc/letsencrypt/ssl-dhparams.pem ] && [ -f /etc/letsencrypt/ssl-defaults/ssl-dhparams.pem ]; then cp /etc/letsencrypt/ssl-defaults/ssl-dhparams.pem /etc/letsencrypt/ssl-dhparams.pem; fi; trap exit TERM; while :; do sleep 24h & wait $$!; done"]
+    networks:
+      - microbbox-proxy-network
+
+networks:
+  microbbox-proxy-network:
+    driver: bridge
+    name: microbbox-proxy-network

@@ -145,38 +145,8 @@
             </div>
         </div>
 
-        <!-- VR управление -->
+        <!-- VR управление (скрыто - управление через контроллеры) -->
         <div id="vrControls" class="vr-controls hidden">
-            <div class="vr-info">
-                <h2>Режим VR активен</h2>
-                <p>Используйте контроллеры Oculus для управления</p>
-                <div class="vr-status">
-                    <span id="vrStatus">Поиск контроллеров...</span>
-                </div>
-                <div class="vr-buttons">
-                    <button id="vrSettingsBtn" class="vr-debug-btn">⚙️ Settings</button>
-                    <button id="vrDebugBtn" class="vr-debug-btn">🔍 Debug Info</button>
-                    <button id="vrLiveLogBtn" class="vr-debug-btn">📊 Live Log</button>
-                </div>
-                <!-- Панель с debug информацией -->
-                <div id="vrDebugPanel" class="vr-debug-panel hidden">
-                    <h3>VR Debug Information</h3>
-                    <pre id="vrDebugOutput"></pre>
-                    <button id="vrDebugClose" class="vr-debug-close">✕ Закрыть</button>
-                </div>
-                <!-- Панель с live логами -->
-                <div id="vrLiveLogPanel" class="vr-debug-panel hidden">
-                    <h3>Live Log (updates in real-time)</h3>
-                    <div class="vr-log-controls">
-                        <button id="vrLogClear" class="vr-log-btn">🗑️ Clear</button>
-                        <label class="vr-log-checkbox">
-                            <input type="checkbox" id="vrLogToSerial"> → Serial Monitor
-                        </label>
-                    </div>
-                    <pre id="vrLiveLogOutput"></pre>
-                    <button id="vrLiveLogClose" class="vr-debug-close">✕ Закрыть</button>
-                </div>
-            </div>
         </div>
 
         <!-- Модальное окно настроек с табами -->
