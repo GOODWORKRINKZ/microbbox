@@ -1,0 +1,95 @@
+version: '3.8'
+
+# Docker Compose конфигурация для nginx reverse proxy
+# Проксирует ESP32 устройство на HTTPS с поддержкой Let's Encrypt SSL сертификатов
+# Может быть запущена на любой системе: ноутбук, Raspberry Pi, сервер
+
+services:
+  nginx:
+    image: nginx:alpine
+    container_name: microbbox-proxy-nginx
+    restart: unless-stopped
+    ports:
+      - "80:80"      # HTTP (для редиректа и Let's Encrypt проверки)
+      - "443:443"    # HTTPS (основной доступ)
+    volumes:
+      # Конфигурация nginx
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/conf.d:/etc/nginx/conf.d:ro
+      
+      # SSL сертификаты от Let's Encrypt
+      - ./certbot/conf:/etc/letsencrypt:ro
+      - ./certbot/www:/var/www/certbot:ro
+      
+      # Логи
+      - ./nginx/logs:/var/log/nginx
+    networks:
+      - microbbox-proxy-network
+    depends_on:
+      - certbot
+    command: >
+      /bin/sh -c "
+      # Ожидание инициализации certbot
+      echo 'Ожидание настройки SSL...';
+      while [ ! -f /etc/letsencrypt/options-ssl-nginx.conf ]; do
+        sleep 2;
+      done;
+      echo 'SSL конфигурация готова, запуск nginx...';
+      
+      # Запуск nginx
+      nginx -g 'daemon off;'
+      "
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost/nginx-health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  certbot:
+    image: certbot/certbot
+    container_name: microbbox-proxy-certbot
+    restart: unless-stopped
+    volumes:
+      - ./certbot/conf:/etc/letsencrypt
+      - ./certbot/www:/var/www/certbot
+      - ./certbot/logs:/var/log/letsencrypt
+    environment:
+      - TZ=${TZ:-Europe/Moscow}
+    # Обновление сертификатов каждые 12 часов
+    entrypoint: >
+      /bin/sh -c "
+      echo 'Инициализация Certbot...';
+      
+      # Создание базовых директорий
+      mkdir -p /etc/letsencrypt /var/www/certbot /var/log/letsencrypt;
+      
+      # Копирование стандартных SSL опций если их нет
+      if [ ! -f /etc/letsencrypt/options-ssl-nginx.conf ]; then
+        echo 'Загрузка SSL конфигурации...';
+        wget -q -O /etc/letsencrypt/options-ssl-nginx.conf https://raw.githubusercontent.com/certbot/certbot/master/certbot-nginx/certbot_nginx/_internal/tls_configs/options-ssl-nginx.conf || echo 'Предупреждение: не удалось загрузить options-ssl-nginx.conf';
+      fi;
+      
+      if [ ! -f /etc/letsencrypt/ssl-dhparams.pem ]; then
+        echo 'Загрузка DH параметров...';
+        wget -q -O /etc/letsencrypt/ssl-dhparams.pem https://raw.githubusercontent.com/certbot/certbot/master/certbot/certbot/ssl-dhparams.pem || echo 'Предупреждение: не удалось загрузить ssl-dhparams.pem';
+      fi;
+      
+      echo 'Certbot готов к работе';
+      
+      # Бесконечный цикл для обновления сертификатов
+      trap exit TERM;
+      while :; do
+        echo 'Проверка сертификатов для обновления...';
+        certbot renew --webroot --webroot-path=/var/www/certbot --quiet;
+        echo 'Следующая проверка через 12 часов';
+        sleep 12h & wait $${!};
+      done
+      "
+    networks:
+      - microbbox-proxy-network
+
+networks:
+  microbbox-proxy-network:
+    driver: bridge
+    name: microbbox-proxy-network
