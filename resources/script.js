@@ -369,31 +369,18 @@ class CommandController {
 }
 
 // ═══════════════════════════════════════════════════════════════
-// ДЕТЕКТОР УСТРОЙСТВА (Single Responsibility)
+// ДЕТЕКТОР УСТРОЙСТВА - ВСЕГДА МОБИЛЬНЫЙ РЕЖИМ
 // ═══════════════════════════════════════════════════════════════
 
 class DeviceDetector {
     static detect() {
-        const ua = navigator.userAgent.toLowerCase();
-        const isOculusBrowser = ua.includes('oculusbrowser');
-        const isMobile = /android|webos|iphone|ipad|ipod|blackberry|iemobile|opera mini/i.test(ua);
-        
-        if (isOculusBrowser) {
-            return 'vr';
-        } else if (isMobile) {
-            return 'mobile';
-        } else {
-            return 'desktop';
-        }
+        // Всегда возвращаем mobile для унифицированного интерфейса
+        return 'mobile';
     }
     
     static getDeviceTypeText(deviceType) {
-        switch (deviceType) {
-            case 'vr': return '🥽 VR режим';
-            case 'mobile': return '📱 Мобильное';
-            case 'desktop': return '🖥️ ПК';
-            default: return '❓ Неизвестно';
-        }
+        // Всегда мобильный интерфейс
+        return '📱 Мобильное управление';
     }
 }
 
@@ -445,8 +432,6 @@ class BaseRobotUI {
         this.setupCameraStream();
         this.setupEventListeners();
         
-        await this.checkVRSupport();
-        
         this.startMainLoop();
         
         // Скрыть загрузку
@@ -488,27 +473,12 @@ class BaseRobotUI {
     }
     
     showControlsForDevice() {
-        const pcControls = document.getElementById('pcControls');
         const mobileControls = document.getElementById('mobileControls');
-        const vrControls = document.getElementById('vrControls');
         
-        // Скрываем все
-        [pcControls, mobileControls, vrControls].forEach(el => {
-            if (el) el.classList.add('hidden');
-        });
-        
-        // Показываем нужные
-        switch (this.deviceType) {
-            case 'desktop':
-                if (pcControls) pcControls.classList.remove('hidden');
-                break;
-            case 'mobile':
-                if (mobileControls) mobileControls.classList.remove('hidden');
-                this.setupMobileJoysticks();
-                break;
-            case 'vr':
-                if (vrControls) vrControls.classList.remove('hidden');
-                break;
+        // Всегда показываем только мобильные контролы
+        if (mobileControls) {
+            mobileControls.classList.remove('hidden');
+            this.setupMobileJoysticks();
         }
     }
     
@@ -640,11 +610,6 @@ class BaseRobotUI {
             fullscreenBtn.addEventListener('click', () => this.toggleFullscreen());
         }
         
-        // Клавиатура для desktop
-        if (this.deviceType === 'desktop') {
-            this.setupKeyboardControls();
-        }
-        
         // Общие кнопки
         this.setupCommonButtons();
         
@@ -652,37 +617,8 @@ class BaseRobotUI {
         this.setupSettingsModal();
     }
     
-    setupKeyboardControls() {
-        document.addEventListener('keydown', (e) => this.handleKeyDown(e));
-        document.addEventListener('keyup', (e) => this.handleKeyUp(e));
-    }
-    
-    handleKeyDown(e) {
-        const key = e.key.toLowerCase();
-        
-        // WASD или стрелки
-        if (['w', 'arrowup', 's', 'arrowdown', 'a', 'arrowleft', 'd', 'arrowright'].includes(key)) {
-            e.preventDefault();
-            this.updateKeyboardControl(key, true);
-        }
-    }
-    
-    handleKeyUp(e) {
-        const key = e.key.toLowerCase();
-        
-        if (['w', 'arrowup', 's', 'arrowdown', 'a', 'arrowleft', 'd', 'arrowright'].includes(key)) {
-            e.preventDefault();
-            this.updateKeyboardControl(key, false);
-        }
-    }
-    
-    updateKeyboardControl(key, pressed) {
-        // Базовая реализация - может быть переопределена в наследниках
-    }
-    
     setupCommonButtons() {
-        // Кнопки, которые есть у всех типов роботов
-        // Используем универсальные мобильные кнопки для всех устройств
+        // Мобильные кнопки настроек и справки
         const settingsBtn = document.getElementById('mobileSettings');
         if (settingsBtn) {
             settingsBtn.addEventListener('click', () => this.openSettings());
@@ -691,17 +627,6 @@ class BaseRobotUI {
         const helpBtn = document.getElementById('mobileHelp');
         if (helpBtn) {
             helpBtn.addEventListener('click', () => this.openHelp());
-        }
-        
-        // Десктопные кнопки настроек и справки
-        const pcSettingsBtn = document.getElementById('pcSettings');
-        if (pcSettingsBtn) {
-            pcSettingsBtn.addEventListener('click', () => this.openSettings());
-        }
-        
-        const pcHelpBtn = document.getElementById('pcHelp');
-        if (pcHelpBtn) {
-            pcHelpBtn.addEventListener('click', () => this.openHelp());
         }
     }
     
@@ -838,32 +763,6 @@ class BaseRobotUI {
         // Реализация сенсорного джойстика
         // Упрощенная версия - полная реализация в конкретных типах роботов
         Logger.debug(`Настройка джойстика: ${side}`);
-    }
-    
-    async checkVRSupport() {
-        if (!navigator.xr) {
-            Logger.debug('WebXR не поддерживается');
-            return;
-        }
-        
-        try {
-            const supported = await navigator.xr.isSessionSupported('immersive-vr');
-            if (supported) {
-                Logger.info('VR поддерживается');
-                const vrBtn = document.getElementById('vrBtn');
-                if (vrBtn) {
-                    vrBtn.classList.remove('hidden');
-                    vrBtn.addEventListener('click', () => this.enterVR());
-                }
-            }
-        } catch (error) {
-            Logger.debug('Ошибка проверки VR поддержки:', error);
-        }
-    }
-    
-    async enterVR() {
-        Logger.info('Вход в VR режим...');
-        // Переопределяется в наследниках
     }
     
     startMainLoop() {
@@ -1454,7 +1353,6 @@ class ClassicRobotUI extends BaseRobotUI {
         super();
         this.robotType = 'classic';
         this.effectMode = 'normal';
-        this.keyStates = {};
         
         // Маппинг эффектов для API (DRY)
         this.effectMap = { normal: 0, police: 1, fire: 2, ambulance: 3, terminator: 4 };
@@ -1473,39 +1371,7 @@ class ClassicRobotUI extends BaseRobotUI {
     
     setupEventListeners() {
         super.setupEventListeners();
-        
-        // Кнопки эффектов
-        const effectModeSelect = document.getElementById('effectMode');
-        if (effectModeSelect) {
-            effectModeSelect.addEventListener('change', (e) => {
-                this.setEffectMode(e.target.value);
-            });
-        }
-        
-        // Фонарик
-        const flashlightBtn = document.getElementById('flashlightBtn');
-        if (flashlightBtn) {
-            flashlightBtn.addEventListener('click', () => this.toggleFlashlight());
-        }
-        
-        // Сигнал
-        const hornBtn = document.getElementById('hornBtn');
-        if (hornBtn) {
-            hornBtn.addEventListener('click', () => this.playHorn());
-        }
-        
-        // Кнопки управления для ПК
-        document.querySelectorAll('.control-btn').forEach(btn => {
-            btn.addEventListener('mousedown', () => {
-                const direction = btn.dataset.direction;
-                this.handleControlButton(direction, true);
-            });
-            
-            btn.addEventListener('mouseup', () => {
-                const direction = btn.dataset.direction;
-                this.handleControlButton(direction, false);
-            });
-        });
+        // PC контролы удалены - используется только мобильный интерфейс
     }
     
     setupSaveButtons() {
@@ -1541,49 +1407,6 @@ class ClassicRobotUI extends BaseRobotUI {
         }
     }
     
-    handleControlButton(direction, pressed) {
-        if (!pressed) {
-            this.commandController.stop();
-            return;
-        }
-        
-        const speedMap = {
-            'forward': { t: this.PWM_FORWARD, s: this.PWM_NEUTRAL },
-            'backward': { t: this.PWM_BACKWARD, s: this.PWM_NEUTRAL },
-            'left': { t: this.PWM_NEUTRAL, s: this.PWM_LEFT },
-            'right': { t: this.PWM_NEUTRAL, s: this.PWM_RIGHT },
-            'stop': { t: this.PWM_NEUTRAL, s: this.PWM_NEUTRAL }
-        };
-        
-        const speed = speedMap[direction];
-        if (speed) {
-            this.commandController.setTarget(speed.t, speed.s);
-        }
-    }
-    
-    updateKeyboardControl(key, pressed) {
-        this.keyStates[key] = pressed;
-        
-        let throttle = this.PWM_NEUTRAL;
-        let steering = this.PWM_NEUTRAL;
-        
-        // Расчет throttle
-        if (this.keyStates['w'] || this.keyStates['arrowup']) {
-            throttle = this.PWM_FORWARD;
-        } else if (this.keyStates['s'] || this.keyStates['arrowdown']) {
-            throttle = this.PWM_BACKWARD;
-        }
-        
-        // Расчет steering
-        if (this.keyStates['a'] || this.keyStates['arrowleft']) {
-            steering = this.PWM_LEFT;
-        } else if (this.keyStates['d'] || this.keyStates['arrowright']) {
-            steering = this.PWM_RIGHT;
-        }
-        
-        this.commandController.setTarget(throttle, steering);
-    }
-    
     async setEffectMode(mode) {
         this.effectMode = mode;
         
@@ -1591,69 +1414,8 @@ class ClassicRobotUI extends BaseRobotUI {
         
         try {
             await fetch(`/cmd?effect=${effectId}`);
-            
-            // T-800 overlay
-            if (mode === 'terminator') {
-                this.startT800Overlay();
-            } else {
-                this.stopT800Overlay();
-            }
         } catch (error) {
             Logger.error('Ошибка установки эффекта:', error);
-        }
-    }
-    
-    startT800Overlay() {
-        const overlay = document.getElementById('t800Overlay');
-        if (!overlay) return;
-        
-        overlay.classList.remove('hidden');
-        this.t800StartTime = Date.now();
-        
-        this.t800Interval = setInterval(() => {
-            const elapsed = Math.floor((Date.now() - this.t800StartTime) / 1000);
-            const hours = Math.floor(elapsed / 3600);
-            const minutes = Math.floor((elapsed % 3600) / 60);
-            const seconds = elapsed % 60;
-            
-            document.getElementById('t800Time').textContent = 
-                `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
-            
-            // Случайные значения для реализма
-            document.getElementById('t800Mem').textContent = 
-                '0x' + Math.floor(Math.random() * 0xFFFF).toString(16).toUpperCase();
-            document.getElementById('t800Power').textContent = 
-                (98 + Math.random() * 2).toFixed(1) + '%';
-            document.getElementById('t800Temp').textContent = 
-                (36 + Math.random() * 2).toFixed(1) + '°C';
-        }, 1000);
-    }
-    
-    stopT800Overlay() {
-        const overlay = document.getElementById('t800Overlay');
-        if (overlay) {
-            overlay.classList.add('hidden');
-        }
-        
-        if (this.t800Interval) {
-            clearInterval(this.t800Interval);
-            this.t800Interval = null;
-        }
-    }
-    
-    async toggleFlashlight() {
-        try {
-            await fetch('/flashlight');
-        } catch (error) {
-            Logger.error('Ошибка переключения фонарика:', error);
-        }
-    }
-    
-    async playHorn() {
-        try {
-            await fetch('/horn');
-        } catch (error) {
-            Logger.error('Ошибка воспроизведения сигнала:', error);
         }
     }
     
