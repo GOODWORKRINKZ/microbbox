@@ -430,17 +430,40 @@ class MockMotorController : public IMotorController {
 
 ### HTTPS поддержка
 
-#### Вариант 1: nginx Reverse Proxy с Let's Encrypt (Рекомендуется для WebXR)
+#### Вариант 1: Docker Proxy (Рекомендуется - Простая настройка)
 
-Для работы WebXR требуется HTTPS с валидными SSL сертификатами. Рекомендуемое решение - использование nginx reverse proxy на Raspberry Pi с Let's Encrypt сертификатами.
+**Новое!** Простая Docker композиция для проксирования ESP32 на HTTPS с валидными SSL сертификатами.
 
 **Преимущества:**
-- ✅ Валидные SSL сертификаты (без предупреждений браузера)
-- ✅ Автоматическое обновление сертификатов
-- ✅ Поддержка нескольких ESP32 устройств
-- ✅ Обработка отключенных устройств
-- ✅ Не нагружает ESP32 (SSL терминация на proxy)
+- ✅ Автоматическая настройка одним скриптом
+- ✅ Let's Encrypt сертификаты с автообновлением
+- ✅ Работает на любой системе (ноутбук, Raspberry Pi, сервер)
+- ✅ Проксирование двух портов ESP32 (80 и 81) на один HTTPS (443)
 - ✅ Полная совместимость с WebXR
+- ✅ Самоподписанные сертификаты для локальной сети
+
+**Быстрый старт (5 минут):**
+```bash
+cd docker/
+./scripts/setup.sh
+# Отредактировать .env (ESP32_IP, DOMAIN_NAME)
+./scripts/generate-selfsigned-cert.sh  # или obtain-certificate.sh для Let's Encrypt
+```
+
+📖 **Полная документация:** [docker/README.md](docker/README.md)  
+🚀 **Быстрый старт:** [docker/QUICKSTART.md](docker/QUICKSTART.md)  
+📚 **Примеры:** [docker/EXAMPLES.md](docker/EXAMPLES.md)  
+❓ **FAQ:** [docker/FAQ.md](docker/FAQ.md)
+
+#### Вариант 2: nginx Reverse Proxy с множественными устройствами (Продвинутый)
+
+Для управления несколькими ESP32 устройствами через единую точку доступа.
+
+**Преимущества:**
+- ✅ Централизованное управление множеством устройств
+- ✅ Единая точка конфигурации
+- ✅ Готовые скрипты для добавления устройств
+- ✅ Мониторинг и логирование
 
 **Быстрый старт:**
 ```bash
@@ -453,7 +476,7 @@ sudo ./scripts/obtain-certificate.sh robot1.example.com
 🚀 **Быстрый старт:** [infrastructure/vr-proxy/QUICKSTART.md](infrastructure/vr-proxy/QUICKSTART.md)  
 🔧 **Настройка роутера:** [infrastructure/vr-proxy/KEENETIC_SETUP.md](infrastructure/vr-proxy/KEENETIC_SETUP.md)
 
-#### Вариант 2: HTTPS на ESP32 (Не рекомендуется)
+#### Вариант 3: HTTPS на ESP32 (Не рекомендуется)
 
 Встраивание SSL в ESP32 возможно, но имеет существенные недостатки:
 
