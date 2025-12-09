@@ -15,9 +15,6 @@
     <!-- Кнопка fullscreen -->
     <button id="fullscreenBtn" class="fullscreen-btn" title="Полноэкранный режим">⛶</button>
     
-    <!-- Кнопка входа в VR -->
-    <button id="vrBtn" class="vr-btn hidden" title="Войти в VR режим">🥽 VR</button>
-    
     <div id="loading" class="loading-screen">
         <div class="loader"></div>
         <h2>МикРоББокс</h2>
@@ -80,48 +77,6 @@
             </div>
         </div>
 
-        <!-- Панель управления для ПК -->
-        <div id="pcControls" class="pc-controls hidden">
-            <div class="control-panel">
-                <div class="control-section">
-                    <h3>Управление</h3>
-                    <div class="control-buttons">
-                        <button class="control-btn" data-direction="forward">↑</button>
-                        <div class="middle-row">
-                            <button class="control-btn" data-direction="left">←</button>
-                            <button class="control-btn stop-btn" data-direction="stop">⏹</button>
-                            <button class="control-btn" data-direction="right">→</button>
-                        </div>
-                        <button class="control-btn" data-direction="backward">↓</button>
-                    </div>
-                </div>
-                
-                <div class="control-section">
-                    <h3>Режимы</h3>
-                    
-                    <select id="effectMode" class="mode-selector">
-                        <option value="normal">Обычный</option>
-                        <option value="police">Полиция</option>
-                        <option value="fire">Пожарные</option>
-                        <option value="ambulance">Скорая</option>
-                        <option value="terminator">T-800 🤖</option>
-                    </select>
-                </div>
-
-                <div class="control-section">
-                    <h3>Дополнительно</h3>
-                    <button id="flashlightBtn" class="feature-btn">💡 Фонарик</button>
-                    <button id="hornBtn" class="feature-btn">🔊 Сигнал</button>
-                </div>
-                
-                <div class="control-section">
-                    <h3>Меню</h3>
-                    <button id="pcSettings" class="feature-btn settings-btn">⚙️ Настройки</button>
-                    <button id="pcHelp" class="feature-btn help-btn">❓ Справка</button>
-                </div>
-            </div>
-        </div>
-
         <!-- Мобильные стики -->
         <div id="mobileControls" class="mobile-controls hidden">
             <div class="joystick-container left">
@@ -142,40 +97,6 @@
             <div class="mobile-panel">
                 <button id="mobileSettings" class="panel-btn" title="Настройки">⚙️</button>
                 <button id="mobileHelp" class="panel-btn" title="Справка">❓</button>
-            </div>
-        </div>
-
-        <!-- VR управление -->
-        <div id="vrControls" class="vr-controls hidden">
-            <div class="vr-info">
-                <h2>Режим VR активен</h2>
-                <p>Используйте контроллеры Oculus для управления</p>
-                <div class="vr-status">
-                    <span id="vrStatus">Поиск контроллеров...</span>
-                </div>
-                <div class="vr-buttons">
-                    <button id="vrSettingsBtn" class="vr-debug-btn">⚙️ Settings</button>
-                    <button id="vrDebugBtn" class="vr-debug-btn">🔍 Debug Info</button>
-                    <button id="vrLiveLogBtn" class="vr-debug-btn">📊 Live Log</button>
-                </div>
-                <!-- Панель с debug информацией -->
-                <div id="vrDebugPanel" class="vr-debug-panel hidden">
-                    <h3>VR Debug Information</h3>
-                    <pre id="vrDebugOutput"></pre>
-                    <button id="vrDebugClose" class="vr-debug-close">✕ Закрыть</button>
-                </div>
-                <!-- Панель с live логами -->
-                <div id="vrLiveLogPanel" class="vr-debug-panel hidden">
-                    <h3>Live Log (updates in real-time)</h3>
-                    <div class="vr-log-controls">
-                        <button id="vrLogClear" class="vr-log-btn">🗑️ Clear</button>
-                        <label class="vr-log-checkbox">
-                            <input type="checkbox" id="vrLogToSerial"> → Serial Monitor
-                        </label>
-                    </div>
-                    <pre id="vrLiveLogOutput"></pre>
-                    <button id="vrLiveLogClose" class="vr-debug-close">✕ Закрыть</button>
-                </div>
             </div>
         </div>
 
